@@ -1,0 +1,415 @@
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-links" id="navLinks">
+        <a href="{{ path('app_client') }}" data-i18n="home">Home</a>
+        <a href="#" data-i18n="favorites">Favoris List</a>
+        <a href="#" data-i18n="cart">Cart</a>
+    </div>
+
+    <span class="logo">
+        <span class="logo-live">Live</span>
+        <span class="logo-shop">Shop</span>
+    </span>
+
+    <div class="right-group">
+        <input class="search-bar" type="text" placeholder="Recherche..." data-i18n-placeholder="search">
+        <div class="icons">
+            <span class="icon">
+                <!-- Loupe -->
+                <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
+                    <circle cx="17" cy="17" r="10" />
+                    <line x1="25" y1="25" x2="36" y2="36" />
+                </svg>
+            </span>
+            <span class="icon">
+                <!-- Bulle -->
+                <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
+                    <ellipse cx="19" cy="17" rx="12" ry="8" />
+                    <polyline points="13,25 13,29 19,25" />
+                </svg>
+            </span>
+            <span class="icon">
+                <!-- Cloche -->
+                <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
+                    <path d="M19 32c2.5 0 4-1.5 4-3h-8c0 1.5 1.5 3 4 3z"/>
+                    <path d="M29 25V17c0-5.5-4.5-10-10-10s-10 4.5-10 10v8l-2 2v1h24v-1l-2-2z"/>
+                </svg>
+            </span>
+            <span class="icon burger" id="burgerMenu" aria-label="Toggle navigation menu" role="button" tabindex="0">
+                <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="8" y1="12" x2="30" y2="12" />
+                    <line x1="8" y1="19" x2="30" y2="19" />
+                    <line x1="8" y1="26" x2="30" y2="26" />
+                </svg>
+            </span>
+        </div>
+    </div>
+
+    <!-- SIDE MENU -->
+    <div class="side-menu" id="sideMenu">
+        <div class="user-profile">
+            <div class="user-menu">
+                <a href="/users/profil" data-i18n="profile">Your profile</a>
+                <div class="theme-toggle-container">
+                    <a data-i18n="theme">Theme change</a>
+                    <label class="theme-toggle">
+                        <input type="checkbox" id="themeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="theme-toggle-container">
+                    <span data-i18n="language">Language</span>
+                    <div>
+                        <img src="https://flagcdn.com/fr.svg" alt="Français" width="20" class="lang-flag" data-lang="fr" style="cursor:pointer; margin-right:5px;">
+                        <img src="https://flagcdn.com/gb.svg" alt="English" width="20" class="lang-flag" data-lang="en" style="cursor:pointer;">
+                    </div>
+                </div>
+                <a href="{{ path('app_logout') }}" data-i18n="logout">Log out</a>
+            </div>
+        </div>
+        <div class="side-menu-links">
+            <a href="#" data-i18n="home">Home</a>
+            <a href="#" data-i18n="favorites">Favoris List</a>
+            <a href="#" data-i18n="cart">Cart</a>
+        </div>
+    </div>
+</nav>
+
+<style>
+    .navbar {
+        background: #231f20;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        height: 60px;
+        justify-content: space-between;
+        border-radius: 6px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 2000; /* Toujours au-dessus du contenu */
+    }
+    .nav-links {
+        display: flex;
+        gap: 30px;
+        align-items: center;
+    }
+    .nav-links a {
+        color: #567AF4;
+        font-family: 'Inter', Arial, sans-serif;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 16px;
+        transition: color 0.2s;
+    }
+    .nav-links a:hover {
+        color: #fff;
+    }
+    .logo {
+        font-size: 24px;
+        font-weight: 700;
+        font-family: 'Inter', Arial, sans-serif;
+    }
+    .logo-live {
+        color: #567AF4;
+    }
+    .logo-shop {
+        color: #fff;
+    }
+    .search-bar {
+        background: #eee;
+        border-radius: 20px;
+        border: none;
+        padding: 6px 18px;
+        width: 160px;
+        box-shadow: 0 2px 8px rgba(86, 122, 244, 0.15);
+        font-size: 16px;
+    }
+    .icons {
+        display: flex;
+        gap: 12px;
+        margin-right: 100px;
+    }
+    .icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        cursor: pointer;
+    }
+
+    .right-group {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .side-menu {
+        position: fixed;
+        top: 60px;
+        right: -280px;
+        width: 260px;
+        height: calc(100vh - 60px);
+        background: #231f20;
+        box-shadow: -4px 0 8px rgba(0,0,0,0.3);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        transition: right 0.3s ease;
+        border-radius: 0 0 0 6px;
+        z-index: 1050;
+    }
+
+    .side-menu.active {
+        right: 0;
+    }
+
+    .side-menu-links {
+        display: none;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .side-menu-links a {
+        color: #567AF4;
+        font-family: 'Inter', Arial, sans-serif;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .user-profile {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .username {
+        font-weight: bold;
+        font-size: 18px;
+        color: black;
+    }
+
+    .user-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .user-menu a {
+        color: #567AF4;
+        text-decoration: none;
+        font-family: 'Inter', Arial, sans-serif;
+        font-size: 15px;
+        transition: color 0.2s;
+    }
+
+    .user-menu a:hover {
+        color: white;
+    }
+
+    .theme-toggle-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: white;
+        font-family: 'Inter', Arial, sans-serif;
+    }
+
+    .theme-toggle-container > span {
+        color: #567AF4;
+        cursor: default; /* optionnel, si tu ne veux pas que ça ressemble à un lien cliquable */
+    }
+
+    .theme-toggle {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .theme-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #567AF4;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    @media (max-width: 768px) {
+        .nav-links {
+            display: none;
+        }
+        .side-menu-links {
+            display: flex !important;
+        }
+    }
+
+    /* Dark theme */
+    body.dark-theme {
+        background-color: #121212;
+    }
+
+    body.dark-theme .navbar {
+        background: #231f20;
+        color: #fff;
+    }
+
+    body.dark-theme .nav-links a,
+    body.dark-theme .side-menu-links a {
+        color: #567AF4;
+    }
+
+    body.dark-theme .logo-shop { color: #fff; }
+
+    body.dark-theme .search-bar { background: #2a2a2a; color: #eee; border: 1px solid #444; }
+
+    body.dark-theme .icons svg {
+        stroke: #567AF4;
+    }
+
+    body.dark-theme .side-menu { background: #2b2b2b; box-shadow: -4px 0 8px rgba(0,0,0,0.3); }
+
+    body.dark-theme .username,
+    body.dark-theme .theme-toggle-container { color: #fff; }
+
+    body.dark-theme .user-menu a {
+        color: #567AF4;
+    }
+
+    body.dark-theme .user-menu a:hover { color: #fff; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const burger = document.getElementById('burgerMenu');
+        const sideMenu = document.getElementById('sideMenu');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Utiliser une clé globale pour la persistance du thème sur tout le site
+        const userThemeKey = 'site_theme';
+        const savedTheme = localStorage.getItem(userThemeKey);
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            if (themeToggle) themeToggle.checked = true;
+        }
+
+        if (burger && sideMenu) {
+            burger.addEventListener('click', () => sideMenu.classList.toggle('active'));
+            burger.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    sideMenu.classList.toggle('active');
+                }
+            });
+        }
+
+        if (themeToggle) {
+            themeToggle.addEventListener('change', () => {
+                const isDark = document.body.classList.toggle('dark-theme');
+                localStorage.setItem(userThemeKey, isDark ? 'dark' : 'light');
+            });
+        }
+
+        // Internationalisation
+        const translations = {
+            fr: {
+                home: 'Accueil',
+                favorites: 'Liste de favoris',
+                cart: 'Panier',
+                profile: 'Votre profil',
+                theme: 'Changer thème',
+                language: 'Langue',
+                logout: 'Déconnexion',
+                search: 'Recherche...',
+                mail: 'E-mail',
+                address: 'Adresse',
+                country: 'Pays',
+                contact: 'Contact',
+                choose_image: 'Choisir une image',
+                username: 'Nom d\'utilisateur',
+                cancel: 'Annuler',
+                save: 'Enregistrer',
+                profil_picture: 'Photo de profil',
+            },
+            en: {
+                home: 'Home',
+                favorites: 'Favorites List',
+                cart: 'Cart',
+                profile: 'Your profile',
+                theme: 'Theme change',
+                language: 'Language',
+                logout: 'Log out',
+                search: 'Search...',
+                mail: 'Email',
+                address: 'Address',
+                country: 'Country',
+                contact: 'Contact',
+                choose_image: 'Choose image',
+                username: 'Username',
+                cancel: 'Cancel',
+                save: 'Save',
+                profil_picture: 'Profile picture',
+            }
+        };
+
+        function setLanguage(lang) {
+            localStorage.setItem('site_language', lang);
+            const dict = translations[lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) el.textContent = dict[key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key]) el.setAttribute('placeholder', dict[key]);
+            });
+        }
+
+        // Set language from localStorage or default to English
+        const savedLang = localStorage.getItem('site_language') || 'en';
+        setLanguage(savedLang);
+
+        // Flag click event
+        document.querySelectorAll('.lang-flag').forEach(flag => {
+            flag.addEventListener('click', () => {
+                const lang = flag.getAttribute('data-lang');
+                setLanguage(lang);
+            });
+        });
+    });
+</script>

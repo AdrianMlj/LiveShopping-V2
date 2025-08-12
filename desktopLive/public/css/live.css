@@ -1,0 +1,442 @@
+:root {
+    --primary-color: #9147ff;
+    --primary-dark: #772ce8;
+    --dark-bg: #0e0e10;
+    --dark-panel: #18181b;
+    --dark-text: #efeff1;
+    --light-text: #ffffff;
+    --gray-text: #adadb8;
+    --border-color: #2d2d35;
+    --success-color: #00b894;
+    --warning-color: #fdcb6e;
+    --error-color: #ff4757;
+    --info-color: #3498db;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--dark-text);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.live-container {
+    width: 100%;
+    min-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.live-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+    height: calc(100vh - 40px);
+}
+
+/* Section vidéo principale */
+.video-main {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    background-color: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.video-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.viewer-count {
+    align-self: flex-end;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin: 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.video-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    pointer-events: auto;
+}
+
+.control-btn {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.control-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.control-btn.muted {
+    background-color: var(--error-color);
+}
+
+/* Section chat */
+.chat-section {
+    background-color: var(--dark-panel);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    height: 300px;
+    overflow: hidden;
+}
+
+.chat-header {
+    padding: 12px 15px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.chat-header h3 {
+    margin: 0;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chat-messages {
+    flex-grow: 1;
+    padding: 10px 15px;
+    overflow-y: auto;
+}
+
+.message-system {
+    color: var(--gray-text);
+    font-size: 14px;
+    text-align: center;
+    padding: 10px 0;
+}
+
+.chat-input {
+    display: flex;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--border-color);
+}
+
+.chat-input input {
+    flex-grow: 1;
+    background-color: var(--dark-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: var(--dark-text);
+    outline: none;
+}
+
+.chat-input input:focus {
+    border-color: var(--primary-color);
+}
+
+.send-btn {
+    background-color: var(--primary-color);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.send-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Panel d'informations */
+.info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.stream-info {
+    background-color: var(--dark-panel);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.stream-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 20px;
+    color: var(--light-text);
+}
+
+.stream-meta {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: var(--gray-text);
+}
+
+.live-badge {
+    color: var(--error-color);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.live-badge i {
+    font-size: 10px;
+}
+
+.stream-description {
+    margin: 20px 0;
+}
+
+.stream-description h3 {
+    font-size: 16px;
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--light-text);
+}
+
+.stream-description p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--gray-text);
+}
+
+.stream-stats h3 {
+    font-size: 16px;
+    margin: 0 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--light-text);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.stat-card {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--light-text);
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--gray-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stream-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.stop-stream-btn, .action-btn {
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-size: 14px;
+}
+
+.stop-stream-btn {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.stop-stream-btn:hover {
+    background-color: #e84118;
+}
+
+.action-btn {
+    background-color: var(--dark-panel);
+    color: var(--dark-text);
+    border: 1px solid var(--border-color);
+}
+
+.action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.debug-console {
+    background-color: var(--dark-panel);
+    border-radius: 8px;
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.debug-console h3 {
+    font-size: 16px;
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--light-text);
+}
+
+.debug-logs {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 200px;
+}
+
+.debug-message {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.debug-time {
+    color: var(--gray-text);
+    margin-right: 8px;
+}
+
+/* État quand il n'y a pas de live */
+.no-live-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 40px);
+}
+
+.no-live-content {
+    text-align: center;
+    max-width: 400px;
+    padding: 30px;
+    background-color: var(--dark-panel);
+    border-radius: 8px;
+}
+
+.no-live-icon {
+    font-size: 50px;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.no-live-content h2 {
+    margin: 0 0 10px 0;
+    color: var(--light-text);
+}
+
+.no-live-content p {
+    margin: 0 0 20px 0;
+    color: var(--gray-text);
+}
+
+.start-stream-btn {
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.start-stream-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .live-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .video-wrapper {
+        padding-bottom: 56.25%;
+    }
+
+    .chat-section {
+        height: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .live-container {
+        padding: 10px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}

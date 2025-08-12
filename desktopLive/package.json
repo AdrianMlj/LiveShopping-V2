@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "chart.js": "^4.5.0",
+    "ws": "^8.14.2"
+  },
+  "scripts": {
+    "start": "node websocket-server.js"
+  }
+}

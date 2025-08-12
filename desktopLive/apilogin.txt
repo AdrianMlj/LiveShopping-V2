@@ -1,0 +1,8 @@
+URL : http://127.0.0.1:8000/api/login
+Methods : POST 
+
+raw : 
+{
+  "username": "Adrianno",
+  "password": "adri123"
+}

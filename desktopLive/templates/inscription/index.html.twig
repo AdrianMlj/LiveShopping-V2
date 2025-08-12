@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/inscription.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="login-container">
+        <h1>Sign<div class="text-color">Up</div></h1>
+
+        {{ form_start(inscriptionForm, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+            <div class="form-group">
+                {{ form_widget(inscriptionForm.username, {'attr': {'class': 'form-control'}}) }}
+                <small class="text-danger">{{ form_errors(inscriptionForm.username) }}</small>
+            </div>
+
+            <div class="form-group">
+                {{ form_widget(inscriptionForm.email, {'attr': {'class': 'form-control'}}) }}
+                <small class="text-danger">{{ form_errors(inscriptionForm.email) }}</small>
+            </div>
+
+            <div class="form-group">
+                {{ form_widget(inscriptionForm.contact, {'attr': {'class': 'form-control'}}) }}
+                <small class="text-danger">{{ form_errors(inscriptionForm.contact) }}</small>
+            </div>
+
+            <div class="form-group">
+                {{ form_widget(inscriptionForm.address, {'attr': {'class': 'form-control', 'rows': 3}}) }}
+            </div>
+
+            <div class="form-group">
+                {{ form_widget(inscriptionForm.country, {'attr': {'class': 'form-control'}}) }}
+            </div>
+
+            <div class="form-group">
+                {{ form_widget(inscriptionForm.plainPassword, {'attr': {'class': 'form-control', 'id': 'plainPassword'}}) }}
+                <small class="text-danger" id="passwordError">{{ form_errors(inscriptionForm.plainPassword) }}</small>
+            </div>
+
+            <div class="form-group compact-checkbox">
+                {{ form_widget(inscriptionForm.isSeller, {'attr': {'class': 'form-check-input'}}) }}
+                {{ form_label(inscriptionForm.isSeller, null, {'label_attr': {'class': 'form-check-label'}}) }}
+            </div>
+
+            <div class="form-group compact-checkbox">
+                {{ form_widget(inscriptionForm.remember_me, {'attr': {'class': 'form-check-input'}}) }}
+                {{ form_label(inscriptionForm.remember_me, null, {'label_attr': {'class': 'form-check-label'}}) }}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg">S'inscrire</button>
+        {{ form_end(inscriptionForm) }}
+    </div>
+{% endblock %}

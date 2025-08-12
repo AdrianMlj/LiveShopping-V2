@@ -1,0 +1,253 @@
+/* ======== Style global ======== */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.login-container {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #555;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.remember-me input {
+    margin-right: 0.5rem;
+}
+
+button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.links {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.links a {
+    color: #567AF4;
+    text-decoration: none;
+    margin: 0 0.5rem;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+.text-color {
+    color: #567AF4;
+    display: inline-block;
+}
+
+.alert {
+    background-color: #f8d7da;
+    color: #842029;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    border: 1px solid #f5c2c7;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ======== Navbar thème clair (extrait de ton CSS d'origine) ======== */
+.navbar {
+    background: #231f20;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
+    height: 60px;
+    justify-content: space-between;
+    border-radius: 6px;
+}
+
+.navbar .nav-links {
+    display: flex;
+    gap: 30px;
+}
+
+.navbar a {
+    color: #567AF4;
+    font-family: 'Inter', Arial, sans-serif;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 16px;
+    transition: color 0.2s;
+}
+
+.navbar a:hover {
+    color: #fff;
+}
+
+.navbar .logo {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.navbar .search-bar {
+    background: #eee;
+    border-radius: 20px;
+    border: none;
+    padding: 6px 18px;
+    width: 160px;
+    margin: 0;
+    box-shadow: 0 2px 8px rgba(86, 122, 244, 0.15);
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 16px;
+}
+
+.navbar .icons {
+    display: flex;
+    gap: 12px;
+}
+
+.navbar .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: transparent;
+    margin-right: 2px;
+    cursor: pointer;
+}
+
+.navbar .icon svg {
+    display: block;
+}
+
+.right-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* ======== Thème sombre ======== */
+body.dark-theme {
+    background-color: #121212;
+    color: #eee;
+}
+
+body.dark-theme .login-container {
+    background-color: #222;
+    box-shadow: 0 2px 12px rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme h1 {
+    color: #eee;
+}
+
+body.dark-theme label {
+    color: #bbb;
+}
+
+body.dark-theme input[type="text"],
+body.dark-theme input[type="password"] {
+    background-color: #333;
+    border: 1px solid #555;
+    color: #eee;
+}
+
+body.dark-theme .remember-me input {
+    filter: invert(1);
+}
+
+body.dark-theme button {
+    background-color: #567AF4;
+}
+
+body.dark-theme button:hover {
+    background-color: #3458a5;
+}
+
+body.dark-theme .links a {
+    color: #8ab4f8;
+}
+
+body.dark-theme .links a:hover {
+    text-decoration: underline;
+}
+
+body.dark-theme .alert {
+    background-color: #842029;
+    color: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+body.dark-theme .navbar {
+    background: #121212;
+    color: #eee;
+}
+
+body.dark-theme .navbar a {
+    color: #8ab4f8;
+}
+
+body.dark-theme .navbar a:hover {
+    color: #fff;
+}
+
+body.dark-theme .navbar .search-bar {
+    background: #333;
+    color: #eee;
+}
+
+body.dark-theme .navbar .icons svg {
+    stroke: #8ab4f8;
+}

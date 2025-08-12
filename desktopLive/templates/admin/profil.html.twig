@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Client</title>
+</head>
+<header>
+    {% include 'components/navbarAdmin.html.twig' %}
+</header>
+<body>
+    <div class="profile-container">
+        <div class="profile-content">
+            <!-- Section Avatar -->
+            <div class="avatar-section">
+                <div class="avatar-circle" id="avatar-preview">
+                    {% if user.images %}
+                        <img src="/uploads/{{ user.images }}" alt="Photo de profil" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                    {% else %}
+                        {{ user.username|first|upper }}
+                    {% endif %}
+
+                    <div id="edit-btn" class="edit-button" title="Modifier">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="username">{{ user.username }}</div>
+            </div>
+
+            <!-- Section Informations -->
+            <div class="profile-info">
+                <div id="profile-view" class="info-container">
+                    <div class="info-item">
+                        <span class="info-label" data-i18n="mail">Email</span>
+                        <span class="info-value">{{ user.email }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" data-i18n="address">Adresse</span>
+                        <span class="info-value">{{ user.address }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" data-i18n="country">Country</span>
+                        <span class="info-value">{{ user.country }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" data-i18n="contact">Contact</span>
+                        <span class="info-value">{{ user.contact }}</span>
+                    </div>
+                </div>
+
+                <!-- Formulaire de modification -->
+                <div id="profile-edit" class="edit-form">
+                    <form method="POST" action="{{ path('app_users_update_profile') }}" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label data-i18n="profil_picture">Photo de profil</label>
+                            <input type="file" id="image-upload" name="image" accept="image/*" style="display: none;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div id="image-preview-container" style="width: 80px; height: 80px; border-radius: 50%; background: #f0f0f0; overflow: hidden;">
+                                    {% if user.images %}
+                                        <img id="image-preview" src="/uploads/{{ user.images }}" style="width:100%; height:100%; object-fit:cover;">
+                                    {% else %}
+                                        <div id="image-preview" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:30px;">
+                                            {{ user.username|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <button type="button" data-i18n="choose_image" onclick="document.getElementById('image-upload').click()" style="padding: 8px 12px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    Choisir une image
+                                </button>
+                            </div>
+                            <input type="hidden" id="image-base64" name="images" value="{{ user.images }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label data-i18n="username">Nom d'utilisateur</label>
+                            <input type="text" name="username" value="{{ user.username }}">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="mail">Email</label>
+                            <input type="email" name="email" value="{{ user.email }}">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="address">Adresse</label>
+                            <input type="text" name="address" value="{{ user.address }}">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="country">Country</label>
+                            <select id="country" name="country" class="select2" required>
+                                {% for country in countries %}
+                                    <option value="{{ country }}" {% if country == user.country %}selected{% endif %}>{{ country }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="contact">Contact</label>
+                            <input type="text" name="contact" value="{{ user.contact }}">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="cancel-edit" class="btn btn-cancel" data-i18n="cancel">Annuler</button>
+                            <button type="submit" class="btn btn-save" data-i18n="save">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {# Inclusion des dépendances Select2 #}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            $('.select2').select2({
+                placeholder: 'Select a country',
+                allowClear: true
+            });
+            const editBtn = document.getElementById('edit-btn');
+            const cancelEdit = document.getElementById('cancel-edit');
+            const profileView = document.getElementById('profile-view');
+            const profileEdit = document.getElementById('profile-edit');
+            const imageUpload = document.getElementById('image-upload');
+
+            // Gestion de l'affichage du formulaire
+            editBtn.addEventListener('click', function() {
+                profileView.style.display = 'none';
+                profileEdit.style.display = 'block';
+            });
+
+            cancelEdit.addEventListener('click', function() {
+                profileEdit.style.display = 'none';
+                profileView.style.display = 'block';
+            });
+
+            // Gestion de l'upload d'image
+            imageUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const base64 = event.target.result.split(',')[1];
+                        document.getElementById('image-base64').value = base64;
+
+                        // Mise à jour de l'aperçu
+                        const preview = document.getElementById('image-preview');
+                        if (preview.tagName === 'IMG') {
+                            preview.src = event.target.result;
+                        } else {
+                            const img = document.createElement('img');
+                            img.id = 'image-preview';
+                            img.src = event.target.result;
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'cover';
+                            document.getElementById('image-preview-container').innerHTML = '';
+                            document.getElementById('image-preview-container').appendChild(img);
+                        }
+
+                        // Mise à jour de l'avatar preview
+                        const avatarPreview = document.getElementById('avatar-preview');
+                        avatarPreview.innerHTML = '';
+                        const avatarImg = document.createElement('img');
+                        avatarImg.src = event.target.result;
+                        avatarImg.style.width = '100%';
+                        avatarImg.style.height = '100%';
+                        avatarImg.style.borderRadius = '50%';
+                        avatarImg.style.objectFit = 'cover';
+                        avatarPreview.appendChild(avatarImg);
+                        avatarPreview.appendChild(document.getElementById('edit-btn'));
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+<style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            margin-top: 60px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .profile-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+        }
+        .profile-content {
+            display: flex;
+            gap: 60px;
+            width: 100%;
+            align-items: flex-start;
+        }
+        .avatar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 300px;
+            position: sticky;
+            top: 80px;
+            z-index: 1;
+        }
+        .avatar-circle {
+            width: 250px;
+            height: 250px;
+            background-color: #e0e0e0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            font-size: 100px;
+            position: relative;
+        }
+        .edit-button {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: #3498db;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .edit-button svg {
+            color: white;
+            width: 20px;
+            height: 20px;
+        }
+        .username {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+        }
+        .profile-info {
+            flex: 1;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .info-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        .info-item {
+            margin-bottom: 20px;
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .info-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .info-value {
+            padding-left: 10px;
+            width: 100%;
+            text-align: left;
+        }
+        .edit-form {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .btn-cancel {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+        }
+        .btn-cancel:hover {
+            background: #e0e0e0;
+        }
+        .btn-save {
+            background: #3498db;
+            color: white;
+            border: none;
+        }
+        .btn-save:hover {
+            background: #2980b9;
+        }
+    </style>

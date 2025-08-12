@@ -1,0 +1,115 @@
+{# filepath: templates/client/index.html.twig #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>LiveShop</title>
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', Arial, sans-serif;
+            background: #f6f6f6;
+        }
+        .page {
+            padding: 100px 30px 40px; /* pour laisser la navbar fixed */
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            margin-bottom: 50px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .section-title { font-size: 18px; font-weight: 700; color: #000; }
+        body.dark-theme .section-title { color: #fff; }
+        .see-all {
+            color: #567AF4;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .divider { height: 4px; background: #7a61ff; border-radius: 2px; margin-bottom: 18px; width: 70%; }
+        body.dark-theme .divider { background: #567AF4; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; transition: transform .2s ease; }
+        body.dark-theme .card { background: #1f1f1f; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .card:hover { transform: translateY(-2px); }
+        .thumb {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 */
+            overflow: hidden;
+        }
+        .thumb img {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        /* Flou léger pour les lives en cours */
+        .card.is-live .thumb img {
+            filter: blur(3px);
+            transform: scale(1.06);
+        }
+        .badge { position: absolute; top: 8px; left: 8px; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.65); color: #fff; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+        .viewer { position: absolute; top: 8px; right: 8px; background: #ff3b30; color: #fff; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+        .username-chip { position: absolute; bottom: 10px; left: 10px; background: #1e90ff; color: #fff; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; }
+        @media (max-width: 992px){ .grid{ grid-template-columns: repeat(2,1fr);} }
+        @media (max-width: 576px){ .grid{ grid-template-columns: 1fr;} }
+    </style>
+</head>
+<body>
+    {% include 'components/navbarClient.html.twig' %}
+    <div class="page">
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">Followed</div>
+                <a class="see-all" href="#">voir tous</a>
+            </div>
+            <div class="divider"></div>
+
+            <div class="grid">
+                {% for live in followedLives %}
+                    <a class="card{% if live.isLive %} is-live{% endif %}" href="{{ path('app_client_live', { id: live.id }) }}" style="text-decoration:none;">
+                        <div class="thumb">
+                            <img src="{{ live.thumbnail }}" alt="{{ live.title }}">
+                            <div class="badge">{{ live.language }}</div>
+                            <div class="viewer">{{ live.viewers }}</div>
+                            <div class="username-chip">{{ live.username }}</div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">Followed</div>
+                <a class="see-all" href="#">voir tous</a>
+            </div>
+            <div class="divider"></div>
+
+            <div class="grid">
+                {% for live in recommendedLives %}
+                    <a class="card{% if live.isLive %} is-live{% endif %}" href="{{ path('app_client_live', { id: live.id }) }}" style="text-decoration:none;">
+                        <div class="thumb">
+                            <img src="{{ live.thumbnail }}" alt="{{ live.title }}">
+                            <div class="badge">{{ live.language }}</div>
+                            <div class="viewer">{{ live.viewers }}</div>
+                            <div class="username-chip">{{ live.username }}</div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
