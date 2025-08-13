@@ -85,25 +85,26 @@ class AdminController extends AbstractController
         // Valeurs par défaut
         $defaultStart = new \DateTime('first day of January this year');
         $defaultEnd = new \DateTime('last day of December this year');
+
         // Récupérer les paramètres GET
         $data = json_decode($request->getContent(), true);
+
         $dateD = isset($data['dateD']) ? new \DateTime($data['dateD']) : $defaultStart;
         $dateF = isset($data['dateF']) ? new \DateTime($data['dateF']) : $defaultEnd;
         $categoryId = $data['category'] ?? 1;
-        // Vendeur connecté via session
-        $session = $request->getSession();
-        $defaultSeller = $session->get('user');
-        if (!$defaultSeller || !$defaultSeller instanceof \App\Entity\Users) {
-            return new JsonResponse(['error' => 'Aucun utilisateur connecté'], 401);
-        }
-        $defaultSeller = $usersRepository->find($defaultSeller->getId());
+
+        $defaultSeller = $usersRepository->find($data['id_user']);
         // $defaultSeller = $usersRepository->find(1);
+
+
         // Statistiques et données
-        $stats = $saleRepository->getStatistiquesVendeur($dateD, $dateF, $defaultSeller->getId());
-        $ventesParCategorieParMois = $saleRepository->getVentesVendeurParCategorieParMois($dateD, $dateF, $defaultSeller->getId());
-        $ventesParArticle = $saleRepository->getVentesParArticlePourCategorie($dateD, $dateF, $defaultSeller->getId(), $categoryId);
-        $bestSeller = $saleRepository->getTopArticlesVendeur($dateD, $dateF, $defaultSeller->getId(), 3);
+        $stats = $saleRepository->getStatistiquesVendeur($dateD, $dateF, $data['id_user']);
+        $ventesParCategorieParMois = $saleRepository->getVentesVendeurParCategorieParMois($dateD, $dateF, $data['id_user']);
+        $ventesParArticle = $saleRepository->getVentesParArticlePourCategorie($dateD, $dateF, $data['id_user'], $categoryId);
+        $bestSeller = $saleRepository->getTopArticlesVendeur($dateD, $dateF, $data['id_user'], 3);
+
         // Optionnel : transformer objets Doctrine si besoin
+
         return new JsonResponse([
             'dates' => [
                 'start' => $dateD->format('Y-m-d'),
