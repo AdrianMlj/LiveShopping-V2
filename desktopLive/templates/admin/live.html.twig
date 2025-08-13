@@ -125,7 +125,7 @@
         document.addEventListener("DOMContentLoaded", function () {
             debugLog('Initialisation du streamer...', 'info');
 
-            const signalingServer = new WebSocket('ws://localhost:9090');
+            const signalingServer = new WebSocket(`ws://${window.location.hostname}:9090`);
             const peerConnections = new Map();
             let localStream;
 
