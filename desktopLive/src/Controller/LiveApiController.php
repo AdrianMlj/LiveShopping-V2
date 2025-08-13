@@ -129,4 +129,28 @@ class LiveApiController extends AbstractController
             'end_time' => $live->getEndLive()->format('Y-m-d H:i:s')
         ], 200);
     }
+
+    #[Route('/active', name: 'active', methods: ['GET'])]
+    public function getActiveLives(EntityManagerInterface $em): JsonResponse
+    {
+        $lives = $em->getRepository(Live::class)->findActiveLives();
+
+        $data = array_map(function (Live $live) {
+            return [
+                'id' => $live->getId(),
+                'titre' => $live->getTitre(),
+                'description' => $live->getDescription(),
+                'start_time' => $live->getStartLive()->format('Y-m-d H:i:s'),
+                'seller' => [
+                    'id' => $live->getSeller()->getId(),
+                    'name' => $live->getSeller()->getUsername()
+                ]
+            ];
+        }, $lives);
+
+        return $this->json([
+            'success' => true,
+            'lives' => $data
+        ]);
+    }
 }
