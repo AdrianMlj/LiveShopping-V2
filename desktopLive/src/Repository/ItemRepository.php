@@ -17,7 +17,7 @@ class ItemRepository extends ServiceEntityRepository
         parent::__construct($registry, Item::class);
     }
 
-    public function findAvailableItems(): array
+    public function findAvailableItems($user): array
     {
         $expr = 'SUM(s.inItem - COALESCE(s.outItem, 0))';
         $sub = $this->getEntityManager()->createQueryBuilder()
@@ -44,6 +44,8 @@ class ItemRepository extends ServiceEntityRepository
             'promo.startDate <= CURRENT_DATE() AND (promo.endDate IS NULL OR promo.endDate >= CURRENT_DATE())'
         )
         ->andWhere('p.datePrice = (' . $sub->getDQL() . ')')
+        ->andWhere('i.seller = :user')
+        ->setParameter('user', $user)
         ->groupBy('i.id, i.nameItem, c.nameCategory, p.price, promo.namePromotion, promo.percentage')
         ->having($expr . ' > 0')
         ->distinct();
