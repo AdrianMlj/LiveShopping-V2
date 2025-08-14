@@ -136,14 +136,16 @@ class LiveApiController extends AbstractController
         $lives = $em->getRepository(Live::class)->findActiveLives();
 
         $data = array_map(function (Live $live) {
+            $seller = $live->getSeller(); // Correction ici
             return [
                 'id' => $live->getId(),
                 'titre' => $live->getTitre(),
                 'description' => $live->getDescription(),
                 'start_time' => $live->getStartLive()->format('Y-m-d H:i:s'),
                 'seller' => [
-                    'id' => $live->getSeller()->getId(),
-                    'name' => $live->getSeller()->getUsername()
+                    'id' => $seller->getId(),
+                    'name' => $seller->getUsername(),
+                    'pdp' => '/uploads/' . $seller->getImages() ?: 'uploads/default-pdp.jpg'
                 ]
             ];
         }, $lives);

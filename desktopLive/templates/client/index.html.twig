@@ -110,7 +110,7 @@
                 html += `
                     <a class="card is-live" href="/client/live/${live.id}" style="text-decoration:none;">
                         <div class="thumb">
-                            <img src="${live.thumbnail || '/default.jpg'}" alt="${live.titre || 'Live'}">
+                            <img src="${live.seller?.pdp || '/default-pdp.jpg'}" alt="${live.seller?.name || 'Streamer'}">
                             <div class="badge">${live.language || 'FR'}</div>
                             <div class="viewer">${live.viewers || 0}</div>
                             <div class="username-chip">${live.seller?.name || 'Streamer'}</div>
