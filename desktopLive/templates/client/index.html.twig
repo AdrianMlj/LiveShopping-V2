@@ -12,7 +12,7 @@
             background: #f6f6f6;
         }
         .page {
-            padding: 100px 30px 40px; /* pour laisser la navbar fixed */
+            padding: 100px 30px 40px;
             max-width: 1200px;
             margin: 0 auto;
         }
@@ -45,7 +45,7 @@
         .thumb {
             position: relative;
             width: 100%;
-            padding-top: 56.25%; /* 16:9 */
+            padding-top: 56.25%;
             overflow: hidden;
         }
         .thumb img {
@@ -54,7 +54,6 @@
             width: 100%; height: 100%;
             object-fit: cover;
         }
-        /* Flou léger pour les lives en cours */
         .card.is-live .thumb img {
             filter: blur(3px);
             transform: scale(1.06);
@@ -76,23 +75,14 @@
             </div>
             <div class="divider"></div>
 
-            <div class="grid">
-                {% for live in followedLives %}
-                    <a class="card{% if live.isLive %} is-live{% endif %}" href="{{ path('app_client_live', { id: live.id }) }}" style="text-decoration:none;">
-                        <div class="thumb">
-                            <img src="{{ live.thumbnail }}" alt="{{ live.title }}">
-                            <div class="badge">{{ live.language }}</div>
-                            <div class="viewer">{{ live.viewers }}</div>
-                            <div class="username-chip">{{ live.username }}</div>
-                        </div>
-                    </a>
-                {% endfor %}
+            <div class="grid" id="live-grid">
+                {# Le contenu dynamique sera injecté ici #}
             </div>
         </div>
 
         <div class="section">
             <div class="section-header">
-                <div class="section-title">Followed</div>
+                <div class="section-title">Recommended</div>
                 <a class="see-all" href="#">voir tous</a>
             </div>
             <div class="divider"></div>
@@ -111,5 +101,28 @@
             </div>
         </div>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    function loadLives() {
+        $.get('/api/live/active', function(response) {
+            let html = '';
+            response.lives.forEach(function(live) {
+                html += `
+                    <a class="card is-live" href="/client/live/${live.id}" style="text-decoration:none;">
+                        <div class="thumb">
+                            <img src="${live.thumbnail || '/default.jpg'}" alt="${live.titre || 'Live'}">
+                            <div class="badge">${live.language || 'FR'}</div>
+                            <div class="viewer">${live.viewers || 0}</div>
+                            <div class="username-chip">${live.seller?.name || 'Streamer'}</div>
+                        </div>
+                    </a>
+                `;
+            });
+            $('#live-grid').html(html);
+        });
+    }
+    setInterval(loadLives, 5000);
+    loadLives();
+    </script>
 </body>
 </html>
