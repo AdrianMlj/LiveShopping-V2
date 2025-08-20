@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+  <domain-config cleartextTrafficPermitted="false">
+    <domain includeSubdomains="true">192.168.88.40</domain>
+    <trust-anchors>
+      <certificates src="@raw/certificat_192_168_88_40"/>
+      <certificates src="@raw/root_ca"/>
+    </trust-anchors>
+  </domain-config>
+</network-security-config>
