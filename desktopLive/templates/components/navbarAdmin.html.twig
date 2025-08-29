@@ -1,8 +1,84 @@
 <nav class="navbar">
     <div class="nav-links" id="navLinks">
+        <a href="#" data-i18n="actions" id="actionsLink">Actions</a>
         <a href="{{ path('app_dashboard') }}" data-i18n="home">Home</a>
-        <a href="#" data-i18n="sales_history">Sales History</a>
-        <a href="#" data-i18n="items">Items</a>
+    </div>
+
+    <!-- Menu déroulant pour les actions -->
+    <div class="dropdown-menu" id="dropdownMenu">
+        <ul class="actions-list">
+            <li>
+                <a href="#" data-i18n="action_1">
+                    <span class="action-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 16L3 5L8.5 7L12 4L15.5 7L21 5L19 16H5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                            <path d="M5 16H19V19H5V16Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <div class="action-content">
+                        <span class="action-text">Ranking</span>
+                        <span class="action-subtitle">Loyal clients and best-selling products</span>
+                    </div>
+                    <span class="action-arrow">→</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-i18n="action_1">
+                    <span class="action-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L15.09 8.26L22 9L17 14.74L18.18 22L12 18.27L5.82 22L7 14.74L2 9L8.91 8.26L12 2Z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <div class="action-content">
+                        <span class="action-text">Promotions</span>
+                        <span class="action-subtitle">Create and manage special offers</span>
+                    </div>
+                    <span class="action-arrow">→</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-i18n="action_2">
+                    <span class="action-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.1 3.89 23 5 23H11V21H5V19H13V17H5V15H13V13H5V11H13V9H21ZM15 15V17H21V19H15V21L12 18L15 15Z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <div class="action-content">
+                        <span class="action-text">Price</span>
+                        <span class="action-subtitle">Modify the prices of your products</span>
+                    </div>
+                    <span class="action-arrow">→</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-i18n="action_3">
+                    <span class="action-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 7H16V6C16 4.35 14.65 3 13 3H11C9.35 3 8 4.35 8 6V7H5C4.45 7 4 7.45 4 8S4.45 9 5 9H6V19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19V9H19C19.55 9 20 8.55 20 8S19.55 7 19 7ZM10 6C10 5.45 10.45 5 11 5H13C13.55 5 14 5.45 14 6V7H10V6ZM16 19H8V9H10V10C10 10.55 10.45 11 11 11S12 10.55 12 10V9H12V10C12 10.55 12.45 11 13 11S14 10.55 14 10V9H16V19Z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <div class="action-content">
+                        <span class="action-text">Items</span>
+                        <span class="action-subtitle">Add, modify or delete products</span>
+                    </div>
+                    <span class="action-arrow">→</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-i18n="action_4">
+                    <span class="action-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L13.09 5.3L16 4L14.91 7.3L18 8L14.91 8.7L16 12L13.09 10.7L12 14L10.91 10.7L8 12L9.09 8.7L6 8L9.09 7.3L8 4L10.91 5.3L12 2ZM2 18H7V20H2V18ZM9 18H14V20H9V18ZM16 18H22V20H16V18Z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <div class="action-content">
+                        <span class="action-text">Categories</span>
+                        <span class="action-subtitle">Organize your products by categories</span>
+                    </div>
+                    <span class="action-arrow">→</span>
+                </a>
+            </li>
+        </ul>
     </div>
 
     <span class="logo">
@@ -26,13 +102,6 @@
                 <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
                     <ellipse cx="19" cy="17" rx="12" ry="8" />
                     <polyline points="13,25 13,29 19,25" />
-                </svg>
-            </span>
-            <span class="icon">
-                <!-- Cloche -->
-                <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
-                    <path d="M19 32c2.5 0 4-1.5 4-3h-8c0 1.5 1.5 3 4 3z"/>
-                    <path d="M29 25V17c0-5.5-4.5-10-10-10s-10 4.5-10 10v8l-2 2v1h24v-1l-2-2z"/>
                 </svg>
             </span>
             <span class="icon burger" id="burgerMenu" aria-label="Toggle navigation menu" role="button" tabindex="0">
@@ -324,9 +393,284 @@
     body.dark-theme .user-menu a:hover {
         color: #000;
     }
+
+    /* Style pour le popup */
+    .dropdown-trigger {
+        display: inline-flex;
+        align-items: center;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #567AF4, #3a5bd9);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(86, 122, 244, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .dropdown-trigger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(86, 122, 244, 0.4);
+    }
+
+    .trigger-icon {
+        margin-right: 8px;
+    }
+
+    /* Styles pour le menu déroulant */
+    .dropdown-menu {
+        position: fixed;
+        top: 90px; /* Position sous la navbar */
+        left: 20px;
+        background: #ffffff;
+        padding: 12px;
+        border-radius: 12px;
+        width: 300px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px) scale(0.95);
+        transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(86, 122, 244, 0.1);
+    }
+
+    .dropdown-menu.open {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+    }
+
+    .actions-list {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        gap: 8px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .actions-list li {
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .actions-list li:hover {
+        transform: translateX(4px);
+        background-color: rgba(86, 122, 244, 0.05);
+    }
+
+    .actions-list a {
+        text-decoration: none;
+        color: #333;
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        transition: all 0.2s ease;
+        border-radius: 8px;
+    }
+
+    .actions-list a:hover {
+        color: #567AF4;
+        background-color: rgba(86, 122, 244, 0.05);
+    }
+
+    .action-icon {
+        margin-right: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #567AF4;
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        background: rgba(86, 122, 244, 0.1);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .actions-list a:hover .action-icon {
+        background: rgba(86, 122, 244, 0.2);
+        transform: scale(1.05);
+    }
+
+    .action-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .action-text {
+        font-weight: 600;
+        font-size: 14px;
+        line-height: 1.2;
+    }
+
+    .action-subtitle {
+        font-size: 12px;
+        color: #666;
+        font-weight: 400;
+        line-height: 1.3;
+    }
+
+    .actions-list a:hover .action-subtitle {
+        color: rgba(86, 122, 244, 0.8);
+    }
+
+    .action-arrow {
+        color: #bbb;
+        transition: all 0.2s ease;
+        font-size: 16px;
+        margin-left: 8px;
+    }
+
+    .actions-list a:hover .action-arrow {
+        color: #567AF4;
+        transform: translateX(2px);
+    }
+
+    /* Dark theme styles */
+    body.dark-theme {
+        background-color: #1a1a1a;
+        color: #eee;
+    }
+
+    body.dark-theme .navbar {
+        background: #ffffff;
+    }
+
+    body.dark-theme .nav-links a {
+        color: #7a9aff;
+    }
+
+    body.dark-theme .nav-links a:hover {
+        background-color: rgba(122, 154, 255, 0.1);
+    }
+
+    body.dark-theme .dropdown-menu {
+        background: linear-gradient(145deg, #2d2d2d, #252525);
+    }
+
+    body.dark-theme .dropdown-header {
+        background: linear-gradient(135deg, #3a5bd9, #2a4bc4);
+    }
+
+    body.dark-theme .actions-list a {
+        background: #3a3a3a;
+        color: #eee;
+        border-color: #444;
+    }
+
+    body.dark-theme .actions-list li {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        border-color: #444;
+    }
+
+    body.dark-theme .actions-list li:hover {
+        box-shadow: 0 8px 25px rgba(86, 122, 244, 0.25);
+        border-color: rgba(86, 122, 244, 0.4);
+    }
+
+    body.dark-theme .actions-list a:hover {
+        color: #7a9aff;
+        background: rgba(86, 122, 244, 0.08);
+    }
+
+    body.dark-theme .action-icon {
+        color: #7a9aff;
+        background: rgba(122, 154, 255, 0.15);
+    }
+
+    body.dark-theme .actions-list a:hover .action-icon {
+        background: rgba(122, 154, 255, 0.25);
+    }
+
+    body.dark-theme .action-subtitle {
+        color: #aaa;
+    }
+
+    body.dark-theme .actions-list a:hover .action-subtitle {
+        color: rgba(122, 154, 255, 0.8);
+    }
+
+    body.dark-theme .actions-list a:hover .action-arrow {
+        color: #7a9aff;
+    }
 </style>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const actionsLink = document.getElementById('actionsLink');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+
+        // Positionner le menu déroulant sous le lien Actions
+        function positionDropdown() {
+            const rect = actionsLink.getBoundingClientRect();
+            dropdownMenu.style.left = 0 + 'px';
+            dropdownMenu.style.top = (rect.bottom + 10) + 'px';
+        }
+
+        // Ouvrir/fermer le menu déroulant
+        actionsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Positionner le menu avant de l'afficher
+            positionDropdown();
+
+            // Basculer l'état ouvert/fermé
+            dropdownMenu.classList.toggle('open');
+        });
+
+        // Fermer le menu en cliquant à l'extérieur
+        document.addEventListener('click', function(e) {
+            if (dropdownMenu.classList.contains('open') &&
+                !dropdownMenu.contains(e.target) &&
+                e.target !== actionsLink) {
+                dropdownMenu.classList.remove('open');
+            }
+        });
+
+        // Fermer le menu avec la touche Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && dropdownMenu.classList.contains('open')) {
+                dropdownMenu.classList.remove('open');
+                actionsLink.focus();
+            }
+        });
+
+        // Garder le focus à l'intérieur du menu quand il est ouvert
+        dropdownMenu.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab' && dropdownMenu.classList.contains('open')) {
+                const focusableElements = dropdownMenu.querySelectorAll('a[href]');
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey) {
+                    if (document.activeElement === firstElement) {
+                        lastElement.focus();
+                        e.preventDefault();
+                    }
+                } else {
+                    if (document.activeElement === lastElement) {
+                        firstElement.focus();
+                        e.preventDefault();
+                    }
+                }
+            }
+        });
+
+        // Repositionner le menu en cas de redimensionnement
+        window.addEventListener('resize', function() {
+            if (dropdownMenu.classList.contains('open')) {
+                positionDropdown();
+            }
+        });
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
         const burger = document.getElementById('burgerMenu');
         const sideMenu = document.getElementById('sideMenu');
