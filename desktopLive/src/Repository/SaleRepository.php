@@ -380,6 +380,109 @@ class SaleRepository extends ServiceEntityRepository
     }
 
     /**
+     * Obtient les meilleurs articles d'un vendeur
+     *
+     * @param \DateTime $dateDebut
+     * @param \DateTime $dateFin
+     * @param int $sellerId
+     * @param int $limit
+     * @return array
+     */
+    public function getTopArticles(int $sellerId, int $limit): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "
+            SELECT
+                i.name_item AS name,
+                i.images AS image_id,
+                cat.name_category AS category,
+                COUNT(s.id_sale) AS sales,
+                SUM(pi.price) AS total_revenue,
+                ROUND(AVG(pi.price), 2) AS average_price
+            FROM sale s
+            INNER JOIN commande c ON s.id_commande = c.id_commande
+            INNER JOIN bag b ON c.id_bag = b.id_bag
+            INNER JOIN bag_details bd ON bd.id_bag = b.id_bag
+            INNER JOIN item_size ish ON ish.id_item_size = bd.id_item_size
+            INNER JOIN item i ON i.id_item = ish.id_item
+            INNER JOIN price_items pi ON pi.id_item = i.id_item
+            INNER JOIN category cat ON i.id_category = cat.id_category
+            INNER JOIN users seller ON i.id_seller = seller.id_user
+            WHERE s.is_paid = true
+            AND seller.id_user = :sellerId
+            AND pi.date_price = (
+                SELECT MAX(pi2.date_price)
+                FROM price_items pi2
+                WHERE pi2.id_item = i.id_item
+                AND pi2.date_price <= s.sale_date
+            )
+            GROUP BY i.id_item, i.name_item, i.images, cat.name_category
+            ORDER BY sales DESC
+            LIMIT :limit
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $result = $stmt->executeQuery([
+            'sellerId' => $sellerId,
+            'limit' => $limit,
+        ]);
+
+        return $result->fetchAllAssociative();
+    }
+
+    /**
+     * Obtient les meilleurs clients d'un vendeur
+     *
+     * @param int $sellerId
+     * @param int $limit
+     * @return array
+     */
+    public function getTopClients(int $sellerId, int $limit): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "
+            SELECT
+                u.id_user AS client_id,
+                u.username AS client_name,
+                u.email,
+                u.contact,
+                u.address,
+                COUNT(s.id_sale) AS total_purchases,
+                SUM(pi.price) AS total_spent
+            FROM sale s
+            INNER JOIN commande c ON s.id_commande = c.id_commande
+            INNER JOIN bag b ON c.id_bag = b.id_bag
+            INNER JOIN users u ON b.id_user = u.id_user   -- le client
+            INNER JOIN bag_details bd ON bd.id_bag = b.id_bag
+            INNER JOIN item_size ish ON ish.id_item_size = bd.id_item_size
+            INNER JOIN item i ON i.id_item = ish.id_item
+            INNER JOIN price_items pi ON pi.id_item = i.id_item
+            INNER JOIN users seller ON i.id_seller = seller.id_user
+            WHERE s.is_paid = true
+            AND seller.id_user = :sellerId
+            AND pi.date_price = (
+                SELECT MAX(pi2.date_price)
+                FROM price_items pi2
+                WHERE pi2.id_item = i.id_item
+                AND pi2.date_price <= s.sale_date
+            )
+            GROUP BY u.id_user, u.username, u.email, u.contact, u.address
+            ORDER BY total_spent DESC
+            LIMIT :limit
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $result = $stmt->executeQuery([
+            'sellerId' => $sellerId,
+            'limit' => $limit,
+        ]);
+
+        return $result->fetchAllAssociative();
+    }
+
+    /**
      * Convertit le numéro de mois en nom de mois en français
      *
      * @param int $mois
