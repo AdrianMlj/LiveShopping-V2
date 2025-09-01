@@ -125,15 +125,6 @@ CREATE TABLE Bag_details(
    FOREIGN KEY(id_bag) REFERENCES Bag(id_bag)
 );
 
--- CREATE TABLE Commande(
---    id_commande SERIAL,
---    id_state INTEGER NOT NULL,
---    id_bag INTEGER NOT NULL,
---    PRIMARY KEY(id_commande),
---    FOREIGN KEY(id_state) REFERENCES State_commande(id_state),
---    FOREIGN KEY(id_bag) REFERENCES Bag(id_bag)
--- );
-
 CREATE TABLE Commande(
    id_commande SERIAL PRIMARY KEY,
    id_state INTEGER NOT NULL,             -- ex: en attente, payé, livré
@@ -222,6 +213,37 @@ CREATE TABLE Sale(
    FOREIGN KEY(id_commande) REFERENCES Commande(id_commande)
 );
 
+CREATE TABLE Goals(
+   id_goal SERIAL,
+   id_seller INTEGER NOT NULL,
+   target_ca NUMERIC(15,2) NOT NULL,   
+   target_ventes INTEGER NOT NULL,
+   PRIMARY KEY(id_goal),
+   FOREIGN KEY(id_seller) REFERENCES Users(id_user)
+);
 
+SELECT
+    EXTRACT(YEAR FROM s.sale_date) AS annee,
+    EXTRACT(MONTH FROM s.sale_date) AS mois,
+    g.target_ca,
+    g.target_ventes,
+    COALESCE(SUM(cd.price * cd.quantity), 0) AS ca_realise,
+    COUNT(DISTINCT s.id_sale) AS ventes_realisees,
+    COALESCE(SUM(cd.price * cd.quantity), 0) - g.target_ca AS ecart_ca,
+    COUNT(DISTINCT s.id_sale) - g.target_ventes AS ecart_ventes
+FROM Goals g
+LEFT JOIN Commande c ON c.id_seller = g.id_seller
+LEFT JOIN Sale s ON s.id_commande = c.id_commande AND s.is_paid = TRUE
+LEFT JOIN Commande_details cd ON cd.id_commande = c.id_commande
+WHERE g.id_seller = :sellerId
+AND s.sale_date BETWEEN :dateDebut AND :dateFin
+GROUP BY annee, mois, g.target_ca, g.target_ventes
+ORDER BY annee, mois;
+
+$jours_passes = (new \DateTime())->format('d'); // jours écoulés du mois
+$jours_total = date('t'); // nombre total de jours dans le mois
+
+$projection_ca = $ca_realise / $jours_passes * $jours_total;
+$projection_ventes = $ventes_realisees / $jours_passes * $jours_total;
 
 https://dbdiagram.io/d/67dc43c975d75cc844dcaee2

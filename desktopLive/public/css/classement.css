@@ -1,0 +1,516 @@
+:root {
+    --primary-color: #3150b6;
+    --primary-light: #eef2ff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --background-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-color: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --header-bg: #ffffff;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --gray-400: #94a3b8;
+    --border-radius: 8px;
+}
+
+body.dark-theme {
+    --primary-color: #2d3748;
+    --primary-light: #2d3748;
+    --secondary-color: #a0aec0;
+    --success-color: #38a169;
+    --warning-color: #d69e2e;
+    --danger-color: #e53e3e;
+    --background-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-color: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --header-bg: #1e293b;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --gray-400: #94a3b8;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header modernisé */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding: 16px 0;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-title i {
+    color: var(--primary-color);
+    background: var(--primary-light);
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn {
+    padding: 10px 16px;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.btn-outline:hover {
+    background-color: var(--primary-light);
+    border-color: var(--primary-color);
+}
+
+/* Disposition en deux colonnes */
+.ranking-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 968px) {
+    .ranking-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.column {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 0;
+    overflow: hidden;
+}
+
+.section-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+}
+
+.filter-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.section-description {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-top: 4px;
+    margin-left: 36px;
+}
+
+/* Listes de classement */
+.ranking-list {
+    list-style: none;
+    padding: 8px;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    margin: 8px;
+    border-radius: var(--border-radius);
+    transition: all 0.2s;
+}
+
+.ranking-item:hover {
+    background-color: var(--primary-light);
+    box-shadow: var(--shadow-hover);
+}
+
+.rank {
+    font-size: 16px;
+    font-weight: 700;
+    min-width: 32px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.item-info {
+    flex-grow: 1;
+    margin-left: 12px;
+}
+
+.item-name {
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.item-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stat-value {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+/* Badges pour les top 3 */
+.top-1 {
+    background-color: rgba(255, 215, 0, 0.05);
+}
+
+.top-1 .rank {
+    color: #ffd700;
+    font-size: 18px;
+}
+
+.top-2 {
+    background-color: rgba(192, 192, 192, 0.05);
+}
+
+.top-2 .rank {
+    color: #c0c0c0;
+    font-size: 17px;
+}
+
+.top-3 {
+    background-color: rgba(205, 127, 50, 0.05);
+}
+
+.top-3 .rank {
+    color: #cd7f32;
+    font-size: 16px;
+}
+
+/* Indicateur de progression */
+.trend {
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.trend.up {
+    color: var(--success-color);
+}
+
+.trend.down {
+    color: var(--danger-color);
+}
+
+/* Icônes modernisées */
+.icon {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+}
+
+/* Mode sombre */
+body.dark-theme .section-header p,
+body.dark-theme .section-description {
+    color: var(--gray-400);
+}
+
+/* Bannière de performances */
+.performance-banner {
+    background: linear-gradient(120deg, var(--primary-color), #6c8fff);
+    color: white;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.performance-text h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.performance-stats {
+    display: flex;
+    gap: 24px;
+}
+
+.performance-stat {
+    text-align: center;
+}
+
+.performance-value {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.performance-label {
+    font-size: 14px;
+}
+
+
+/* Pagination Styles */
+/* Pagination Styles améliorée */
+.pagination-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 25px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.pagination-info {
+    font-size: 0.9rem;
+    color: var(--text-muted, #666);
+    font-weight: 500;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+}
+
+.pagination ul {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: 6px;
+}
+
+.pagination li {
+    display: inline-block;
+}
+
+.pagination a,
+.pagination span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--pagination-border, #e0e0e0);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--pagination-text, #666);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: var(--pagination-bg, #ffffff);
+}
+
+.pagination a:hover {
+    background-color: var(--pagination-hover-bg, #f8f9fa);
+    border-color: var(--primary-color, #007bff);
+    color: var(--primary-color, #007bff);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.pagination .active span {
+    background-color: var(--primary-color, #007bff);
+    border-color: var(--primary-color, #007bff);
+    color: white;
+    box-shadow: 0 2px 12px rgba(0, 123, 255, 0.25);
+}
+
+.pagination .disabled span {
+    color: var(--pagination-disabled-text, #ccc);
+    border-color: var(--pagination-disabled-border, #e0e0e0);
+    background-color: var(--pagination-disabled-bg, #f8f9fa);
+    cursor: not-allowed;
+}
+
+.pagination .page-item:first-child a,
+.pagination .page-item:last-child a {
+    padding: 0 15px;
+    font-weight: 700;
+}
+
+.pagination .page-item:first-child a:hover,
+.pagination .page-item:last-child a:hover {
+    background-color: var(--primary-color, #007bff);
+    color: white;
+    border-color: var(--primary-color, #007bff);
+}
+
+/* Style compact pour les paginations avec beaucoup de pages */
+.pagination.compact ul {
+    gap: 3px;
+}
+
+.pagination.compact a,
+.pagination.compact span {
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+}
+
+/* Mode sombre */
+[data-theme="dark"] .pagination-container {
+    border-top-color: var(--dark-border-color, #444);
+}
+
+[data-theme="dark"] .pagination-info {
+    color: var(--dark-text-muted, #aaa);
+}
+
+[data-theme="dark"] .pagination a,
+[data-theme="dark"] .pagination span {
+    background: var(--dark-pagination-bg, #2d3748);
+    border-color: var(--dark-pagination-border, #4a5568);
+    color: var(--dark-pagination-text, #e2e8f0);
+}
+
+[data-theme="dark"] .pagination a:hover {
+    background-color: var(--dark-pagination-hover-bg, #4a5568);
+    border-color: var(--primary-color, #007bff);
+    color: var(--primary-color, #007bff);
+}
+
+[data-theme="dark"] .pagination .active span {
+    background-color: var(--primary-color, #007bff);
+    border-color: var(--primary-color, #007bff);
+    color: white;
+}
+
+[data-theme="dark"] .pagination .disabled span {
+    color: var(--dark-pagination-disabled-text, #718096);
+    border-color: var(--dark-pagination-disabled-border, #4a5568);
+    background-color: var(--dark-pagination-disabled-bg, #2d3748);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .pagination-info {
+        text-align: center;
+    }
+
+    .pagination ul {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .pagination a,
+    .pagination span {
+        min-width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .pagination ul {
+        gap: 2px;
+    }
+
+    .pagination a,
+    .pagination span {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        font-size: 0.85rem;
+    }
+
+    .pagination .page-item:first-child a,
+    .pagination .page-item:last-child a {
+        padding: 0 10px;
+    }
+}
+
+/* Animation pour les changements de page */
+.pagination a {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pagination a:active {
+    transform: scale(0.95);
+}

@@ -83,61 +83,157 @@ class SaleRepository extends ServiceEntityRepository
      * @param int $sellerId
      * @return array
      */
+    // public function getStatistiquesVendeur(\DateTime $dateDebut, \DateTime $dateFin, int $sellerId): array
+    // {
+    //     $conn = $this->getEntityManager()->getConnection();
+
+    //     $sql = "
+    //         SELECT
+    //             EXTRACT(YEAR FROM s.sale_date) AS annee,
+    //             EXTRACT(MONTH FROM s.sale_date) AS mois,
+    //             COALESCE(SUM(cd.price * cd.quantity), 0) AS chiffre_affaires_mensuel,
+    //             COUNT(DISTINCT s.id_sale) AS nombre_commandes_mensuel,
+    //             SUM(cd.quantity) AS nombre_articles_vendus_mensuel,
+    //             COALESCE(AVG(cd.price), 0) AS prix_moyen_mensuel
+    //         FROM sale s
+    //         INNER JOIN commande c ON s.id_commande = c.id_commande
+    //         INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+    //         INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
+    //         INNER JOIN item i ON isz.id_item = i.id_item
+    //         INNER JOIN users u ON i.id_seller = u.id_user
+    //         WHERE u.id_user = :sellerId
+    //         AND s.sale_date BETWEEN :dateDebut AND :dateFin
+    //         AND s.is_paid = true
+    //         GROUP BY annee, mois
+    //         ORDER BY annee, mois ASC
+    //     ";
+
+    //     $stmt = $conn->executeQuery($sql, [
+    //         'sellerId' => $sellerId,
+    //         'dateDebut' => $dateDebut->format('Y-m-d'),
+    //         'dateFin' => $dateFin->format('Y-m-d'),
+    //     ]);
+
+    //     $results = $stmt->fetchAllAssociative();
+
+    //     $labels = [];
+    //     $chiffreAffaires = [];
+    //     $commandes = [];
+    //     $articles = [];
+    //     $prixMoyens = [];
+
+    //     foreach ($results as $result) {
+    //         $mois = $result['mois'];
+    //         $annee = $result['annee'];
+    //         $label = \DateTime::createFromFormat('!m', $mois)->format('F') . ' ' . $annee;
+
+    //         if (!in_array($label, $labels)) {
+    //             $labels[] = $label;
+    //         }
+
+    //         $chiffreAffaires[] = (float) $result['chiffre_affaires_mensuel'];
+    //         $commandes[] = (int) $result['nombre_commandes_mensuel'];
+    //         $articles[] = (int) $result['nombre_articles_vendus_mensuel'];
+    //         $prixMoyens[] = (float) $result['prix_moyen_mensuel'];
+    //     }
+
+    //     return [
+    //         'labels' => $labels,
+    //         'chiffre_affaires' => $chiffreAffaires,
+    //         'commandes' => $commandes,
+    //         'articles' => $articles,
+    //         'prix_moyens' => $prixMoyens,
+    //     ];
+    // }
+
     public function getStatistiquesVendeur(\DateTime $dateDebut, \DateTime $dateFin, int $sellerId): array
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        $sql = "
+        // ---- Stats mensuelles (déjà existantes) ----
+        $sqlMensuel = "
             SELECT
                 EXTRACT(YEAR FROM s.sale_date) AS annee,
                 EXTRACT(MONTH FROM s.sale_date) AS mois,
-                COALESCE(SUM(pi.price), 0) AS chiffre_affaires_mensuel,
+                COALESCE(SUM(cd.price * cd.quantity), 0) AS chiffre_affaires_mensuel,
                 COUNT(DISTINCT s.id_sale) AS nombre_commandes_mensuel,
-                COUNT(DISTINCT bd.id_bag_detail) AS nombre_articles_vendus_mensuel,
-                COALESCE(AVG(pi.price), 0) AS prix_moyen_mensuel
+                SUM(cd.quantity) AS nombre_articles_vendus_mensuel,
+                COALESCE(AVG(cd.price), 0) AS prix_moyen_mensuel
             FROM sale s
             INNER JOIN commande c ON s.id_commande = c.id_commande
-            INNER JOIN bag b ON c.id_bag = b.id_bag
-            INNER JOIN bag_details bd ON bd.id_bag = b.id_bag
-            INNER JOIN item_size isz ON bd.id_item_size = isz.id_item_size
+            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+            INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
             INNER JOIN item i ON isz.id_item = i.id_item
-            INNER JOIN price_items pi ON pi.id_item = i.id_item
             INNER JOIN users u ON i.id_seller = u.id_user
             WHERE u.id_user = :sellerId
-              AND s.sale_date BETWEEN :dateDebut AND :dateFin
-              AND s.is_paid = true
-              AND pi.date_price = (
-                  SELECT MAX(pi2.date_price)
-                  FROM price_items pi2
-                  WHERE pi2.id_item = i.id_item AND pi2.date_price <= s.sale_date
-              )
+            AND s.sale_date BETWEEN :dateDebut AND :dateFin
+            AND s.is_paid = true
             GROUP BY annee, mois
             ORDER BY annee, mois ASC
         ";
 
-        $stmt = $conn->executeQuery($sql, [
+        $resultsMensuel = $conn->executeQuery($sqlMensuel, [
             'sellerId' => $sellerId,
             'dateDebut' => $dateDebut->format('Y-m-d'),
             'dateFin' => $dateFin->format('Y-m-d'),
-        ]);
+        ])->fetchAllAssociative();
 
-        $results = $stmt->fetchAllAssociative();
+        // ---- Stats globales ----
+        $sqlGlobal = "
+            SELECT
+                COALESCE(SUM(cd.price * cd.quantity), 0) AS ca_total,
+                COUNT(DISTINCT s.id_sale) AS ventes_total
+            FROM sale s
+            INNER JOIN commande c ON s.id_commande = c.id_commande
+            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+            INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
+            INNER JOIN item i ON isz.id_item = i.id_item
+            INNER JOIN users u ON i.id_seller = u.id_user
+            WHERE u.id_user = :sellerId
+            AND s.sale_date BETWEEN :dateDebut AND :dateFin
+            AND s.is_paid = true
+        ";
 
+        $resultGlobal = $conn->executeQuery($sqlGlobal, [
+            'sellerId' => $sellerId,
+            'dateDebut' => $dateDebut->format('Y-m-d'),
+            'dateFin' => $dateFin->format('Y-m-d'),
+        ])->fetchAssociative();
+
+        // ---- Meilleure catégorie ----
+        $sqlBestCat = "
+            SELECT c.name_category, SUM(cd.price * cd.quantity) AS total_cat
+            FROM sale s
+            INNER JOIN commande c2 ON s.id_commande = c2.id_commande
+            INNER JOIN commande_details cd ON cd.id_commande = c2.id_commande
+            INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
+            INNER JOIN item i ON isz.id_item = i.id_item
+            INNER JOIN category c ON i.id_category = c.id_category
+            INNER JOIN users u ON i.id_seller = u.id_user
+            WHERE u.id_user = :sellerId
+            AND s.sale_date BETWEEN :dateDebut AND :dateFin
+            AND s.is_paid = true
+            GROUP BY c.id_category, c.name_category
+            ORDER BY total_cat DESC
+            LIMIT 1
+        ";
+
+        $bestCategory = $conn->executeQuery($sqlBestCat, [
+            'sellerId' => $sellerId,
+            'dateDebut' => $dateDebut->format('Y-m-d'),
+            'dateFin' => $dateFin->format('Y-m-d'),
+        ])->fetchAssociative();
+
+        // ---- Reformater les résultats mensuels ----
         $labels = [];
         $chiffreAffaires = [];
         $commandes = [];
         $articles = [];
         $prixMoyens = [];
 
-        foreach ($results as $result) {
-            $mois = $result['mois'];
-            $annee = $result['annee'];
-            $label = \DateTime::createFromFormat('!m', $mois)->format('F') . ' ' . $annee;
-
-            if (!in_array($label, $labels)) {
-                $labels[] = $label;
-            }
-
+        foreach ($resultsMensuel as $result) {
+            $label = \DateTime::createFromFormat('!m', $result['mois'])->format('F') . ' ' . $result['annee'];
+            $labels[] = $label;
             $chiffreAffaires[] = (float) $result['chiffre_affaires_mensuel'];
             $commandes[] = (int) $result['nombre_commandes_mensuel'];
             $articles[] = (int) $result['nombre_articles_vendus_mensuel'];
@@ -145,6 +241,15 @@ class SaleRepository extends ServiceEntityRepository
         }
 
         return [
+            // Données globales
+            'ca_total' => (float) ($resultGlobal['ca_total'] ?? 0),
+            'ventes_total' => (int) ($resultGlobal['ventes_total'] ?? 0),
+            'panier_moyen' => ($resultGlobal['ventes_total'] > 0)
+                ? $resultGlobal['ca_total'] / $resultGlobal['ventes_total']
+                : 0,
+            'meilleure_categorie' => $bestCategory['name_category'] ?? 'N/A',
+
+            // Données mensuelles (pour les graphiques)
             'labels' => $labels,
             'chiffre_affaires' => $chiffreAffaires,
             'commandes' => $commandes,
@@ -170,24 +275,17 @@ class SaleRepository extends ServiceEntityRepository
                 TO_CHAR(s.sale_date, 'YYYY') AS annee,
                 TO_CHAR(s.sale_date, 'MM') AS mois,
                 cat.name_category,
-                COUNT(s.id_sale) AS nombre_vendus
+                SUM(cd.quantity) AS nombre_vendus
             FROM sale s
             INNER JOIN commande c ON s.id_commande = c.id_commande
-            INNER JOIN bag b ON c.id_bag = b.id_bag
-            INNER JOIN bag_details bd ON bd.id_bag = b.id_bag
-            INNER JOIN item_size ish ON ish.id_item_size = bd.id_item_size
-            INNER JOIN item i ON i.id_item = ish.id_item
-            INNER JOIN price_items pi ON pi.id_item = i.id_item
+            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+            INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
+            INNER JOIN item i ON i.id_item = isz.id_item
             INNER JOIN category cat ON i.id_category = cat.id_category
             INNER JOIN users seller ON i.id_seller = seller.id_user
             WHERE s.sale_date BETWEEN :dateDebut AND :dateFin
             AND s.is_paid = true
             AND seller.id_user = :sellerId
-            AND pi.date_price = (
-                SELECT MAX(pi2.date_price)
-                FROM price_items pi2
-                WHERE pi2.id_item = i.id_item AND pi2.date_price <= s.sale_date
-            )
             GROUP BY annee, mois, cat.name_category
             ORDER BY annee, mois, cat.name_category
         ";
@@ -251,25 +349,18 @@ class SaleRepository extends ServiceEntityRepository
                 TO_CHAR(s.sale_date, 'YYYY') AS annee,
                 TO_CHAR(s.sale_date, 'MM') AS mois,
                 i.name_item AS article,
-                COUNT(s.id_sale) AS nombre_vendus
+                SUM(cd.quantity) AS nombre_vendus
             FROM sale s
             INNER JOIN commande c ON s.id_commande = c.id_commande
-            INNER JOIN bag b ON c.id_bag = b.id_bag
-            INNER JOIN bag_details bd ON bd.id_bag = b.id_bag
-            INNER JOIN item_size ish ON ish.id_item_size = bd.id_item_size
-            INNER JOIN item i ON i.id_item = ish.id_item
-            INNER JOIN price_items pi ON pi.id_item = i.id_item
+            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+            INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
+            INNER JOIN item i ON i.id_item = isz.id_item
             INNER JOIN category cat ON i.id_category = cat.id_category
             INNER JOIN users seller ON i.id_seller = seller.id_user
             WHERE s.sale_date BETWEEN :dateDebut AND :dateFin
             AND s.is_paid = true
             AND seller.id_user = :sellerId
             AND cat.id_category = :categoryId
-            AND pi.date_price = (
-                SELECT MAX(pi2.date_price)
-                FROM price_items pi2
-                WHERE pi2.id_item = i.id_item AND pi2.date_price <= s.sale_date
-            )
             GROUP BY annee, mois, i.name_item
             ORDER BY annee, mois, i.name_item
         ";
@@ -342,27 +433,19 @@ class SaleRepository extends ServiceEntityRepository
                 i.name_item AS name,
                 i.images AS image_id,
                 cat.name_category AS category,
-                COUNT(s.id_sale) AS sales,
-                SUM(pi.price) AS total_revenue,
-                ROUND(AVG(pi.price), 2) AS average_price
+                SUM(cd.quantity) AS sales,
+                SUM(cd.quantity * cd.price) AS total_revenue,
+                ROUND(AVG(cd.price), 2) AS average_price
             FROM sale s
             INNER JOIN commande c ON s.id_commande = c.id_commande
-            INNER JOIN bag b ON c.id_bag = b.id_bag
-            INNER JOIN bag_details bd ON bd.id_bag = b.id_bag
-            INNER JOIN item_size ish ON ish.id_item_size = bd.id_item_size
-            INNER JOIN item i ON i.id_item = ish.id_item
-            INNER JOIN price_items pi ON pi.id_item = i.id_item
+            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+            INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
+            INNER JOIN item i ON i.id_item = isz.id_item
             INNER JOIN category cat ON i.id_category = cat.id_category
             INNER JOIN users seller ON i.id_seller = seller.id_user
             WHERE s.sale_date BETWEEN :dateDebut AND :dateFin
             AND s.is_paid = true
             AND seller.id_user = :sellerId
-            AND pi.date_price = (
-                SELECT MAX(pi2.date_price)
-                FROM price_items pi2
-                WHERE pi2.id_item = i.id_item
-                AND pi2.date_price <= s.sale_date
-            )
             GROUP BY i.id_item, i.name_item, i.images, cat.name_category
             ORDER BY sales DESC
             LIMIT :limit
@@ -397,26 +480,18 @@ class SaleRepository extends ServiceEntityRepository
                 i.name_item AS name,
                 i.images AS image_id,
                 cat.name_category AS category,
-                COUNT(s.id_sale) AS sales,
-                SUM(pi.price) AS total_revenue,
-                ROUND(AVG(pi.price), 2) AS average_price
+                SUM(cd.quantity) AS sales,
+                SUM(cd.quantity * cd.price) AS total_revenue,
+                ROUND(SUM(cd.quantity * cd.price) / NULLIF(SUM(cd.quantity), 0), 2) AS average_price
             FROM sale s
             INNER JOIN commande c ON s.id_commande = c.id_commande
-            INNER JOIN bag b ON c.id_bag = b.id_bag
-            INNER JOIN bag_details bd ON bd.id_bag = b.id_bag
-            INNER JOIN item_size ish ON ish.id_item_size = bd.id_item_size
-            INNER JOIN item i ON i.id_item = ish.id_item
-            INNER JOIN price_items pi ON pi.id_item = i.id_item
+            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+            INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
+            INNER JOIN item i ON i.id_item = isz.id_item
             INNER JOIN category cat ON i.id_category = cat.id_category
             INNER JOIN users seller ON i.id_seller = seller.id_user
             WHERE s.is_paid = true
             AND seller.id_user = :sellerId
-            AND pi.date_price = (
-                SELECT MAX(pi2.date_price)
-                FROM price_items pi2
-                WHERE pi2.id_item = i.id_item
-                AND pi2.date_price <= s.sale_date
-            )
             GROUP BY i.id_item, i.name_item, i.images, cat.name_category
             ORDER BY sales DESC
             LIMIT :limit
@@ -449,25 +524,14 @@ class SaleRepository extends ServiceEntityRepository
                 u.email,
                 u.contact,
                 u.address,
-                COUNT(s.id_sale) AS total_purchases,
-                SUM(pi.price) AS total_spent
-            FROM sale s
-            INNER JOIN commande c ON s.id_commande = c.id_commande
-            INNER JOIN bag b ON c.id_bag = b.id_bag
-            INNER JOIN users u ON b.id_user = u.id_user   -- le client
-            INNER JOIN bag_details bd ON bd.id_bag = b.id_bag
-            INNER JOIN item_size ish ON ish.id_item_size = bd.id_item_size
-            INNER JOIN item i ON i.id_item = ish.id_item
-            INNER JOIN price_items pi ON pi.id_item = i.id_item
-            INNER JOIN users seller ON i.id_seller = seller.id_user
-            WHERE s.is_paid = true
-            AND seller.id_user = :sellerId
-            AND pi.date_price = (
-                SELECT MAX(pi2.date_price)
-                FROM price_items pi2
-                WHERE pi2.id_item = i.id_item
-                AND pi2.date_price <= s.sale_date
-            )
+                COUNT(cd.id_commande_detail) AS total_purchases,
+                SUM(cd.price * cd.quantity) AS total_spent
+            FROM commande c
+            INNER JOIN sale s ON s.id_commande = c.id_commande
+            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+            INNER JOIN users u ON c.id_client = u.id_user
+            WHERE c.id_seller = :sellerId
+            AND s.is_paid = true
             GROUP BY u.id_user, u.username, u.email, u.contact, u.address
             ORDER BY total_spent DESC
             LIMIT :limit

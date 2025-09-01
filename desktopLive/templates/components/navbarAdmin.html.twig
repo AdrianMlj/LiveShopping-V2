@@ -1,14 +1,28 @@
 <nav class="navbar">
     <div class="nav-links" id="navLinks">
         <a href="#" data-i18n="actions" id="actionsLink">Actions</a>
-        <a href="{{ path('app_dashboard') }}" data-i18n="home">Home</a>
     </div>
 
     <!-- Menu déroulant pour les actions -->
     <div class="dropdown-menu" id="dropdownMenu">
         <ul class="actions-list">
             <li>
-                <a href="#" data-i18n="action_1">
+                <a href="{{ path('app_dashboard') }}" data-i18n="action_1">
+                    <span class="action-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 12L12 3L21 12V21H3V12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 21V12H15V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <div class="action-content">
+                        <span class="action-text">Home</span>
+                        <span class="action-subtitle">Global performance summary</span>
+                    </div>
+                    <span class="action-arrow">→</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_classement') }}" data-i18n="action_1">
                     <span class="action-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M5 16L3 5L8.5 7L12 4L15.5 7L21 5L19 16H5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>

@@ -1,0 +1,205 @@
+{% extends 'admin/baseAdmin.html.twig' %}
+
+{% block title %}Tableau de Bord des Performances{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/classement.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Bannière de performances avec données globales calculées -->
+    <div class="performance-banner">
+        <div class="performance-text">
+            <h2>Overview of Performance</h2>
+        </div>
+        <div class="performance-stats">
+            <div class="performance-stat">
+                <div class="performance-value">{{ globalStats.totalRevenue|number_format(0, ',', ' ') }} €</div>
+                <div class="performance-label">Total turnover</div>
+                <div class="performance-sublabel">{{ globalStats.totalArticlesCount }} active products</div>
+            </div>
+            <div class="performance-stat">
+                <div class="performance-value">{{ globalStats.totalSales|number_format(0, ',', ' ') }}</div>
+                <div class="performance-label">Total sales</div>
+                <div class="performance-sublabel">{{ globalStats.totalClientsCount }} clients</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ranking-container">
+        <div class="column">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">
+                        <i class="fas fa-box"></i>
+                        Top Items
+                    </h2>
+                    <p class="section-description">
+                        Average income : {{ globalStats.avgRevenuePerArticle|number_format(0, ',', ' ') }} €
+                    </p>
+                </div>
+                <div class="section-actions">
+                    <button class="filter-btn" title="Filtrer">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <button class="filter-btn" title="Plus d'options">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+            </div>
+
+            {% if topArticles|length > 0 %}
+                <ul class="ranking-list">
+                    {% for article in topArticles %}
+                    {% set articleMarketShare = globalStats.totalSales > 0 ? (article.sales / globalStats.totalSales * 100)|round(1) : 0 %}
+                    {% set performanceLevel = articleMarketShare >= 20 ? 'excellent' : (articleMarketShare >= 10 ? 'good' : 'standard') %}
+                    {% set globalRank = (topArticles.getCurrentPageNumber() - 1) * topArticles.getItemNumberPerPage() + loop.index %}
+
+                    <li class="ranking-item top-{{ globalRank }} performance-{{ performanceLevel }}">
+                        <div class="rank">
+                            #{{ globalRank }}
+                            {% if globalRank == 1 %}
+                                <i class="fas fa-star rank-star"></i>
+                            {% endif %}
+                        </div>
+                        <div class="item-info">
+                            <div class="item-name">
+                                {{ article.name }}
+                            </div>
+                            <div class="item-stats">
+                                <div class="stat">
+                                    <i class="fas fa-shopping-bag icon"></i>
+                                    <span class="stat-value">{{ article.sales|number_format(0, ',', ' ') }}</span> sales
+                                    <span class="stat-percentage">({{ articleMarketShare }}% of the total)</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-euro-sign icon"></i>
+                                    <span class="stat-value">{{ article.total_revenue|number_format(0, ',', ' ') }} €</span>
+                                </div>
+                            </div>
+                            <div class="performance-bar">
+                                <div class="performance-fill" style="width: {{ articleMarketShare > 100 ? 100 : articleMarketShare }}%"></div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                {# Pagination pour les articles - Toujours visible #}
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Page {{ topArticles.getCurrentPageNumber() }} of {{ topArticles.getPageCount() }}
+                        • {{ topArticles.getTotalItemCount() }} elements
+                    </div>
+                    <div class="pagination">
+                        {{ knp_pagination_render(topArticles, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
+                            'pageParameterName': 'articles_page',
+                            'sortFieldParameterName': 'articles_sort',
+                            'sortDirectionParameterName': 'articles_direction',
+                            'viewParams': {
+                                'align': 'center',
+                                'size': 'small',
+                                'style': 'bottom'
+                            }
+                        }) }}
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-chart-line"></i>
+                    <p>Aucune donnée de vente disponible</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Colonne des clients (droite) -->
+        <div class="column">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">
+                        <i class="fas fa-users"></i>
+                        Top Clients
+                    </h2>
+                    <p class="section-description">
+                        Average spending : {{ globalStats.avgSpendingPerClient|number_format(0, ',', ' ') }} €
+                    </p>
+                </div>
+                <div class="section-actions">
+                    <button class="filter-btn" title="Filtrer">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <button class="filter-btn" title="Plus d'options">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+            </div>
+
+            {% if topClients|length > 0 %}
+                <ul class="ranking-list">
+                    {% for client in topClients %}
+                    {% set clientMarketShare = globalStats.totalClientSpending > 0 ? (client.total_spent / globalStats.totalClientSpending * 100)|round(1) : 0 %}
+                    {% set loyaltyLevel = client.total_purchases >= 20 ? 'premium' : (client.total_purchases >= 10 ? 'gold' : (client.total_purchases >= 5 ? 'silver' : 'standard')) %}
+                    {% set clientValue = client.total_spent >= globalStats.avgSpendingPerClient * 2 ? 'high' : (client.total_spent >= globalStats.avgSpendingPerClient ? 'medium' : 'low') %}
+                    {% set globalRank = (topClients.getCurrentPageNumber() - 1) * topClients.getItemNumberPerPage() + loop.index %}
+
+                    <li class="ranking-item top-{{ globalRank }} client-{{ clientValue }}">
+                        <div class="rank">
+                            #{{ globalRank }}
+                            {% if globalRank == 1 %}
+                                <i class="fas fa-crown rank-crown"></i>
+                            {% endif %}
+                        </div>
+                        <div class="item-info">
+                            <div class="item-name">
+                                {{ client.client_name }}
+                            </div>
+                            <div class="item-stats">
+                                <div class="stat">
+                                    <i class="fas fa-shopping-cart icon"></i>
+                                    <span class="stat-value">{{ client.total_purchases|number_format(0, ',', ' ') }}</span> purchases
+                                    <span class="stat-percentage">({{ clientMarketShare }}% of the turnover)</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-euro-sign icon"></i>
+                                    <span class="stat-value">{{ client.total_spent|number_format(0, ',', ' ') }} €</span>
+                                </div>
+                            </div>
+                            <div class="performance-bar">
+                                <div class="performance-fill client-{{ clientValue }}" style="width: {{ clientMarketShare > 100 ? 100 : clientMarketShare }}%"></div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                {# Pagination pour les clients - Toujours visible #}
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Page {{ topClients.getCurrentPageNumber() }} of {{ topClients.getPageCount() }}
+                        • {{ topClients.getTotalItemCount() }} elements
+                    </div>
+                    <div class="pagination">
+                        {{ knp_pagination_render(topClients, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
+                            'pageParameterName': 'clients_page',
+                            'sortFieldParameterName': 'clients_sort',
+                            'sortDirectionParameterName': 'clients_direction',
+                            'viewParams': {
+                                'align': 'center',
+                                'size': 'small',
+                                'style': 'bottom'
+                            }
+                        }) }}
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <p>Aucun client trouvé</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
