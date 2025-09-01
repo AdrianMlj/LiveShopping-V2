@@ -21,13 +21,13 @@
                     <line x1="25" y1="25" x2="36" y2="36" />
                 </svg>
             </span>
-            <span class="icon">
+            <a class="icon" href="{{ path('app_messages') }}">
                 <!-- Bulle -->
                 <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
                     <ellipse cx="19" cy="17" rx="12" ry="8" />
                     <polyline points="13,25 13,29 19,25" />
                 </svg>
-            </span>
+            </a>
             <span class="icon">
                 <!-- Cloche -->
                 <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
@@ -75,7 +75,17 @@
     </div>
 </nav>
 
+<!-- WRAPPER POUR LE CONTENU -->
+<div class="content-below-navbar">
+    {% block content %}{% endblock %}
+</div>
+
 <style>
+    /* Décalage du contenu pour ne pas être caché par le navbar */
+    .content-below-navbar {
+        margin-top: 15px; /* même hauteur que ton navbar */
+        padding: 20px; /* optionnel */
+    }
     .navbar {
         background: #231f20;
         color: #fff;
@@ -185,7 +195,7 @@
     .user-profile {
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        gap: 15px;  
     }
 
     .username {
@@ -209,6 +219,10 @@
     }
 
     .user-menu a:hover {
+        color: white;
+    }
+
+    .user-menu span:hover {
         color: white;
     }
 
@@ -285,7 +299,7 @@
     }
 
     body.dark-theme .navbar {
-        background: #231f20;
+        background: #ffffffff;
         color: #fff;
     }
 
@@ -294,7 +308,7 @@
         color: #567AF4;
     }
 
-    body.dark-theme .logo-shop { color: #fff; }
+    body.dark-theme .logo-shop { color: #000000ff; }
 
     body.dark-theme .search-bar { background: #2a2a2a; color: #eee; border: 1px solid #444; }
 
@@ -302,7 +316,7 @@
         stroke: #567AF4;
     }
 
-    body.dark-theme .side-menu { background: #2b2b2b; box-shadow: -4px 0 8px rgba(0,0,0,0.3); }
+    body.dark-theme .side-menu { background: #ffffffff; box-shadow: -4px 0 8px rgba(0,0,0,0.3); }
 
     body.dark-theme .username,
     body.dark-theme .theme-toggle-container { color: #fff; }
@@ -311,7 +325,8 @@
         color: #567AF4;
     }
 
-    body.dark-theme .user-menu a:hover { color: #fff; }
+    body.dark-theme .user-menu a:hover { color: #000000ff; }
+    body.dark-theme .user-menu span:hover { color: #000000ff; }
 </style>
 
 <script>

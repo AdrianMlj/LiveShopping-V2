@@ -3,3 +3,14 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
+get_messages:
+    path: /messages
+    controller: App\Controller\MessageController::getMessages
+    methods: GET
+
+send_message:
+    path: /messages/send
+    controller: App\Controller\MessageController::sendMessage
+    methods: POST
+
+

@@ -21,3 +21,11 @@ npm install ws
 
 symfony serve --allow-http --port=8000 --allow-all-ip
 netsh advfirewall firewall add rule name="WebSocket" dir=in action=allow protocol=TCP localport=9090
+
+
+
+Redis-cli 
+
+composer require symfony/redis-messenger
+composer require predis/predis
+
