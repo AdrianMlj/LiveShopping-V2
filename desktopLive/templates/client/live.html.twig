@@ -223,7 +223,22 @@
 
         <aside>
             <div class="products">
-                {# Placeholder: produits liés au live si disponibles plus tard #}
+                {% if items is defined and items|length > 0 %}
+                    {% for product in items %}
+                        <div class="product">
+                        <img src="{{ product.images ? '/uploads/' ~ product.images : '/uploads/default-product.jpg' }}" alt="{{ product.nameitem }}">
+                        <div>
+                            <div class="name">{{ product.nameitem }}</div>
+                            {% if product.price is defined %}
+                                <div class="price">{{ product.price }} €</div>
+                            {% endif %}
+                        </div>
+                            <button class="btn-bag cta">Add to bag</button>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Aucun produit associé à ce live.</p>
+                {% endif %}
             </div>
         </aside>
     </div>

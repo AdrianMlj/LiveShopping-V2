@@ -747,86 +747,108 @@
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const conversationItems = document.querySelectorAll('.conversation-item');
-        const chatInput = document.querySelector('.chat-input input');
-        const sendButton = document.querySelector('.chat-input button');
-        const messagesContainer = document.querySelector('.chat-messages');
-        const tabs = document.querySelectorAll('.tab');
-        const themeToggle = document.getElementById('themeToggle');
+document.addEventListener('DOMContentLoaded', function() {
+    const conversationItems = document.querySelectorAll('.conversation-item');
+    const chatInput = document.querySelector('.chat-input input');
+    const sendButton = document.querySelector('.chat-input button');
+    const messagesContainer = document.querySelector('.chat-messages');
+    const tabs = document.querySelectorAll('.tab');
+    const themeToggle = document.getElementById('themeToggle');
+
+    // --- Gestion Dark Mode ---
+    const userThemeKey = 'site_theme';
+    const savedTheme = localStorage.getItem(userThemeKey);
+
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (themeToggle) themeToggle.checked = true;
+    } else {
+        document.body.classList.remove('dark-mode');
+        if (themeToggle) themeToggle.checked = false;
+    }
+
+    if (themeToggle) {
         themeToggle.addEventListener('change', function() {
-            document.body.classList.toggle('dark-mode', this.checked);
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem(userThemeKey, 'dark');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem(userThemeKey, 'light');
+            }
         });
-        
-        // Gestion des onglets Personnes/Groupes
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                tabs.forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                const tabType = this.getAttribute('data-tab');
-                conversationItems.forEach(item => {
-                    if (tabType === 'people') {
-                        item.style.display = item.getAttribute('data-type') === 'person' ? 'flex' : 'none';
-                    } else {
-                        item.style.display = item.getAttribute('data-type') === 'group' ? 'flex' : 'none';
-                    }
-                });
+    }
+
+    // --- Gestion des onglets Personnes/Groupes ---
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            tabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            const tabType = this.getAttribute('data-tab');
+            conversationItems.forEach(item => {
+                if (tabType === 'people') {
+                    item.style.display = item.getAttribute('data-type') === 'person' ? 'flex' : 'none';
+                } else {
+                    item.style.display = item.getAttribute('data-type') === 'group' ? 'flex' : 'none';
+                }
             });
-        });
-
-        // Gestion de la sélection de conversation
-        conversationItems.forEach(item => {
-            item.addEventListener('click', function() {
-                conversationItems.forEach(i => i.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Mettre à jour le header du chat
-                const userName = this.querySelector('strong').textContent;
-                const userImage = this.querySelector('img').src;
-                document.querySelector('.chat-header strong').textContent = userName;
-                document.querySelector('.chat-header img').src = userImage;
-            });
-        });
-
-        // Envoyer un message
-        function sendMessage() {
-            const message = chatInput.value.trim();
-            if (!message) return;
-
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message', 'sent');
-            
-            const now = new Date();
-            const timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
-            
-            messageElement.innerHTML = `
-                ${message}
-                <div class="message-time">${timeString}</div>
-            `;
-            
-            messagesContainer.appendChild(messageElement);
-            chatInput.value = '';
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-            // Simuler une réponse après un délai
-            setTimeout(() => {
-                const responseElement = document.createElement('div');
-                responseElement.classList.add('message', 'received');
-                responseElement.innerHTML = `
-                    Merci pour votre message! Je vous répondrai dès que possible.
-                    <div class="message-time">${timeString}</div>
-                `;
-                messagesContainer.appendChild(responseElement);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 1000);
-        }
-
-        sendButton.addEventListener('click', sendMessage);
-        chatInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
         });
     });
-    </script>
+
+    // --- Gestion de la sélection de conversation ---
+    conversationItems.forEach(item => {
+        item.addEventListener('click', function() {
+            conversationItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Mettre à jour le header du chat
+            const userName = this.querySelector('strong').textContent;
+            const userImage = this.querySelector('img').src;
+            document.querySelector('.chat-header strong').textContent = userName;
+            document.querySelector('.chat-header img').src = userImage;
+        });
+    });
+
+    // --- Envoyer un message ---
+    function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', 'sent');
+        
+        const now = new Date();
+        const timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+        
+        messageElement.innerHTML = `
+            ${message}
+            <div class="message-time">${timeString}</div>
+        `;
+        
+        messagesContainer.appendChild(messageElement);
+        chatInput.value = '';
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        // Simuler une réponse après un délai
+        setTimeout(() => {
+            const responseElement = document.createElement('div');
+            responseElement.classList.add('message', 'received');
+            responseElement.innerHTML = `
+                Merci pour votre message! Je vous répondrai dès que possible.
+                <div class="message-time">${timeString}</div>
+            `;
+            messagesContainer.appendChild(responseElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 1000);
+    }
+
+    sendButton.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+});
+</script>
+
 </body>
 </html>
