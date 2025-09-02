@@ -37,6 +37,20 @@
                 </a>
             </li>
             <li>
+                <a href="{{ path('app_objectif_mensuel') }}" data-i18n="action_1">
+                    <span class="action-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 20V10M18 20V4M6 20V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <div class="action-content">
+                        <span class="action-text">Objective tracking</span>
+                        <span class="action-subtitle">Gap detection, projection and Forecasting</span>
+                    </div>
+                    <span class="action-arrow">→</span>
+                </a>
+            </li>
+            <li>
                 <a href="#" data-i18n="action_1">
                     <span class="action-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -172,6 +186,7 @@
         top: 0;
         left: 0;
         width: 100%;
+        z-index: 2000;
     }
     .nav-links {
         display: flex;

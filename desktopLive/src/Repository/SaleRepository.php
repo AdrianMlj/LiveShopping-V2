@@ -83,69 +83,6 @@ class SaleRepository extends ServiceEntityRepository
      * @param int $sellerId
      * @return array
      */
-    // public function getStatistiquesVendeur(\DateTime $dateDebut, \DateTime $dateFin, int $sellerId): array
-    // {
-    //     $conn = $this->getEntityManager()->getConnection();
-
-    //     $sql = "
-    //         SELECT
-    //             EXTRACT(YEAR FROM s.sale_date) AS annee,
-    //             EXTRACT(MONTH FROM s.sale_date) AS mois,
-    //             COALESCE(SUM(cd.price * cd.quantity), 0) AS chiffre_affaires_mensuel,
-    //             COUNT(DISTINCT s.id_sale) AS nombre_commandes_mensuel,
-    //             SUM(cd.quantity) AS nombre_articles_vendus_mensuel,
-    //             COALESCE(AVG(cd.price), 0) AS prix_moyen_mensuel
-    //         FROM sale s
-    //         INNER JOIN commande c ON s.id_commande = c.id_commande
-    //         INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
-    //         INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
-    //         INNER JOIN item i ON isz.id_item = i.id_item
-    //         INNER JOIN users u ON i.id_seller = u.id_user
-    //         WHERE u.id_user = :sellerId
-    //         AND s.sale_date BETWEEN :dateDebut AND :dateFin
-    //         AND s.is_paid = true
-    //         GROUP BY annee, mois
-    //         ORDER BY annee, mois ASC
-    //     ";
-
-    //     $stmt = $conn->executeQuery($sql, [
-    //         'sellerId' => $sellerId,
-    //         'dateDebut' => $dateDebut->format('Y-m-d'),
-    //         'dateFin' => $dateFin->format('Y-m-d'),
-    //     ]);
-
-    //     $results = $stmt->fetchAllAssociative();
-
-    //     $labels = [];
-    //     $chiffreAffaires = [];
-    //     $commandes = [];
-    //     $articles = [];
-    //     $prixMoyens = [];
-
-    //     foreach ($results as $result) {
-    //         $mois = $result['mois'];
-    //         $annee = $result['annee'];
-    //         $label = \DateTime::createFromFormat('!m', $mois)->format('F') . ' ' . $annee;
-
-    //         if (!in_array($label, $labels)) {
-    //             $labels[] = $label;
-    //         }
-
-    //         $chiffreAffaires[] = (float) $result['chiffre_affaires_mensuel'];
-    //         $commandes[] = (int) $result['nombre_commandes_mensuel'];
-    //         $articles[] = (int) $result['nombre_articles_vendus_mensuel'];
-    //         $prixMoyens[] = (float) $result['prix_moyen_mensuel'];
-    //     }
-
-    //     return [
-    //         'labels' => $labels,
-    //         'chiffre_affaires' => $chiffreAffaires,
-    //         'commandes' => $commandes,
-    //         'articles' => $articles,
-    //         'prix_moyens' => $prixMoyens,
-    //     ];
-    // }
-
     public function getStatistiquesVendeur(\DateTime $dateDebut, \DateTime $dateFin, int $sellerId): array
     {
         $conn = $this->getEntityManager()->getConnection();
