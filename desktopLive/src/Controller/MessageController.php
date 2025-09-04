@@ -2,11 +2,10 @@
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\CacheInterface;
 
 class MessageController extends AbstractController
 {
@@ -20,25 +19,34 @@ class MessageController extends AbstractController
     #[Route('/messages', name: 'app_messages', methods: ['GET'])]
     public function index(Request $request): Response
     {
-        // Si c'est une requête AJAX (fetch), renvoyer le JSON
-        if ($request->isXmlHttpRequest()) {
-            $messages = $this->cache->get('messages', fn() => []);
-            return $this->json($messages);
-        }
+        // Récupère l'utilisateur connecté depuis la session
+        $session = $request->getSession();
+        $user = $session->get('user');
 
-        // Sinon, afficher le template HTML du messages
-        return $this->render('messages/index.html.twig'); // ton fichier HTML
+        return $this->render('messages/index.html.twig', [
+            'user' => $user, // ← ton utilisateur connecté
+        ]);
     }
 
     #[Route('/messages/send', name: 'send_message', methods: ['POST'])]
-    public function sendMessage(Request $request): JsonResponse
+    public function sendMessage(Request $request): Response
     {
+        $session = $request->getSession();
+        $user = $session->get('user');
+        if (!$user) {
+            return $this->json(['status' => 'error', 'message' => 'Utilisateur non connecté'], 401);
+        }
+
         $data = json_decode($request->getContent(), true);
         $messages = $this->cache->get('messages', fn() => []);
 
         $messages[] = [
-            'user' => $data['user'],
-            'message' => $data['message'],
+            'user' => [
+                'id_user' => $user->getId(),
+                'username' => $user->getUsername(),
+                'image' => $user->getImages(),
+            ],
+            'message' => $data['message'] ?? '',
             'time' => date('H:i')
         ];
 
