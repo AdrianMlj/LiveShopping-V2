@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Favoris{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h2 class="mb-4">Favoris List</h2>
+
+    {% if favoris is empty %}
+        <p class="text-muted">Vous n’avez encore aucun favori.</p>
+    {% else %}
+        {% for fav in favoris %}
+        <div class="row align-items-center border-bottom py-3">
+            <!-- Image -->
+            <div class="col-md-2">
+                <img src="{{ fav.item.imageUrl }}" alt="{{ fav.item.name }}" class="img-fluid">
+            </div>
+
+            <!-- Détails produit -->
+            <div class="col-md-6">
+                <p><strong>Name :</strong> {{ fav.item.name }}</p>
+                <p><strong>Price :</strong> ${{ fav.item.price }}</p>
+
+                <!-- Sélection taille -->
+                <select class="form-select w-auto d-inline">
+                    {% for size in fav.item.sizes %}
+                        <option value="{{ size.id }}" {% if size.id == fav.sizeId %}selected{% endif %}>
+                            {{ size.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-md-4 text-end">
+                <form method="post" action="{{ path('add_to_cart', { id: fav.item.id }) }}" class="d-inline">
+                    <button type="submit" class="btn btn-dark">Add to bag</button>
+                </form>
+
+                <form method="post" action="{{ path('remove_favorite', { id: fav.id }) }}" class="d-inline ms-2">
+                    <button type="submit" class="btn btn-link p-0">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
