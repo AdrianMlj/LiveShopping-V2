@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="modern-dashboard">
     <!-- Bannière de performances avec données globales calculées -->
     <div class="performance-banner">
         <div class="performance-text">
@@ -29,6 +29,7 @@
     </div>
 
     <div class="ranking-container">
+        <!-- Colonne des articles (gauche) -->
         <div class="column">
             <div class="section-header">
                 <div>
@@ -37,7 +38,7 @@
                         Top Items
                     </h2>
                     <p class="section-description">
-                        Average income : {{ globalStats.avgRevenuePerArticle|number_format(0, ',', ' ') }} €
+                        Revenu moyen : {{ globalStats.avgRevenuePerArticle|number_format(0, ',', ' ') }} €
                     </p>
                 </div>
                 <div class="section-actions">
@@ -71,8 +72,8 @@
                             <div class="item-stats">
                                 <div class="stat">
                                     <i class="fas fa-shopping-bag icon"></i>
-                                    <span class="stat-value">{{ article.sales|number_format(0, ',', ' ') }}</span> sales
-                                    <span class="stat-percentage">({{ articleMarketShare }}% of the total)</span>
+                                    <span class="stat-value">{{ article.sales|number_format(0, ',', ' ') }}</span> ventes
+                                    <span class="stat-percentage">({{ articleMarketShare }}% du total)</span>
                                 </div>
                                 <div class="stat">
                                     <i class="fas fa-euro-sign icon"></i>
@@ -87,11 +88,11 @@
                     {% endfor %}
                 </ul>
 
-                {# Pagination pour les articles - Toujours visible #}
+                {# Pagination pour les articles #}
                 <div class="pagination-container">
                     <div class="pagination-info">
-                        Page {{ topArticles.getCurrentPageNumber() }} of {{ topArticles.getPageCount() }}
-                        • {{ topArticles.getTotalItemCount() }} elements
+                        Page {{ topArticles.getCurrentPageNumber() }} sur {{ topArticles.getPageCount() }}
+                        • {{ topArticles.getTotalItemCount() }} éléments
                     </div>
                     <div class="pagination">
                         {{ knp_pagination_render(topArticles, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
@@ -123,7 +124,7 @@
                         Top Clients
                     </h2>
                     <p class="section-description">
-                        Average spending : {{ globalStats.avgSpendingPerClient|number_format(0, ',', ' ') }} €
+                        Dépense moyenne : {{ globalStats.avgSpendingPerClient|number_format(0, ',', ' ') }} €
                     </p>
                 </div>
                 <div class="section-actions">
@@ -158,8 +159,8 @@
                             <div class="item-stats">
                                 <div class="stat">
                                     <i class="fas fa-shopping-cart icon"></i>
-                                    <span class="stat-value">{{ client.total_purchases|number_format(0, ',', ' ') }}</span> purchases
-                                    <span class="stat-percentage">({{ clientMarketShare }}% of the turnover)</span>
+                                    <span class="stat-value">{{ client.total_purchases|number_format(0, ',', ' ') }}</span> achats
+                                    <span class="stat-percentage">({{ clientMarketShare }}% du chiffre d'affaires)</span>
                                 </div>
                                 <div class="stat">
                                     <i class="fas fa-euro-sign icon"></i>
@@ -174,11 +175,11 @@
                     {% endfor %}
                 </ul>
 
-                {# Pagination pour les clients - Toujours visible #}
+                {# Pagination pour les clients #}
                 <div class="pagination-container">
                     <div class="pagination-info">
-                        Page {{ topClients.getCurrentPageNumber() }} of {{ topClients.getPageCount() }}
-                        • {{ topClients.getTotalItemCount() }} elements
+                        Page {{ topClients.getCurrentPageNumber() }} sur {{ topClients.getPageCount() }}
+                        • {{ topClients.getTotalItemCount() }} éléments
                     </div>
                     <div class="pagination">
                         {{ knp_pagination_render(topClients, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {

@@ -53,7 +53,7 @@ CREATE TABLE Item_size(
 CREATE TABLE Items_stock(
    id_item_stock SERIAL,
    out_item INTEGER,
-   in_item VARCHAR(50) ,
+   in_item INTEGER ,
    date_move TIMESTAMP NOT NULL,
    id_item_size INTEGER NOT NULL,
    PRIMARY KEY(id_item_stock),

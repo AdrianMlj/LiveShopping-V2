@@ -1,0 +1,285 @@
+{% extends 'admin/baseAdmin.html.twig' %}
+
+{% block title %}Suivi du Stock{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/stock.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="modern-dashboard">
+        <!-- Sidebar avec boutons de sélection -->
+        <div class="dashboard-sidebar">
+            <div class="button-group">
+                <button id="showMovements" class="toggle-btn active">
+                    <i class="fas fa-exchange-alt"></i> Mouvements de stock
+                </button>
+                <button id="showCurrent" class="toggle-btn inactive">
+                    <i class="fas fa-boxes"></i> Stock actuel
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="dashboard-content">
+            <div id="filterSection" class="filter-card">
+                <form method="post" class="filter-form">
+                    <div class="filter-group">
+                        <label for="dateD">Période</label>
+                        <div class="date-range">
+                            <input type="date" name="dateD" id="dateD" required class="modern-input" value="{{ dateD }}">
+                            <span class="date-separator">—</span>
+                            <input type="date" name="dateF" id="dateF" required class="modern-input" value="{{ dateF }}">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="modern-button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Appliquer
+                    </button>
+                </form>
+            </div>
+
+            <!-- Mouvements de stock -->
+            <div id="movementsSection" class="stock-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-exchange-alt"></i> Mouvements entre {{ startDate|date('d/m/Y') }} et {{ endDate|date('d/m/Y') }}
+                    </h3>
+                    <div class="section-actions">
+                        <span class="pagination-info">
+                            {{ stockMovements|length }} sur {{ stockMovements.getTotalItemCount() }} mouvements
+                        </span>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Article</th>
+                                    <th>Taille</th>
+                                    <th>Entrées</th>
+                                    <th>Sorties</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in stockMovements %}
+                                    <tr>
+                                        <td>{{ movement.name_item }}</td>
+                                        <td>{{ movement.name_size }}</td>
+                                        <td class="{% if movement.in_item > 0 %}positive{% endif %}">
+                                            {{ movement.in_item ?? 0 }}
+                                        </td>
+                                        <td class="{% if movement.out_item > 0 %}negative{% endif %}">
+                                            {{ movement.out_item ?? 0 }}
+                                        </td>
+                                        <td>{{ movement.date_move|date('d/m/Y H:i') }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">Aucun mouvement enregistré</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination mouvements -->
+                    <div id="movements-pagination" class="pagination-container">
+                        <div class="pagination-info">
+                            Page {{ stockMovements.getCurrentPageNumber() }} sur {{ stockMovements.getPageCount() }}
+                            • {{ stockMovements.getTotalItemCount() }} mouvements
+                        </div>
+                        <div class="pagination">
+                            {{ knp_pagination_render(stockMovements, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
+                                'pageParameterName': 'movements_page',
+                                'sortFieldParameterName': 'movements_sort',
+                                'sortDirectionParameterName': 'movements_direction'
+                            }) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock actuel -->
+            <div id="currentSection" class="stock-section hidden-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-boxes"></i> Stock actuel
+                    </h3>
+                    <div class="section-actions">
+                        <span class="pagination-info">
+                            {{ currentStock|length }} sur {{ currentStock.getTotalItemCount() }} articles
+                        </span>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Article</th>
+                                    <th>Taille</th>
+                                    <th>Stock disponible</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in currentStock %}
+                                    <tr>
+                                        <td>{{ row.itemname }}</td>
+                                        <td>{{ row.sizename }}</td>
+                                        <td>
+                                            <strong class="{% if row.currentstock > 5 %}in-stock{% else %}out-of-stock{% endif %}">
+                                                {{ row.currentstock }}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">Aucun stock disponible</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination stock actuel -->
+                    <div id="current-pagination" class="pagination-container">
+                        <div class="pagination-info">
+                            Page {{ currentStock.getCurrentPageNumber() }} sur {{ currentStock.getPageCount() }}
+                            • {{ currentStock.getTotalItemCount() }} articles
+                        </div>
+                        <div class="pagination">
+                            {{ knp_pagination_render(currentStock, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
+                                'pageParameterName': 'stock_page',
+                                'sortFieldParameterName': 'stock_sort',
+                                'sortDirectionParameterName': 'stock_direction'
+                            }) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const showMovementsBtn = document.getElementById('showMovements');
+            const showCurrentBtn = document.getElementById('showCurrent');
+            const movementsSection = document.getElementById('movementsSection');
+            const currentSection = document.getElementById('currentSection');
+            const filterSection = document.getElementById('filterSection');
+
+            // Fonction pour basculer entre les sections
+            function toggleSections(showMovements) {
+                if (showMovements) {
+                    movementsSection.classList.remove('hidden-section');
+                    currentSection.classList.add('hidden-section');
+                    filterSection.classList.remove('hidden-section');
+                    showMovementsBtn.classList.add('active');
+                    showMovementsBtn.classList.remove('inactive');
+                    showCurrentBtn.classList.remove('active');
+                    showCurrentBtn.classList.add('inactive');
+
+                    // Mettre à jour l'URL pour indiquer qu'on affiche les mouvements
+                    updateURL('movements');
+                } else {
+                    movementsSection.classList.add('hidden-section');
+                    currentSection.classList.remove('hidden-section');
+                    filterSection.classList.add('hidden-section');
+                    showMovementsBtn.classList.remove('active');
+                    showMovementsBtn.classList.add('inactive');
+                    showCurrentBtn.classList.add('active');
+                    showCurrentBtn.classList.remove('inactive');
+
+                    // Mettre à jour l'URL pour indiquer qu'on affiche le stock actuel
+                    updateURL('current');
+                }
+            }
+
+            // Fonction pour mettre à jour l'URL avec le paramètre de section active
+            function updateURL(section) {
+                const url = new URL(window.location);
+                url.searchParams.set('section', section);
+                // Supprimer les paramètres de pagination de l'autre section
+                if (section === 'movements') {
+                    url.searchParams.delete('stock_page');
+                } else {
+                    url.searchParams.delete('movements_page');
+                }
+                window.history.replaceState({}, '', url);
+            }
+
+            // Intercepter les clics sur les liens de pagination
+            function setupPaginationInterception() {
+                // Pagination des mouvements
+                const movementsPagination = document.getElementById('movements-pagination');
+                if (movementsPagination) {
+                    const movementsLinks = movementsPagination.querySelectorAll('a');
+                    movementsLinks.forEach(link => {
+                        link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            const url = new URL(this.href);
+                            url.searchParams.set('section', 'movements');
+                            window.location.href = url.toString();
+                        });
+                    });
+                }
+
+                // Pagination du stock actuel
+                const currentPagination = document.getElementById('current-pagination');
+                if (currentPagination) {
+                    const currentLinks = currentPagination.querySelectorAll('a');
+                    currentLinks.forEach(link => {
+                        link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            const url = new URL(this.href);
+                            url.searchParams.set('section', 'current');
+                            window.location.href = url.toString();
+                        });
+                    });
+                }
+            }
+
+            // Événements de clic sur les boutons
+            showMovementsBtn.addEventListener('click', function() {
+                toggleSections(true);
+            });
+
+            showCurrentBtn.addEventListener('click', function() {
+                toggleSections(false);
+            });
+
+            // Détecter quelle section afficher selon les paramètres URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const section = urlParams.get('section');
+            const hasMovementsPage = urlParams.has('movements_page');
+            const hasStockPage = urlParams.has('stock_page');
+
+            // Déterminer quelle section afficher
+            let showMovementsSection = true; // Par défaut
+
+            if (section === 'current') {
+                showMovementsSection = false;
+            } else if (section === 'movements') {
+                showMovementsSection = true;
+            } else if (hasStockPage && !hasMovementsPage) {
+                showMovementsSection = false;
+            } else if (hasMovementsPage && !hasStockPage) {
+                showMovementsSection = true;
+            }
+
+            // Afficher la section appropriée
+            toggleSections(showMovementsSection);
+
+            // Configurer l'interception des liens de pagination
+            setupPaginationInterception();
+        });
+    </script>
+{% endblock %}

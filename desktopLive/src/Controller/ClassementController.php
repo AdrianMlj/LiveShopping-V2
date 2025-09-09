@@ -32,8 +32,8 @@ class ClassementController extends AbstractController
         $sellerId = $defaultSeller->getId();
 
         // Récupérer TOUTES les données pour les calculs globaux
-        $allArticles = $this->saleRepository->getTopArticles($sellerId, 5); // null = pas de limite
-        $allClients = $this->saleRepository->getTopClients($sellerId, 5);   // null = pas de limite
+        $allArticles = $this->saleRepository->getTopArticles($sellerId, 100); // null = pas de limite
+        $allClients = $this->saleRepository->getTopClients($sellerId, 100);   // null = pas de limite
 
         // Calculs globaux basés sur TOUTES les données
         $globalStats = $this->calculateGlobalStats($allArticles, $allClients);
@@ -43,7 +43,7 @@ class ClassementController extends AbstractController
         $paginatedArticles = $this->paginator->paginate(
             $allArticles,
             $articlesPerPage,
-            5, // 2 articles par page
+            3, // 2 articles par page
             [
                 'pageParameterName' => 'articles_page',
                 'sortFieldParameterName' => 'articles_sort',
@@ -56,7 +56,7 @@ class ClassementController extends AbstractController
         $paginatedClients = $this->paginator->paginate(
             $allClients,
             $clientsPerPage,
-            5, // 5 clients par page
+            3, // 5 clients par page
             [
                 'pageParameterName' => 'clients_page',
                 'sortFieldParameterName' => 'clients_sort',

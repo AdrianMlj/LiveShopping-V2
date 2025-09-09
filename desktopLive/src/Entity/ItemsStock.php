@@ -17,7 +17,7 @@ class ItemsStock
     private ?int $outItem = null;
 
     #[ORM\Column(name: 'in_item', type: 'integer', nullable: true)]
-    private ?string $inItem = null;
+    private ?int $inItem = null;
 
     #[ORM\Column(name: 'date_move', type: 'datetime')]
     private ?\DateTimeInterface $dateMove = null;
@@ -44,12 +44,12 @@ class ItemsStock
         return $this;
     }
 
-    public function getInItem(): ?string
+    public function getInItem(): ?int
     {
         return $this->inItem;
     }
 
-    public function setInItem(?string $inItem): static
+    public function setInItem(?int $inItem): static
     {
         $this->inItem = $inItem;
         return $this;

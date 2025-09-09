@@ -27,8 +27,8 @@ class AdminController extends AbstractController
         SaleRepository $saleRepository
     ): Response {
         // :épingle: Valeurs par défaut
-        $defaultStart = new \DateTime('first day of January this year');
-        $defaultEnd = new \DateTime('last day of December this year');
+        $defaultStart = new \DateTime('first day of this month');
+        $defaultEnd = new \DateTime('last day of this month');
         // :épingle: Récupérer les valeurs du formulaire
         $dateD = $request->request->get('dateD') ? new \DateTime($request->request->get('dateD')) : $defaultStart;
         $dateF = $request->request->get('dateF') ? new \DateTime($request->request->get('dateF')) : $defaultEnd;
