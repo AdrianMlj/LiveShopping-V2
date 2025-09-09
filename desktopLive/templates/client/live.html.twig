@@ -31,17 +31,93 @@
         .desc-list li { display:flex; align-items:flex-start; gap:8px; margin:6px 0; }
         .desc-list li .dot { width:8px; height:8px; background:#567AF4; border-radius:50%; margin-top:6px; }
         .products { display:flex; flex-direction:column; gap:16px; }
-        .product { display:flex; gap:12px; background:#fff; border-radius:16px; padding:12px; box-shadow: 0 12px 24px rgba(0,0,0,0.12); align-items:center; }
-        .product img { width:92px; height:64px; object-fit:cover; border-radius:12px; }
-        .product .name { font-weight:800; }
-        .product .price { color:#333; margin-top:4px; }
-        .product .cta { margin-left:auto; }
-        .btn-bag { background:#567AF4; color:#fff; border:none; padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; }
-        @media (max-width: 992px) { .page { grid-template-columns: 1fr; } .right-actions{ margin-top:10px; } }
+        
+        /* Styles pour les produits - MODIFIÉ selon l'image */
+        .product { 
+            display: flex; 
+            gap: 12px; 
+            background: #fff; 
+            border-radius: 16px; 
+            padding: 12px; 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12); 
+            align-items: center;
+            position: relative;
+        }
+        .product img { 
+            width: 92px; 
+            height: 64px; 
+            object-fit: cover; 
+            border-radius: 12px; 
+        }
+        .product-info {
+            flex-grow: 1;
+        }
+        .product .name { 
+            font-weight: 800; 
+            margin-bottom: 4px;
+        }
+        .product .price { 
+            color: #333; 
+            margin-top: 4px; 
+            font-weight: 600;
+        }
+        .product-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .btn-bag { 
+            background: #567AF4; 
+            color: #fff; 
+            border: none; 
+            padding: 8px 12px; 
+            border-radius: 999px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            white-space: nowrap;
+            margin-top: 50px;
+        }
+        .btn-favorite {
+            position: absolute;
+            top: 16px;
+            right: 25px;
+            width: 20px;
+            height: 28px;
+            border-radius: 2px;
+            background-color: #ccc;
+            border: none;
+            cursor: pointer;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+            transition: background-color 0.3s, transform 0.2s;
+            z-index: 1;
+        }
+        .btn-favorite:hover {
+            transform: scale(1.1);
+        }
+        .btn-favorite.active {
+            background-color: #e3f635ff;
+            transform: scale(1.2);
+        }
+        
+        @media (max-width: 992px) { 
+            .page { grid-template-columns: 1fr; } 
+            .right-actions{ margin-top:10px; } 
+        }
+        
         /* Dark theme */
         body.dark-theme { background: #121212; }
-        body.dark-theme .player-card, body.dark-theme .description, body.dark-theme .product { background:#1f1f1f; box-shadow: 0 12px 24px rgba(0,0,0,0.5); }
-        body.dark-theme .desc-title, body.dark-theme .product .name, body.dark-theme .product .price { color:#fff; }
+        body.dark-theme .player-card, 
+        body.dark-theme .description, 
+        body.dark-theme .product { 
+            background:#1f1f1f; 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.5); 
+        }
+        body.dark-theme .desc-title, 
+        body.dark-theme .product .name, 
+        body.dark-theme .product .price { 
+            color:#fff; 
+        }
         /* Lisibilité du contenu de la description en dark */
         body.dark-theme .description { color: #e6e6e6; }
         body.dark-theme .description p { color: #e0e0e0; line-height: 1.55; }
@@ -50,10 +126,30 @@
     </style>
     {% include 'components/navbarClient.html.twig' %}
     <script>
-      // Petits handlers mock
       function likeLive(){
         const el = document.getElementById('likeCount');
         el.textContent = parseInt(el.textContent, 10) + 1;
+
+        // 🔥 Envoi du like au serveur WebSocket
+        if (window.signaling && window.signaling.readyState === WebSocket.OPEN) {
+          const adminId = {{ live.seller ? live.seller.id : 0 }};
+          window.signaling.send(JSON.stringify({
+            type: "like",
+            adminId: adminId
+          }));
+        }
+      }
+
+      function toggleFavorite(button) {
+        button.classList.toggle('active');
+        const productElement = button.closest('.product');
+        const productName = productElement.querySelector('.name').textContent;
+        
+        if (button.classList.contains('active')) {
+            console.log(`Produit "${productName}" ajouté aux favoris`);
+        } else {
+            console.log(`Produit "${productName}" retiré des favoris`);
+        }
       }
 
       // WebRTC Viewer pour recevoir le flux du streamer via un serveur de signalisation WebSocket (localhost:8080)
@@ -131,6 +227,7 @@
           const adminId = {{ live.seller ? live.seller.id : 0 }};
           console.log('[CLIENT-LIVE] WS open. viewerId=', viewerId, 'adminId=', adminId);
           signaling.send(JSON.stringify({ type: 'viewer', viewerId, adminId }));
+          window.signaling = signaling; // rendre accessible globalement
         };
 
         signaling.onmessage = async (event) => {
@@ -157,6 +254,15 @@
                 videoEl.srcObject = null;
               }
             }
+            else if (data.type === 'likeUpdate') {
+              const likeEl = document.getElementById('likeCount');
+              if (likeEl) likeEl.textContent = data.count;
+
+              const pillEl = document.querySelector('.viewer-pill');
+              if (pillEl) pillEl.textContent = data.count;
+            }
+
+
           } catch (err) {
             console.error('[CLIENT-LIVE] Erreur WebRTC:', err);
           }
@@ -226,14 +332,19 @@
                 {% if items is defined and items|length > 0 %}
                     {% for product in items %}
                         <div class="product">
-                        <img src="{{ product.images ? '/uploads/' ~ product.images : '/uploads/default-product.jpg' }}" alt="{{ product.nameitem }}">
-                        <div>
-                            <div class="name">{{ product.nameitem }}</div>
-                            {% if product.price is defined %}
-                                <div class="price">{{ product.price }} €</div>
-                            {% endif %}
-                        </div>
-                            <button class="btn-bag cta">Add to bag</button>
+                            <!-- Bouton marque-page CSS en position absolue en haut -->
+                            <button class="btn-favorite" aria-label="Ajouter aux favoris" onclick="toggleFavorite(this)"></button>
+                            
+                            <img src="{{ product.images ? '/uploads/' ~ product.images : '/uploads/default-product.jpg' }}" alt="{{ product.nameitem }}">
+                            <div class="product-info">
+                                <div class="name">{{ product.nameitem }}</div>
+                                {% if product.price is defined %}
+                                    <div class="price">{{ product.price }} €</div>
+                                {% endif %}
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn-bag">Add to bag</button>
+                            </div>
                         </div>
                     {% endfor %}
                 {% else %}
@@ -244,5 +355,3 @@
     </div>
   </body>
 </html>
-
-

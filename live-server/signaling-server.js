@@ -27,8 +27,9 @@ console.log('🌐 Mode HTTP (WS) activé');
 
 const wss = new WebSocket.Server({ server });
 
-const viewers = new Map(); // viewerId => { socket, adminId }
+const viewers = new Map();   // viewerId => { socket, adminId }
 const streamers = new Map(); // adminId => socket
+const likeCounters = {};     // adminId => nombre de likes
 
 console.log('🚀 Serveur WebSocket prêt');
 
@@ -169,6 +170,35 @@ wss.on('connection', (ws, req) => {
                     streamers: activeAdmins
                 }));
             }
+            // Gestion des likes
+            else if (data.type === 'like' && data.adminId) {
+                const adminIdStr = data.adminId.toString();
+                if (!likeCounters[adminIdStr]) likeCounters[adminIdStr] = 0;
+                likeCounters[adminIdStr]++;
+
+                console.log(`👍 Nouveau like pour streamer ${adminIdStr} (total=${likeCounters[adminIdStr]})`);
+
+                // Diffuser à tous les viewers + streamer du même live
+                const update = JSON.stringify({
+                    type: 'likeUpdate',
+                    adminId: adminIdStr,
+                    count: likeCounters[adminIdStr]
+                });
+
+                // Envoyer aux viewers
+                viewers.forEach((viewerData) => {
+                    if (viewerData.adminId === adminIdStr && viewerData.socket.readyState === WebSocket.OPEN) {
+                        viewerData.socket.send(update);
+                    }
+                });
+
+                // Envoyer au streamer
+                const streamerWs = streamers.get(adminIdStr);
+                if (streamerWs && streamerWs.readyState === WebSocket.OPEN) {
+                    streamerWs.send(update);
+                }
+            }
+
 
         } catch (error) {
             console.error(`❌ Erreur parsing JSON depuis ${clientIP}:`, error);
