@@ -11,6 +11,7 @@ use App\Entity\ExportTemp;
 use App\Entity\ItemSize;
 use App\Repository\ExportTempRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class StockController extends AbstractController
 {
@@ -157,4 +158,29 @@ class StockController extends AbstractController
             return new Response("Erreur lors de l'enregistrement : " . $e->getMessage(), 500);
         }
     }
+
+    #[Route('/delete_stock/{id}', name: 'delete_stock', methods: ['DELETE'])]
+    public function deleteStock(int $id, EntityManagerInterface $em): JsonResponse
+    {
+        $export = $em->getRepository(ExportTemp::class)->find($id);
+
+        if (!$export) {
+            return new JsonResponse(['success' => false, 'message' => 'Article introuvable'], 404);
+        }
+
+        $em->remove($export);
+        $em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+    // #[Route('/export_csv', name: 'app_export_csv', methods: ['POST'])]
+    // public function createCSV(Request $request, ExportTempRepository $exportRepo): Response
+    // {
+    //     $session = $request->getSession();
+    //     $user = $session->get('user');
+    //     $sellerId = $user->getId();
+
+
+    // }
 }

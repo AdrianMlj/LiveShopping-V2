@@ -235,6 +235,7 @@
                                     <th>Catégorie</th>
                                     <th>Taille</th>
                                     <th>Quantité</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -251,6 +252,11 @@
                                                 value="{{ row.quantity }}"
                                                 data-id="{{ row.id }}"
                                             />
+                                        </td>
+                                        <td>
+                                            <button class="delete-row-btn btn btn-sm btn-danger" data-id="{{ row.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 {% else %}
@@ -594,6 +600,36 @@
                 // Remplir le champ caché et envoyer le formulaire
                 exportDemandes.value = JSON.stringify(demandes);
                 exportForm.submit();
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.delete-row-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const row = this.closest('tr');
+                    const id = this.dataset.id;
+
+                    if (confirm("Voulez-vous vraiment supprimer cet article ?")) {
+                        fetch('/delete_stock/' + id, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                row.remove(); // ✅ suppression en front
+                            } else {
+                                alert("Erreur : " + data.message);
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert("Erreur lors de la suppression");
+                        });
+                    }
+                });
             });
         });
     </script>
