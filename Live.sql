@@ -50,6 +50,14 @@ CREATE TABLE Item_size(
    FOREIGN KEY(id_item) REFERENCES Item(id_item)
 );
 
+CREATE TABLE Export_temp(
+   id_export_temp SERIAL,
+   id_item_size INTEGER NOT NULL,
+   quantity INTEGER NOT NULL,
+   PRIMARY KEY(id_export_temp),
+   FOREIGN KEY(id_item_size) REFERENCES Item_size(id_item_size)
+);
+
 CREATE TABLE Items_stock(
    id_item_stock SERIAL,
    out_item INTEGER,
