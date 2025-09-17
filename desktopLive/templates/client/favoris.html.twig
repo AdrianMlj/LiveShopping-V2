@@ -1,6 +1,6 @@
-{% extends 'base.html.twig' %}
 
-{% block title %}Mes Favoris{% endblock %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% include 'components/navbarClient.html.twig' %}
 
 {% block body %}
 <div class="container mt-4">
@@ -10,41 +10,267 @@
         <p class="text-muted">Vous n’avez encore aucun favori.</p>
     {% else %}
         {% for fav in favoris %}
-        <div class="row align-items-center border-bottom py-3">
+        <div class="row align-items-center border-bottom py-3 position-relative">
+            <!-- Icône favoris en haut à droite -->
+            <form method="post" action="{{ path('remove_favorite_by_id', { favId: fav.favoriteId }) }}" class="position-absolute" style="top:12px; right:18px; z-index:2;">
+                <button type="submit" class="btn-favorite active" aria-label="Retirer des favoris"
+                    style="background:transparent; border:none; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="fa-solid fa-bookmark" style="font-size:28px; color:#FFD600;"></i>
+                </button>
+            </form>
+
             <!-- Image -->
             <div class="col-md-2">
-                <img src="{{ fav.item.imageUrl }}" alt="{{ fav.item.name }}" class="img-fluid">
+                <img src="{{ fav.item.images ? '/uploads/' ~ fav.item.images : '/uploads/default-product.jpg' }}" alt="{{ fav.item.nameitem }}" class="img-fluid">
             </div>
 
             <!-- Détails produit -->
             <div class="col-md-6">
-                <p><strong>Name :</strong> {{ fav.item.name }}</p>
-                <p><strong>Price :</strong> ${{ fav.item.price }}</p>
-
-                <!-- Sélection taille -->
-                <select class="form-select w-auto d-inline">
-                    {% for size in fav.item.sizes %}
-                        <option value="{{ size.id }}" {% if size.id == fav.sizeId %}selected{% endif %}>
-                            {{ size.label }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Actions -->
-            <div class="col-md-4 text-end">
-                <form method="post" action="{{ path('add_to_cart', { id: fav.item.id }) }}" class="d-inline">
-                    <button type="submit" class="btn btn-dark">Add to bag</button>
-                </form>
-
-                <form method="post" action="{{ path('remove_favorite', { id: fav.id }) }}" class="d-inline ms-2">
-                    <button type="submit" class="btn btn-link p-0">
-                        <i class="fa-solid fa-bookmark"></i>
-                    </button>
-                </form>
+                <p><strong>Name :</strong> {{ fav.item.nameitem }}</p>
+                <p><strong>Price :</strong> ${{ fav.price }}</p>
+                                <p><strong>Size :</strong>
+                                    <select class="form-select w-auto d-inline">
+                                        {% for size in fav.item.itemSizes %}
+                                            <option value="{{ size.id }}" {% if size.id == fav.size.sizeId %}selected{% endif %}>
+                                                {{ size.valueSize }}{% if size.size %} ({{ size.size.nameSize }}){% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </p>
+                                <p style="color: #888; font-size: 13px;">[DEBUG] Article ID: {{ fav.item.id }}, Taille ID: {{ fav.size.sizeId }}</p>
             </div>
         </div>
         {% endfor %}
     {% endif %}
 </div>
 {% endblock %}
+<style>
+    /* Styles pour la page de favoris */
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 15px;
+    }
+
+    .mt-4 {
+        margin-top: 2rem;
+    }
+
+    .mb-4 {
+        margin-bottom: 2rem;
+    }
+
+    h2 {
+        font-family: 'Inter', Arial, sans-serif;
+        font-weight: 700;
+        color: #231f20;
+    }
+
+    /* Bouton favoris (marque-page) */
+    .btn-favorite {
+        background: transparent;
+        border: none;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+        cursor: pointer;
+        box-shadow: none;
+        outline: none;
+        position: relative;
+        position: absolute;
+        top: 12px;
+        right: 18px;
+        z-index: 2;
+    }
+    .btn-favorite i {
+        font-size: 28px;
+        color: #FFD600;
+        transition: color 0.2s;
+    }
+    .btn-favorite.active i {
+        color: #FFD600;
+    }
+    .btn-favorite:not(.active) i {
+        color: #BDBDBD;
+    }
+    .btn-favorite:hover {
+        background: #fffbe6;
+    }
+    .row.position-relative {
+        position: relative;
+    }
+        font-size: 28px;
+        border-bottom: 2px solid #567AF4;
+        padding-bottom: 10px;
+        display: inline-block;
+    }
+
+    .text-muted {
+        color: #6c757d;
+        font-style: normal;
+        font-size: 18px;
+        text-align: center;
+        margin-top: 40px;
+    }
+
+    /* Styles pour les éléments favoris */
+    .row {
+        margin: 0;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+
+    .row:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .border-bottom {
+        border-bottom: 1px solid #e9ecef !important;
+    }
+
+    .py-3 {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .img-fluid {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        object-fit: cover;
+        height: 120px;
+        width: 120px;
+    }
+
+    .col-md-6 p {
+        margin-bottom: 8px;
+        font-family: 'Inter', Arial, sans-serif;
+    }
+
+    .col-md-6 p strong {
+        color: #231f20;
+        font-weight: 600;
+    }
+
+    .form-select {
+        display: inline-block;
+        width: auto;
+        padding: 6px 12px;
+        font-size: 14px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background-color: #fff;
+        margin-top: 10px;
+    }
+
+    .btn-dark {
+        background-color: #231f20;
+        border-color: #231f20;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .btn-dark:hover {
+        background-color: #000;
+        border-color: #000;
+        transform: translateY(-1px);
+    }
+
+    .btn-link {
+        color: #567AF4;
+        font-size: 24px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-link:hover {
+        color: #ff6b6b;
+        transform: scale(1.1);
+    }
+
+    .ms-2 {
+        margin-left: 0.5rem;
+    }
+
+    .text-end {
+        text-align: right;
+    }
+
+    .d-inline {
+        display: inline;
+    }
+
+    /* Styles pour le mode sombre */
+    body.dark-theme .h2 {
+        color: #ffffff;
+    }
+    body.dark-theme .mb-4 {
+        color: #ffffff;
+    }
+    body.dark-theme .text-muted {
+        color: #adb5bd;
+    }
+
+    body.dark-theme .row {
+        background-color: #1e1e1e;
+    }
+
+    body.dark-theme .border-bottom {
+        border-bottom: 1px solid #444 !important;
+    }
+
+    body.dark-theme .col-md-6 p strong {
+        color: #ffffff;
+    }
+
+    body.dark-theme .col-md-6 p {
+        color: #e0e0e0;
+    }
+
+    body.dark-theme .form-select {
+        background-color: #2a2a2a;
+        border-color: #444;
+        color: #e0e0e0;
+    }
+
+    body.dark-theme .btn-dark {
+        background-color: #567AF4;
+        border-color: #567AF4;
+    }
+
+    body.dark-theme .btn-dark:hover {
+        background-color: #4565d3;
+        border-color: #4565d3;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .row {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .col-md-2, .col-md-6, .col-md-4 {
+            width: 100%;
+            max-width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .text-end {
+            text-align: center;
+        }
+        
+        .img-fluid {
+            height: 180px;
+            width: 180px;
+        }
+    }
+</style>

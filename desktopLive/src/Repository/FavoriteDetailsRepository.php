@@ -15,6 +15,14 @@ class FavoriteDetailsRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, FavoriteDetails::class);
     }
+    public function save(FavoriteDetails $entity, bool $flush = false): void
+    {
+        $em = $this->getEntityManager(); // <-- toujours utiliser getEntityManager()
+        $em->persist($entity);
+        if ($flush) {
+            $em->flush();
+        }
+    }
 
     //    /**
     //     * @return FavoriteDetails[] Returns an array of FavoriteDetails objects

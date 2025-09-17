@@ -104,7 +104,8 @@ class Item
         return $this;
     }
 
-    public function getImages(): ?int
+
+    public function getImages(): ?string
     {
         return $this->images;
     }

@@ -140,17 +140,50 @@
         }
       }
 
-      function toggleFavorite(button) {
-        button.classList.toggle('active');
-        const productElement = button.closest('.product');
-        const productName = productElement.querySelector('.name').textContent;
-        
-        if (button.classList.contains('active')) {
-            console.log(`Produit "${productName}" ajouté aux favoris`);
-        } else {
-            console.log(`Produit "${productName}" retiré des favoris`);
-        }
+    function toggleFavorite(button, itemSizeId) {
+      if (button.classList.contains('active') && button.dataset.favoriteId && button.dataset.favoriteId !== 'null') {
+        // Retirer des favoris par favoriteId
+        fetch(`/client/remove-favorite-by-id/${button.dataset.favoriteId}`, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Erreur serveur: ' + res.status);
+          return res.json ? res.json() : null;
+        })
+        .then(data => {
+          button.classList.remove('active');
+        })
+        .catch(err => console.error('Fetch error:', err));
+      } else {
+        // Ajouter aux favoris par itemSizeId
+        fetch(`/client/favorite/toggle/${button.dataset.itemSizeId}`, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Erreur serveur: ' + res.status);
+          return res.json();
+        })
+        .then(data => {
+          if (data.success && data.action === 'added') {
+            button.classList.add('active');
+          } else if (data.action === 'exists') {
+            button.classList.add('active');
+          }
+        })
+        .catch(err => console.error('Fetch error:', err));
       }
+    }
+
 
       // WebRTC Viewer pour recevoir le flux du streamer via un serveur de signalisation WebSocket (localhost:8080)
       document.addEventListener('DOMContentLoaded', function(){
@@ -332,21 +365,31 @@
                 {% if items is defined and items|length > 0 %}
                     {% for product in items %}
                         <div class="product">
-                            <!-- Bouton marque-page CSS en position absolue en haut -->
-                            <button class="btn-favorite" aria-label="Ajouter aux favoris" onclick="toggleFavorite(this)"></button>
-                            
-                            <img src="{{ product.images ? '/uploads/' ~ product.images : '/uploads/default-product.jpg' }}" alt="{{ product.nameitem }}">
-                            <div class="product-info">
-                                <div class="name">{{ product.nameitem }}</div>
-                                {% if product.price is defined %}
-                                    <div class="price">{{ product.price }} €</div>
-                                {% endif %}
-                            </div>
-                            <div class="product-actions">
-                                <button class="btn-bag">Add to bag</button>
-                            </div>
+                <img src="{{ product.getItem.getImages ? '/uploads/' ~ product.getItem.getImages : '/uploads/default-product.jpg' }}" alt="{{ product.getItem.getNameItem }}">
+                <div class="product-info">
+                  <div class="name">{{ product.getItem.getNameItem }}</div>
+                  <div class="sizes mt-2">
+                    <strong>Tailles :</strong>
+                    {% if product.getItem.getItemSizes|length > 0 %}
+                      {% for size in product.getItem.getItemSizes %}
+                        <span class="badge bg-secondary me-1">{{ size.getValueSize }}{% if size.getSize %} ({{ size.getSize.getNameSize }}){% endif %}</span>
+                        <button class="btn-favorite"
+                            aria-label="Ajouter aux favoris"
+                            data-item-size-id="{{ size.getId }}"
+                            onclick="toggleFavorite(this)">
+                        </button>
+                      {% endfor %}
+                    {% else %}
+                      <span class="text-muted">Aucune taille</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="product-actions">
+                    <button class="btn-bag">Add to bag</button>
+                </div>
                         </div>
                     {% endfor %}
+
                 {% else %}
                     <p>Aucun produit associé à ce live.</p>
                 {% endif %}

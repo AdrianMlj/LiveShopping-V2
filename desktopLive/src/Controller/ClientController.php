@@ -22,6 +22,144 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class ClientController extends AbstractController
 {
+    #[Route('/client/favorite/toggle-all-sizes/{itemId}', name: 'toggle_favorite_all_sizes', methods: ['POST'])]
+    public function toggleFavoriteAllSizes(
+        int $itemId,
+        UsersRepository $usersRepository,
+        FavoritesRepository $favRepo,
+        FavoriteDetailsRepository $favDetailRepo,
+        ItemSizeRepository $itemSizeRepo,
+        Request $request
+    ): JsonResponse
+    {
+        $session = $request->getSession();
+        $userSession = $session->get('user');
+
+        if (!$userSession) {
+            $userSession = $usersRepository->find(7); // Anthony
+            $session->set('user', $userSession);
+        }
+
+        $user = $usersRepository->find($userSession->getId());
+
+        $itemSizes = $itemSizeRepo->findBy(['item' => $itemId]);
+        if (!$itemSizes || count($itemSizes) === 0) {
+            return $this->json(['success' => false, 'message' => 'Aucune taille trouvée'], 404);
+        }
+
+        // Cherche l'entrée Favorites existante pour ce client
+        $favorite = $favRepo->findOneBy(['client' => $user]);
+        if (!$favorite) {
+            $favorite = new Favorites();
+            $favorite->setClient($user);
+            $favorite->setCreateAt(new \DateTime());
+            $favRepo->save($favorite, true);
+        }
+
+        $added = 0;
+        foreach ($itemSizes as $itemSize) {
+            $exists = $favDetailRepo->findOneBy(['favorites' => $favorite, 'itemSize' => $itemSize]);
+            if (!$exists) {
+                $favDetail = new FavoriteDetails();
+                $favDetail->setFavorites($favorite);
+                $favDetail->setItemSize($itemSize);
+                $favDetailRepo->save($favDetail, false);
+                $added++;
+            }
+        }
+        $favDetailRepo->getEntityManager()->flush();
+
+        return $this->json(['success' => true, 'action' => 'added', 'count' => $added]);
+    }
+    // ...existing code...
+
+    #[Route('/client/remove-favorite-by-id/{favId}', name: 'remove_favorite_by_id', methods: ['POST'])]
+    public function removeFavoriteById(
+        int $favId,
+        FavoriteDetailsRepository $favDetailRepo,
+        \Doctrine\ORM\EntityManagerInterface $entityManager
+    ): JsonResponse {
+        // favId = id du Favorites
+        $favoriteDetails = $favDetailRepo->findBy(['favorites' => $favId]);
+        $favoritesRepo = $entityManager->getRepository(\App\Entity\Favorites::class);
+        $favorites = $favoritesRepo->find($favId);
+        if ($favoriteDetails && count($favoriteDetails) > 0) {
+            try {
+                foreach ($favoriteDetails as $favDetail) {
+                    $entityManager->remove($favDetail);
+                }
+                $entityManager->flush();
+                // Vérifier s'il reste des FavoriteDetails pour ce favori
+                $remainingDetails = $favDetailRepo->findBy(['favorites' => $favId]);
+                if ($favorites && count($remainingDetails) === 0) {
+                    $entityManager->remove($favorites);
+                    $entityManager->flush();
+                }
+                return $this->json(['success' => true, 'action' => 'removed']);
+            } catch (\Throwable $e) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Exception',
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'favId' => $favId
+                ], 500);
+            }
+        }
+        return $this->json(['success' => false, 'message' => 'Favori non trouvé', 'favId' => $favId], 404);
+    }
+    // ...existing code...
+
+    #[Route('/client/add-to-cart/{id}', name: 'add_to_cart', methods: ['POST'])]
+    public function addToCart(int $id, Request $request): Response
+    {
+        // TODO: Ajout au panier (à adapter selon ta logique)
+        // Pour l'instant, simple redirection
+        return $this->redirectToRoute('app_client_favoris');
+    }
+
+    #[Route('/client/remove-favorite/{itemSizeId}', name: 'remove_favorite', methods: ['POST'])]
+    public function removeFavorite(
+        int $itemSizeId,
+        Request $request,
+        UsersRepository $usersRepository,
+        FavoritesRepository $favRepo,
+        FavoriteDetailsRepository $favDetailRepo
+    ): JsonResponse {
+        $session = $request->getSession();
+        $userSession = $session->get('user');
+        if (!$userSession) {
+            return $this->json(['success' => false, 'message' => 'Non connecté'], 401);
+        }
+        $user = $usersRepository->find($userSession->getId());
+        $favorite = $favRepo->findOneBy(['client' => $user]);
+        if (!$favorite) {
+            return $this->json(['success' => false, 'message' => 'Favori non trouvé'], 404);
+        }
+        try {
+            $favDetail = $favDetailRepo->findOneBy(['favorites' => $favorite, 'itemSize' => $itemSizeId]);
+            if ($favDetail) {
+                $favDetailRepo->remove($favDetail, true);
+                return $this->json(['success' => true, 'action' => 'removed']);
+            } else {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Favori non trouvé',
+                    'debug' => [
+                        'favoriteId' => $favorite->getId(),
+                        'itemSizeId' => $itemSizeId
+                    ]
+                ], 404);
+            }
+        } catch (\Throwable $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Exception',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
     #[Route('/client', name: 'app_client')]
     public function index(
         Request $request,
@@ -70,11 +208,14 @@ class ClientController extends AbstractController
 
     #[Route('/client/live/{id}', name: 'app_client_live')]
     public function live(
-        Request $request,
-        UsersRepository $usersRepository,
-        LiveRepository $liveRepository,
-        LiveDetailsRepository $liveDetailsRepository,
-        int $id
+    Request $request,
+    UsersRepository $usersRepository,
+    LiveRepository $liveRepository,
+    LiveDetailsRepository $liveDetailsRepository,
+    FavoritesRepository $favRepo,
+    FavoriteDetailsRepository $favDetailRepo,
+    ItemSizeRepository $itemSizeRepo,
+    int $id
     ): Response
     {
         $session = $request->getSession();
@@ -89,12 +230,30 @@ class ClientController extends AbstractController
             return $this->redirectToRoute('app_client');
         }
 
-        $items = $liveDetailsRepository->findItemsByLive($id);
+        // Récupère les entités Item associées au live
+        $items = $liveDetailsRepository->findBy(['live' => $live]);
 
+        // Récupérer les favoris de l'utilisateur
+        $favorisIds = [];
+        $favorisMap = [];
+        if ($currentUser) {
+            $favorite = $favRepo->findOneBy(['client' => $currentUser]);
+            if ($favorite) {
+                $details = $favDetailRepo->findBy(['favorites' => $favorite]);
+                foreach ($details as $detail) {
+                    $itemSize = $detail->getItemSize();
+                    $item = $itemSize->getItem();
+                    $favorisIds[] = $item->getId();
+                    $favorisMap[$item->getId()] = $detail->getId();
+                }
+            }
+        }
         return $this->render('client/live.html.twig', [
             'user' => $currentUser,
             'live' => $live,
             'items' => $items,
+            'favorisIds' => $favorisIds,
+            'favorisMap' => $favorisMap,
         ]);
     }
 
@@ -113,17 +272,36 @@ class ClientController extends AbstractController
         }
         $user = $usersRepository->find($userSession->getId());
 
-        $favorite = $favRepo->findOneBy(['client' => $user]);
-
         $favorisData = [];
-        if ($favorite) {
+        $favorites = $favRepo->findBy(['client' => $user]);
+        foreach ($favorites as $favorite) {
             $details = $favDetailRepo->findBy(['favorites' => $favorite]);
             foreach ($details as $detail) {
                 $itemSize = $detail->getItemSize();
+                $item = $itemSize->getItem();
+                $favoriteId = $favorite->getId();
+                // Récupérer le dernier prix
+                $price = null;
+                $priceItems = $item->getPriceItems();
+                if (count($priceItems) > 0) {
+                    $lastPrice = null;
+                    foreach ($priceItems as $p) {
+                        if ($lastPrice === null || $p->getDatePrice() > $lastPrice->getDatePrice()) {
+                            $lastPrice = $p;
+                        }
+                    }
+                    if ($lastPrice) {
+                        $price = $lastPrice->getPrice();
+                    }
+                }
                 $favorisData[] = [
-                    'id' => $detail->getId(),
-                    'item' => $itemSize->getItem(),
-                    'sizeId' => $itemSize->getId()
+                    'favoriteId' => $favoriteId,
+                    'item' => $item,
+                    'price' => $price,
+                    'size' => [
+                        'sizeId' => $itemSize->getId(),
+                        'sizeLabel' => $itemSize->getValueSize() . ($itemSize->getSize() ? ' (' . $itemSize->getSize()->getNameSize() . ')' : ''),
+                    ]
                 ];
             }
         }
@@ -133,7 +311,7 @@ class ClientController extends AbstractController
         ]);
     }
 
-    #[Route('/client/favorite/toggle/{itemSizeId}', name: 'toggle_favorite', methods: ['POST'])]
+   #[Route('/client/favorite/toggle/{itemSizeId}', name: 'toggle_favorite', methods: ['POST'])]
     public function toggleFavorite(
         int $itemSizeId,
         UsersRepository $usersRepository,
@@ -145,12 +323,21 @@ class ClientController extends AbstractController
     {
         $session = $request->getSession();
         $userSession = $session->get('user');
+
+        // --- TEMPORAIRE pour tests Postman ---
         if (!$userSession) {
-            return $this->json(['success' => false, 'message' => 'Utilisateur non connecté'], 403);
+            $userSession = $usersRepository->find(7); // Anthony
+            $session->set('user', $userSession);
         }
 
         $user = $usersRepository->find($userSession->getId());
 
+        $itemSize = $itemSizeRepo->find($itemSizeId);
+        if (!$itemSize) {
+            return $this->json(['success' => false, 'message' => 'Item introuvable'], 404);
+        }
+
+        // Cherche l'entrée Favorites existante pour ce client
         $favorite = $favRepo->findOneBy(['client' => $user]);
         if (!$favorite) {
             $favorite = new Favorites();
@@ -159,21 +346,16 @@ class ClientController extends AbstractController
             $favRepo->save($favorite, true);
         }
 
-        $itemSize = $itemSizeRepo->find($itemSizeId);
-        if (!$itemSize) {
-            return $this->json(['success' => false, 'message' => 'Item introuvable'], 404);
-        }
-
+        // Vérifier si déjà ajouté
         $exists = $favDetailRepo->findOneBy(['favorites' => $favorite, 'itemSize' => $itemSize]);
-        if ($exists) {
-            return $this->json(['success' => true, 'action' => 'exists']);
+        if (!$exists) {
+            $favDetail = new FavoriteDetails();
+            $favDetail->setFavorites($favorite);
+            $favDetail->setItemSize($itemSize);
+            $favDetailRepo->save($favDetail, true);
         }
-
-        $favDetail = new FavoriteDetails();
-        $favDetail->setFavorites($favorite);
-        $favDetail->setItemSize($itemSize);
-        $favDetailRepo->save($favDetail, true);
 
         return $this->json(['success' => true, 'action' => 'added']);
     }
+
 }
