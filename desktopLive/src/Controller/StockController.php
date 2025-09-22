@@ -109,6 +109,7 @@ class StockController extends AbstractController
             'stockMovements'=> $stockMovements,
             'currentStock'  => $currentStock,
             'exportData'    => $exportData,
+            'exportDataFull'=> $exportDataArray,
             'startDate'     => $startDate,
             'endDate'       => $endDate,
             'dateD'         => $startDateValue,
@@ -130,11 +131,16 @@ class StockController extends AbstractController
             $request->files->get('file3'),
         ];
 
-        // Appel de la fonction importCsv
         $importResult = $this->itemsStockRepository->importCsv($sellerId, $files, $em);
 
-        // Affiche le résultat directement dans la page
-        return new Response('<pre>'.$importResult.'</pre>');
+        // Vérifie si succès ou erreur
+        if ($importResult == "true") {
+            $message = "Import réussi ✅";
+        } else {
+            $message = $importResult;
+        }
+
+        return new Response($message);
     }
 
     #[Route('/export', name: 'app_export', methods: ['POST'])]
@@ -174,13 +180,68 @@ class StockController extends AbstractController
         return new JsonResponse(['success' => true]);
     }
 
-    // #[Route('/export_csv', name: 'app_export_csv', methods: ['POST'])]
-    // public function createCSV(Request $request, ExportTempRepository $exportRepo): Response
-    // {
-    //     $session = $request->getSession();
-    //     $user = $session->get('user');
-    //     $sellerId = $user->getId();
+    #[Route('/export_csv', name: 'app_export_csv', methods: ['POST'])]
+    public function createCSV(Request $request, ExportTempRepository $exportRepo, EntityManagerInterface $em): Response
+    {
+        $demandesJson = $request->request->get('demandes');
+        if (!$demandesJson) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Paramètre "demandes" manquant.'
+            ], 400);
+        }
 
+        $demandes = json_decode($demandesJson, true);
+        if (!$demandes || !is_array($demandes)) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Format JSON invalide.'
+            ], 400);
+        }
 
-    // }
+        try {
+            // Générer les données CSV
+            [$categoriesCsv, $itemsCsv, $sizesCsv] = $exportRepo->buildCsvData($demandes);
+
+            // Timestamp pour le dossier
+            $timestamp = date('Ymd_His');
+            $exportDir = $this->getParameter('kernel.project_dir') . '/public/export_' . $timestamp . '/';
+            if (!is_dir($exportDir)) {
+                mkdir($exportDir, 0777, true);
+            }
+
+            // Sauvegarder les CSV
+            $exportRepo->arrayToCsv($categoriesCsv, $exportDir . 'categories.csv');
+            $exportRepo->arrayToCsv($itemsCsv, $exportDir . 'items.csv');
+            $exportRepo->arrayToCsv($sizesCsv, $exportDir . 'sizes.csv');
+
+            // 🔹 Supprimer les enregistrements exportés
+            foreach ($demandes as $demande) {
+                if (!empty($demande['id'])) {
+                    $entity = $exportRepo->find($demande['id']);
+                    if ($entity) {
+                        $em->remove($entity);
+                    }
+                }
+            }
+            $em->flush();
+
+            return $this->json([
+                'status'  => 'success',
+                'message' => '3 CSV générés avec succès et export_temp nettoyé ✅',
+                'folder'  => '/export_' . $timestamp,
+                'files'   => [
+                    '/export_' . $timestamp . '/categories.csv',
+                    '/export_' . $timestamp . '/items.csv',
+                    '/export_' . $timestamp . '/sizes.csv'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'status'  => 'error',
+                'message' => 'Erreur lors de la génération des CSV : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

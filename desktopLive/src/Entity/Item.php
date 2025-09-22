@@ -104,12 +104,12 @@ class Item
         return $this;
     }
 
-    public function getImages(): ?int
+    public function getImages(): ?string
     {
         return $this->images;
     }
 
-    public function setImages(?int $images): self
+    public function setImages(?string $images): self
     {
         $this->images = $images;
         return $this;

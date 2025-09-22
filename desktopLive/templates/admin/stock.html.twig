@@ -22,7 +22,7 @@
                 <button id="showImport" class="toggle-btn inactive">
                     <i class="fas fa-download"></i> Importer de nouveaux stock
                 </button>
-                <button id="showExport" class="toggle-btn inactive" onclick="window.location.href='?section=export'">
+                <button id="showExport" class="toggle-btn inactive">
                     <i class="fas fa-upload"></i> Exporter de nouveaux stock
                 </button>
             </div>
@@ -177,7 +177,7 @@
                     </div>
 
                     <!-- Formulaire caché pour export -->
-                    <form id="exportForm" action="{{ path('app_export') }}" method="POST">
+                    <form id="exportForm" action="{{ path('app_export_csv') }}" method="POST">
                         <input type="hidden" name="demandes" id="exportDemandes" />
                         <button type="submit" id="btn-demande" class="modern-button">
                             <i class="fas fa-file-export"></i> Supply
@@ -194,7 +194,7 @@
                     </h3>
                 </div>
                 <div class="section-body">
-                    <form method="post" enctype="multipart/form-data" class="import-form" action="{{ path('app_import') }}">
+                    <form id="importForm" enctype="multipart/form-data" class="import-form">
                         <div class="form-group">
                             <label for="file1">Fichier des Catgorie</label>
                             <input type="file" id="file1" name="file1" class="modern-input" required>
@@ -284,17 +284,23 @@
                     </div>
 
                     <!-- Formulaire caché pour export -->
-                    <form method="POST">
-                        <input type="hidden" name="demandes" id="exportDemandes" />
-                        <button type="submit" id="btn-demande" class="modern-button">
+                    <form id="exportCsvForm" action="{{ path('app_export_csv') }}" method="POST">
+                        <input type="hidden" name="demandes" id="exportDemandesCsv" value="" />
+                        <button type="submit" id="btn-export-csv" class="modern-button">
                             <i class="fas fa-file-export"></i> Exporter CSV
                         </button>
                     </form>
-
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        window.initialQuantities = {};
+        {% for row in exportDataFull %}
+            window.initialQuantities["{{ row.id }}"] = {{ row.quantity }};
+        {% endfor %}
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -527,6 +533,9 @@
                                     title: 'custom-swal-title',
                                     htmlContainer: 'custom-swal-html'
                                 }
+                            }).then(() => {
+                                // 🔄 Recharge la page après avoir fermé l'alerte
+                                window.location.reload();
                             });
 
                             // 🔥 Vider stockage après succès
@@ -631,6 +640,203 @@
                     }
                 });
             });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const exportForm = document.getElementById('exportCsvForm');
+            if (!exportForm) return;
+
+            // Charger depuis sessionStorage ou initialiser avec toutes les données
+            let allQuantities = JSON.parse(sessionStorage.getItem('allQuantities')) || {};
+
+            // Fusionner avec toutes les quantités par défaut envoyées par Twig
+            if (window.initialQuantities) {
+                for (const [id, qty] of Object.entries(window.initialQuantities)) {
+                    if (allQuantities[id] === undefined) {
+                        allQuantities[id] = qty;
+                    }
+                }
+                sessionStorage.setItem('allQuantities', JSON.stringify(allQuantities));
+            }
+
+            // 🔹 Synchroniser les inputs visibles (page courante)
+            document.querySelectorAll('.export-qty-input').forEach(input => {
+                const id = input.dataset.id;
+
+                // si on a déjà une valeur stockée → l’appliquer
+                if (allQuantities[id] !== undefined) {
+                    input.value = allQuantities[id];
+                }
+
+                // Mettre à jour si modifié
+                input.addEventListener('input', () => {
+                    allQuantities[id] = parseInt(input.value) || 0;
+                    sessionStorage.setItem('allQuantities', JSON.stringify(allQuantities));
+                });
+            });
+
+            exportForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const demandes = [];
+                for (const [id, quantity] of Object.entries(allQuantities)) {
+                    if (quantity > 0) demandes.push({ id, quantity });
+                }
+
+                if (demandes.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Aucune donnée',
+                        text: 'Veuillez entrer au moins une quantité !',
+                        confirmButtonColor: '#f59e0b',
+                        background: '#ffffff',
+                        color: '#333333',
+                        iconColor: '#f59e0b'
+                    });
+                    return;
+                }
+
+                try {
+                    Swal.fire({
+                        title: 'Export en cours...',
+                        text: 'Génération des fichiers CSV',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading(),
+                        background: '#ffffff',
+                        color: '#333333'
+                    });
+
+                    const response = await fetch(exportForm.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'demandes=' + encodeURIComponent(JSON.stringify(demandes))
+                    });
+
+                    const result = await response.json();
+                    Swal.close();
+
+                    if (result.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ Export réussi',
+                            html: `
+                                <div style="text-align:center;">
+                                    <p style="font-size:16px; color:#059669; margin-bottom:12px;">
+                                        ${result.message}
+                                    </p>
+                                    <div style="background:#f0f9ff; padding:10px; border-radius:6px;">
+                                        <p style="margin:0; color:#0369a1; font-size:14px;">
+                                            Dossier : <strong>${result.folder}</strong><br>
+                                            Fichiers générés : <strong>${result.files.length}</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            `,
+                            confirmButtonText: 'Fermer',
+                            confirmButtonColor: '#059669',
+                            background: '#ffffff',
+                            color: '#333333',
+                            iconColor: '#059669'
+                        }).then(() => {
+                            window.location.reload(); // recharge la page après fermeture
+                        });
+
+                        sessionStorage.removeItem('allQuantities'); // nettoyer après succès
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '❌ Erreur',
+                            text: result.message || 'Une erreur est survenue lors de l\'export.',
+                            confirmButtonText: 'Fermer',
+                            confirmButtonColor: '#dc2626',
+                            background: '#ffffff',
+                            color: '#333333',
+                            iconColor: '#dc2626'
+                        });
+                    }
+                } catch (err) {
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: '🌐 Erreur réseau',
+                        text: 'Problème de connexion avec le serveur. Vérifiez votre connexion internet.',
+                        confirmButtonText: 'Réessayer',
+                        confirmButtonColor: '#dc2626',
+                        background: '#ffffff',
+                        color: '#333333',
+                        iconColor: '#dc2626'
+                    });
+                }
+            });
+        });
+
+        document.getElementById('importForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            try {
+                // Afficher un loader pendant le traitement
+                Swal.fire({
+                    title: 'Import en cours',
+                    text: 'Veuillez patienter...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                    background: '#ffffff',
+                    color: '#333333'
+                });
+
+                let response = await fetch('{{ path("app_import") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Fermer le loader
+                Swal.close();
+
+                let message = await response.text();
+                const isSuccess = message.includes("✅"); // true si succès
+
+                Swal.fire({
+                    icon: isSuccess ? 'success' : 'error',
+                    title: isSuccess ? '✅ Import réussi' : '❌ Erreur',
+                    html: `<div style="text-align: center;">
+                               <p style="font-size: 16px; margin-bottom: 16px; color: ${isSuccess ? '#059669' : '#721c24'};">
+                                   ${isSuccess ? 'Les fichiers ont été importés avec succès.' : message}
+                               </p>
+                           </div>`,
+                    confirmButtonText: 'Fermer',
+                    confirmButtonColor: isSuccess ? '#059669' : '#dc2626',
+                    background: '#ffffff',
+                    color: '#333333',
+                    iconColor: isSuccess ? '#059669' : '#dc2626',
+                    customClass: {
+                        popup: 'custom-swal-popup',
+                        title: 'custom-swal-title',
+                        htmlContainer: 'custom-swal-html'
+                    }
+                }).then(() => {
+                    // 🔄 Recharge la page après fermeture
+                    window.location.reload();
+                });
+
+            } catch (err) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: '🌐 Erreur réseau',
+                    text: "Problème de connexion avec le serveur. Vérifiez votre connexion internet.",
+                    confirmButtonText: 'Réessayer',
+                    confirmButtonColor: '#dc2626',
+                    background: '#ffffff',
+                    color: '#333333',
+                    iconColor: '#dc2626'
+                });
+            }
         });
     </script>
 {% endblock %}

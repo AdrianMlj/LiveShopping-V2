@@ -89,6 +89,7 @@ class ItemsStockRepository extends ServiceEntityRepository
 
         // Petite fonction pour ajouter des erreurs
         $addError = function(int $line, string $msg) use (&$errors) {
+            $line = $line + 1;
             $errors[] = "Ligne $line : $msg";
         };
 
@@ -97,15 +98,15 @@ class ItemsStockRepository extends ServiceEntityRepository
             $valid = true;
 
             if (count($row) < 3) {
-                $addError($index, "Format invalide (attendu: ref, name, description)");
+                $addError($index, "Categorie : Format invalide (attendu: ref, name, description)");
                 $valid = false;
             }
             if (empty($row[0])) {
-                $addError($index, "Référence de catégorie vide");
+                $addError($index, "Categorie : Référence de catégorie vide");
                 $valid = false;
             }
             if (empty($row[1])) {
-                $addError($index, "Nom de catégorie vide");
+                $addError($index, "Categorie : Nom de catégorie vide");
                 $valid = false;
             }
             return $valid;
@@ -115,25 +116,25 @@ class ItemsStockRepository extends ServiceEntityRepository
             $valid = true;
 
             if (count($row) < 6) {
-                $addError($index, "Format invalide (attendu: refItem, nameItem, refCategory, images, price, date)");
+                $addError($index, "Items : Format invalide (attendu: refItem, nameItem, refCategory, images, price, date)");
                 $valid = false;
             }
 
             if (!is_numeric($row[4])) {
-                $addError($index, "Prix invalide (pas un nombre) : {$row[4]}");
+                $addError($index, "Items : Prix invalide (pas un nombre) : {$row[4]}");
                 $valid = false;
             } elseif ((float)$row[4] < 0) {
-                $addError($index, "Prix négatif interdit : {$row[4]}");
+                $addError($index, "Items : Prix négatif interdit : {$row[4]}");
                 $valid = false;
             }
 
             if (!\DateTime::createFromFormat('d/m/Y', $row[5])) {
-                $addError($index, "Date invalide (attendu format d/m/Y) : {$row[5]}");
+                $addError($index, "Items : Date invalide (attendu format d/m/Y) : {$row[5]}");
                 $valid = false;
             }
 
             if (empty($row[2])) {
-                $addError($index, "Référence de catégorie vide pour l’item");
+                $addError($index, "Items : Référence de catégorie vide pour l’item");
                 $valid = false;
             }
 
@@ -144,24 +145,24 @@ class ItemsStockRepository extends ServiceEntityRepository
             $valid = true;
 
             if (count($row) < 4) {
-                $addError($index, "Format invalide (attendu: refItem, sizeName, valueSize, inItem)");
+                $addError($index, "Stock : Format invalide (attendu: refItem, sizeName, valueSize, inItem)");
                 $valid = false;
             }
 
             if (empty($row[0])) {
-                $addError($index, "refItem vide");
+                $addError($index, "Stock : refItem vide");
                 $valid = false;
             }
             if (empty($row[1])) {
-                $addError($index, "Nom de taille vide");
+                $addError($index, "Stock : Nom de taille vide");
                 $valid = false;
             }
 
             if (!is_numeric($row[3])) {
-                $addError($index, "Quantité invalide (pas un nombre) : {$row[3]}");
+                $addError($index, "Stock : Quantité invalide (pas un nombre) : {$row[3]}");
                 $valid = false;
             } elseif ((int)$row[3] < 0) {
-                $addError($index, "Quantité négative interdite : {$row[3]}");
+                $addError($index, "Stock : Quantité négative interdite : {$row[3]}");
                 $valid = false;
             }
 
@@ -318,36 +319,11 @@ class ItemsStockRepository extends ServiceEntityRepository
             }
 
             $em->commit();
-            return print_r($result, true);
+            return "true";
 
         } catch (\Exception $e) {
             $em->rollback();
             return "Erreur critique : " . $e->getMessage();
         }
     }
-
-    //    /**
-    //     * @return ItemsStock[] Returns an array of ItemsStock objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('i')
-    //            ->andWhere('i.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('i.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?ItemsStock
-    //    {
-    //        return $this->createQueryBuilder('i')
-    //            ->andWhere('i.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
 }
