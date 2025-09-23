@@ -22,6 +22,89 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class ClientController extends AbstractController
 {
+    #[Route('/client/rate-product/{id}', name: 'app_client_rate_product', methods: ['POST'])]
+    public function rateProduct(Request $request, $id): Response
+    {
+        $session = $request->getSession();
+        $ratings = $session->get('ratings', []);
+        $rating = (int)$request->request->get('rating', 0);
+        if ($rating >= 1 && $rating <= 5) {
+            $ratings[$id] = $rating;
+            $session->set('ratings', $ratings);
+        }
+        return $this->redirectToRoute('app_home');
+    }
+    #[Route('/client/checkout', name: 'app_client_checkout')]
+    public function checkout(Request $request): Response
+    {
+        // Ici, on peut afficher un message de confirmation ou récapitulatif
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
+        $cartTotal = 0;
+        foreach ($cart as $item) {
+            $cartTotal += ($item['price'] ?? 0) * ($item['quantity'] ?? 1);
+        }
+        return $this->render('client/checkout.html.twig', [
+            'cart' => $cart,
+            'cartTotal' => $cartTotal
+        ]);
+    }
+    #[Route('/client/remove-cart/{id}', name: 'app_client_remove_cart', methods: ['POST'])]
+    public function removeCart(Request $request, $id): Response
+    {
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
+        $cart = array_filter($cart, function($item) use ($id) {
+            return $item['id'] != $id;
+        });
+        $session->set('cart', array_values($cart));
+        return $this->redirectToRoute('app_client_panier');
+    }
+    #[Route('/client/add-cart/{id}', name: 'app_client_add_cart', methods: ['POST'])]
+    public function addCart(Request $request, $id): Response
+    {
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
+        $name = $request->request->get('name');
+        $price = $request->request->get('price');
+        $images = $request->request->get('images');
+        $quantity = $request->request->get('quantity', 1);
+        // Vérifie si le produit existe déjà dans le panier
+        $found = false;
+        foreach ($cart as &$item) {
+            if ($item['id'] == $id) {
+                $item['quantity'] += $quantity;
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            $cart[] = [
+                'id' => $id,
+                'name' => $name,
+                'price' => $price,
+                'images' => $images,
+                'quantity' => $quantity
+            ];
+        }
+        $session->set('cart', $cart);
+        return $this->redirectToRoute('app_home');
+    }
+    #[Route('/client/panier', name: 'app_client_panier')]
+    public function panier(Request $request): Response
+    {
+        // Exemple : récupération du panier depuis la session
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
+        $cartTotal = 0;
+        foreach ($cart as $item) {
+            $cartTotal += ($item['price'] ?? 0) * ($item['quantity'] ?? 1);
+        }
+        return $this->render('client/panier.html.twig', [
+            'cart' => $cart,
+            'cartTotal' => $cartTotal
+        ]);
+    }
     #[Route('/client/favorite/toggle-all-sizes/{itemId}', name: 'toggle_favorite_all_sizes', methods: ['POST'])]
     public function toggleFavoriteAllSizes(
         int $itemId,

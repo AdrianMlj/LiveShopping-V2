@@ -384,9 +384,36 @@
                     {% endif %}
                   </div>
                 </div>
-                <div class="product-actions">
-                    <button class="btn-bag">Add to bag</button>
-                </div>
+          <div class="product-actions">
+            {% set lastPrice = product.getItem.getPriceItems|length > 0
+              ? product.getItem.getPriceItems|last.getPrice
+              : 0 %}
+            <button class="btn-bag" onclick="addToBag(this, {{ product.getItem.getId }}, '{{ product.getItem.getNameItem|e('js') }}', '{{ lastPrice }}', '{{ product.getItem.getImages|e('js') }}')">Add to bag</button>
+          </div>
+  <script>
+  function addToBag(btn, id, name, price, images) {
+    btn.disabled = true;
+    btn.textContent = 'Ajout...';
+    fetch(`/client/add-cart/${id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: `name=${encodeURIComponent(name)}&price=${encodeURIComponent(price)}&images=${encodeURIComponent(images)}&quantity=1`
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Erreur serveur');
+      btn.textContent = 'Ajouté !';
+      btn.classList.add('added');
+      btn.style.background = '#28a745';
+    })
+    .catch(() => {
+      btn.textContent = 'Erreur';
+      btn.style.background = '#dc3545';
+    });
+  }
+  </script>
                         </div>
                     {% endfor %}
 

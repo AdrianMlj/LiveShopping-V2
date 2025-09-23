@@ -1,0 +1,568 @@
+{# Page Panier Client #}
+{% include 'components/navbarClient.html.twig'  %}
+
+{% block content %}
+<div class="cart-container">
+    {% if cart|length == 0 %}
+        <div class="cart-empty">
+            <i class="fa-solid fa-shopping-cart"></i>
+            <p>Votre panier est vide.</p>
+            <a href="{{ path('app_home') }}" class="btn btn-primary">Voir les produits</a>
+        </div>
+    {% else %}
+    <div class="cart-wrapper">
+        {# Colonne gauche : produits #}
+        <div class="cart-left">
+            <h2 class="cart-title">Votre Panier</h2>
+            {% for item in cart %}
+            <div class="cart-item">
+                <div class="cart-item-image">
+                    {# Placeholder pour l'image du produit #}
+                    <div class="product-image-placeholder">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                </div>
+                <div class="cart-item-details">
+                    <div class="cart-item-info">
+                        <strong class="item-name">{{ item.name }}</strong>
+                        <small class="item-price">{{ item.price|number_format(2, '.', ' ') }} €</small>
+                    </div>
+                    <div class="cart-item-controls">
+                        <div class="cart-item-qty">
+                            <button class="qty-btn minus" data-id="{{ item.id }}">-</button>
+                            <input type="number" value="{{ item.quantity }}" min="1" class="qty-input" data-id="{{ item.id }}">
+                            <button class="qty-btn plus" data-id="{{ item.id }}">+</button>
+                        </div>
+                        <div class="cart-item-total">
+                            {{ (item.price * item.quantity)|number_format(2, '.', ' ') }} €
+                        </div>
+                    </div>
+                </div>
+                <form method="post" action="{{ path('app_client_remove_cart', {'id': item.id}) }}" class="remove-form">
+                    <button type="submit" class="btn-remove" title="Supprimer">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+            <div class="cart-summary">
+                <div class="cart-subtotal">
+                    <span>Sous-total :</span>
+                    <strong>{{ cartTotal|number_format(2, '.', ' ') }} €</strong>
+                </div>
+                <div class="cart-shipping">
+                    <span>Frais de livraison :</span>
+                    <strong>Gratuit</strong>
+                </div>
+                <div class="cart-total">
+                    <span>Total :</span>
+                    <strong>{{ cartTotal|number_format(2, '.', ' ') }} €</strong>
+                </div>
+            </div>
+        </div>
+
+        {# Colonne droite : paiement #}
+        <div class="cart-right">
+            <h3 class="payment-title">Détails de paiement</h3>
+            
+            <div class="payment-section">
+                <label class="payment-label">Sélectionnez le moyen de paiement</label>
+                <div class="payment-options">
+                    <div class="payment-option">
+                        <input type="radio" id="mvola" name="payment" value="mvola" checked>
+                        <label for="mvola" class="payment-method">
+                            <div class="payment-icon mvola">
+                                <i class="fa-solid fa-mobile-screen"></i>
+                            </div>
+                            <span>Mvola</span>
+                        </label>
+                    </div>
+                    <div class="payment-option">
+                        <input type="radio" id="orange" name="payment" value="orange">
+                        <label for="orange" class="payment-method">
+                            <div class="payment-icon orange">
+                                <i class="fa-solid fa-mobile-screen"></i>
+                            </div>
+                            <span>Orange Money</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-section">
+                <label class="payment-label" for="phone">Numéro Téléphone</label>
+                <div class="payment-input-wrapper">
+                    <span class="input-prefix">+261</span>
+                    <input type="text" id="phone" class="payment-input" placeholder="34 12 345 67" maxlength="10">
+                </div>
+            </div>
+
+            <div class="payment-section">
+                <label class="payment-label" for="code">Code de confirmation</label>
+                <input type="text" id="code" class="payment-input" placeholder="Entrer le code reçu par SMS">
+                <small class="payment-hint">Un code de confirmation sera envoyé à votre numéro</small>
+            </div>
+
+            <div class="payment-actions">
+                <button class="btn-checkout">
+                    <i class="fa-solid fa-lock"></i>
+                    Valider le Paiement
+                </button>
+                <a href="{{ path('app_home') }}" class="btn-continue">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Continuer mes achats
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* ----- Variables de couleurs ----- */
+:root {
+    --primary-color: #4F46E5;
+    --primary-hover: #4338CA;
+    --secondary-color: #FACC15;
+    --secondary-hover: #EAB308;
+    --danger-color: #EF4444;
+    --danger-hover: #DC2626;
+    --dark-bg: #111827;
+    --dark-light: #1F2937;
+    --text-light: #F9FAFB;
+    --text-muted: #6B7280;
+    --border-color: #E5E7EB;
+    --success-color: #10B981;
+}
+
+/* ----- Container principal ----- */
+.cart-container {
+    margin-top: 80px;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
+}
+
+/* ----- Panier vide ----- */
+.cart-empty {
+    background: var(--text-light);
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+.cart-empty i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+.cart-empty p {
+    margin: 1rem 0 1.5rem;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+.cart-empty .btn-primary {
+    background: var(--primary-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+.cart-empty .btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+/* ----- Wrapper 2 colonnes ----- */
+.cart-wrapper {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+/* ----- Colonne gauche (produits) ----- */
+.cart-left {
+    flex: 2;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+}
+.cart-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--dark-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+/* ----- Article du panier ----- */
+.cart-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem 0;
+    position: relative;
+}
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-item-image {
+    flex-shrink: 0;
+}
+.product-image-placeholder {
+    width: 80px;
+    height: 80px;
+    background: var(--text-light);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+}
+
+.cart-item-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cart-item-info {
+    display: flex;
+    flex-direction: column;
+}
+.item-name {
+    font-size: 1.1rem;
+    color: var(--dark-bg);
+    margin-bottom: 5px;
+}
+.item-price {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.cart-item-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cart-item-qty {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.qty-btn {
+    background: var(--text-light);
+    border: 1px solid var(--border-color);
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.qty-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+.qty-input {
+    width: 60px;
+    height: 35px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1rem;
+}
+.qty-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.cart-item-total {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--dark-bg);
+}
+
+.remove-form {
+    position: absolute;
+    top: 1.5rem;
+    right: 0;
+}
+.btn-remove {
+    background: var(--danger-color);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.btn-remove:hover {
+    background: var(--danger-hover);
+}
+
+/* ----- Résumé du panier ----- */
+.cart-summary {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+.cart-subtotal, .cart-shipping, .cart-total {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.8rem;
+    font-size: 1.1rem;
+}
+.cart-total {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ----- Colonne droite (paiement) ----- */
+.cart-right {
+    flex: 1;
+    background: var(--dark-bg);
+    color: var(--text-light);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: sticky;
+    top: 100px;
+}
+.payment-title {
+    margin-bottom: 1.5rem;
+    color: var(--secondary-color);
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+.payment-section {
+    margin-bottom: 1.5rem;
+}
+.payment-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    color: var(--text-light);
+}
+
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.payment-option input[type="radio"] {
+    display: none;
+}
+.payment-method {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    background: var(--dark-light);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.payment-option input[type="radio"]:checked + .payment-method {
+    border-color: var(--secondary-color);
+    background: rgba(250, 204, 21, 0.1);
+}
+.payment-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+.payment-icon.mvola {
+    background: #8B5CF6;
+    color: white;
+}
+.payment-icon.orange {
+    background: #FF6B00;
+    color: white;
+}
+
+.payment-input-wrapper {
+    display: flex;
+    align-items: center;
+}
+.input-prefix {
+    background: var(--dark-light);
+    padding: 10px 12px;
+    border-radius: 8px 0 0 8px;
+    border: 1px solid #374151;
+    border-right: none;
+    color: var(--text-muted);
+}
+.payment-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #374151;
+    border-radius: 0 8px 8px 0;
+    background: var(--dark-light);
+    color: var(--text-light);
+    transition: border-color 0.3s;
+}
+.payment-input:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+}
+.payment-hint {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: block;
+}
+
+.payment-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 2rem;
+}
+.btn-checkout {
+    background: var(--secondary-color);
+    color: var(--dark-bg);
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.3s;
+}
+.btn-checkout:hover {
+    background: var(--secondary-hover);
+}
+.btn-continue {
+    background: transparent;
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 10px;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+.btn-continue:hover {
+    background: var(--dark-light);
+    border-color: var(--text-muted);
+}
+
+/* ----- Responsive ----- */
+@media (max-width: 768px) {
+    .cart-wrapper {
+        flex-direction: column;
+    }
+    .cart-right {
+        position: static;
+    }
+    .cart-item-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .cart-item-total {
+        align-self: flex-end;
+    }
+}
+</style>
+
+<script>
+// Gestion des boutons de quantité
+document.addEventListener('DOMContentLoaded', function() {
+    const qtyButtons = document.querySelectorAll('.qty-btn');
+    
+    qtyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-id');
+            const input = document.querySelector(`.qty-input[data-id="${itemId}"]`);
+            let currentValue = parseInt(input.value);
+            
+            if (this.classList.contains('plus')) {
+                input.value = currentValue + 1;
+            } else if (this.classList.contains('minus') && currentValue > 1) {
+                input.value = currentValue - 1;
+            }
+            
+            // Ici, vous pouvez ajouter une requête AJAX pour mettre à jour la quantité en base de données
+            updateQuantity(itemId, input.value);
+        });
+    });
+    
+    // Mise à jour de la quantité lors de la modification manuelle
+    const qtyInputs = document.querySelectorAll('.qty-input');
+    qtyInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const itemId = this.getAttribute('data-id');
+            if (this.value < 1) this.value = 1;
+            
+            // Mise à jour de la quantité
+            updateQuantity(itemId, this.value);
+        });
+    });
+    
+    function updateQuantity(itemId, quantity) {
+        // Simulation de mise à jour - à remplacer par une requête AJAX réelle
+        console.log(`Mise à jour de l'article ${itemId} avec quantité ${quantity}`);
+        
+        // Exemple de requête AJAX (à adapter selon votre backend)
+        /*
+        fetch('/update-cart-quantity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                itemId: itemId,
+                quantity: quantity
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Mettre à jour le total du panier
+            document.querySelector('.cart-total strong').textContent = data.newTotal + ' €';
+        });
+        */
+    }
+});
+</script>
+{% endblock %}

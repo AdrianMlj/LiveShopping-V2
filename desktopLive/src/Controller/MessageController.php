@@ -22,7 +22,9 @@ class MessageController extends AbstractController
         // Récupère l'utilisateur connecté depuis la session
         $session = $request->getSession();
         $user = $session->get('user');
-
+        if (!$user) {
+            return $this->redirectToRoute('app_connection');
+        }
         return $this->render('messages/index.html.twig', [
             'user' => $user, // ← ton utilisateur connecté
         ]);
