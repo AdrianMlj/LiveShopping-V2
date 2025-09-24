@@ -718,6 +718,17 @@
                     Swal.close();
 
                     if (result.status === 'success') {
+                        // 🔹 Déclencher le téléchargement de chaque fichier
+                        result.files.forEach(file => {
+                            const link = document.createElement('a');
+                            link.href = file;          // chemin du fichier côté public
+                            link.download = file.split('/').pop(); // nom du fichier
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        });
+
+                        // Afficher un message de succès
                         Swal.fire({
                             icon: 'success',
                             title: '✅ Export réussi',

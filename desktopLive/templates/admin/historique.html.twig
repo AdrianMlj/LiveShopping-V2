@@ -1,0 +1,259 @@
+{% extends 'admin/baseAdmin.html.twig' %}
+
+{% block title %}Historique des ventes{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/historique.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="historique-container">
+        {# === Filtres === #}
+        <div class="historique-filter-card">
+            <form method="get" class="historique-filter-grid">
+                <div class="historique-filter-group">
+                    <label for="date_start" class="historique-filter-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        Date début
+                    </label>
+                    <input type="date" name="date_start" id="date_start" class="historique-input"
+                        value="{{ app.request.query.get('date_start') }}">
+                </div>
+
+                <div class="historique-filter-group">
+                    <label for="date_end" class="historique-filter-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        Date fin
+                    </label>
+                    <input type="date" name="date_end" id="date_end" class="historique-input"
+                        value="{{ app.request.query.get('date_end') }}">
+                </div>
+
+                <div class="historique-filter-group">
+                    <label for="state" class="historique-filter-label">
+                        <i class="fas fa-tag"></i>
+                        État commande
+                    </label>
+                    <select name="state" id="state" class="historique-input">
+                        <option value="">-- Tous --</option>
+                        {% for state in states %}
+                            <option value="{{ state.id }}"
+                                {{ app.request.query.get('state') == state.id ? 'selected' }}>
+                                {{ state.nameState }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="historique-filter-group">
+                    <label for="is_paid" class="historique-filter-label">
+                        <i class="fas fa-credit-card"></i>
+                        Paiement
+                    </label>
+                    <select name="is_paid" id="is_paid" class="historique-input">
+                        <option value="">-- Tous --</option>
+                        <option value="1" {{ app.request.query.get('is_paid') == '1' ? 'selected' }}>Payé</option>
+                        <option value="0" {{ app.request.query.get('is_paid') == '0' ? 'selected' }}>Non payé</option>
+                    </select>
+                </div>
+
+                <div class="historique-filter-actions">
+                    <button type="submit" class="historique-button">
+                        <i class="fas fa-search"></i>
+                        Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {# === Tableau des ventes === #}
+        <div class="historique-table-section">
+            <div class="historique-table-header">
+                <h3 class="historique-table-title">
+                    <i class="fas fa-history"></i>
+                    Historique des ventes
+                </h3>
+            </div>
+
+            <div class="historique-table-container">
+                <table class="historique-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Vendeur</th>
+                            <th>État commande</th>
+                            <th>Montant total</th>
+                            <th>Paiement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                            {% set total = 0 %}
+                            {% for detail in sale.commande.details %}
+                                {% set total = total + (detail.quantity * detail.price) %}
+                            {% endfor %}
+
+                            <tr class="clickable-row" data-sale-id="{{ sale.id }}">
+                                <td>{{ sale.saleDate|date('d/m/Y H:i') }}</td>
+                                <td>{{ sale.commande.client ? sale.commande.client.getUsername() : '-' }}</td>
+                                <td>{{ sale.commande.seller ? sale.commande.seller.getUsername() : '-' }}</td>
+                                <td>{{ sale.commande.state.nameState }}</td>
+                                <td class="historique-amount">{{ total|number_format(2, ',', ' ') }} €</td>
+                                <td>
+                                    {% if sale.isPaid %}
+                                        <span class="historique-badge historique-badge-success">Payé</span>
+                                    {% else %}
+                                        <span class="historique-badge historique-badge-danger">Non payé</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="historique-empty">Aucune vente trouvée.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="saleDetailsModal" class="custom-modal" style="display: none;">
+        <div class="modal-overlay">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h5>Détails de la vente</h5>
+                    <button type="button" id="exportPDF" class="export-btn">Download the invoice</button>
+                    <button type="button" class="close-btn" id="closeModal">&times;</button>
+                </div>
+                <div class="modal-body" id="saleDetailsContent">
+                    <!-- Contenu chargé via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('saleDetailsModal');
+            const closeBtn = document.getElementById('closeModal');
+            const modalContent = document.getElementById('saleDetailsContent');
+
+            function openModal() {
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                modal.classList.remove('closing');
+            }
+
+            function closeModal() {
+                modal.classList.add('closing');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                    modal.classList.remove('closing');
+                }, 200);
+            }
+
+            // Event listener pour fermer le modal
+            closeBtn.addEventListener('click', closeModal);
+
+            // Fermer le modal en cliquant sur l'overlay
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // Fermer avec la touche Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'block') {
+                    closeModal();
+                }
+            });
+
+            // Event listeners pour les lignes cliquables
+            document.querySelectorAll('.clickable-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    const saleId = row.dataset.saleId;
+
+                    fetch(`/historyDetails?sale_id=${saleId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.html) {
+                                modalContent.innerHTML = data.html;
+                                openModal();
+                            } else if (data.error) {
+                                alert(data.error);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Erreur:', err);
+                            alert('Une erreur est survenue lors du chargement des détails.');
+                        });
+                });
+            });
+        });
+
+        // Export PDF corrigé
+        document.getElementById('exportPDF').addEventListener('click', () => {
+            try {
+                // VÉRIFICATION CRITIQUE : s'assurer que jsPDF est disponible
+                if (typeof window.jspdf === 'undefined') {
+                    alert('La bibliothèque PDF n\'est pas chargée. Veuillez rafraîchir la page.');
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+
+                // Vérifications de base
+                if (!modalContent.innerHTML || modalContent.innerHTML.trim() === '' || !currentSaleId) {
+                    alert('Veuillez d\'abord sélectionner une vente en cliquant sur une ligne du tableau.');
+                    return;
+                }
+
+                // Créer un PDF simple avec texte seulement
+                const doc = new jsPDF();
+
+                // Récupérer le texte du contenu (plus fiable que innerHTML)
+                const textContent = modalContent.textContent || modalContent.innerText;
+
+                if (!textContent || textContent.trim() === '') {
+                    alert('Aucun contenu à exporter.');
+                    return;
+                }
+
+                // Configurer la police et la taille
+                doc.setFont('helvetica');
+                doc.setFontSize(16);
+
+                // Ajouter un titre centré
+                doc.text(`FACTURE #${currentSaleId}`, 105, 20, { align: 'center' });
+
+                // Ligne séparatrice
+                doc.setLineWidth(0.5);
+                doc.line(10, 25, 200, 25);
+
+                // Préparer le contenu
+                doc.setFontSize(10);
+                const lines = doc.splitTextToSize(textContent, 180);
+
+                // Ajouter le contenu avec une marge
+                doc.text(lines, 15, 35);
+
+                // Ajouter la date en bas de page
+                const today = new Date().toLocaleDateString('fr-FR');
+                doc.setFontSize(8);
+                doc.text(`Généré le ${today}`, 15, 280);
+
+                // Sauvegarder le PDF
+                doc.save(`Facture_${currentSaleId}.pdf`);
+
+            } catch (error) {
+                console.error('Erreur détaillée:', error);
+                alert('Erreur lors de la génération du PDF: ' + error.message);
+            }
+        });
+    </script>
+{% endblock %}
