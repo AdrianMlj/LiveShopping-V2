@@ -86,7 +86,7 @@
         
         .hero {
            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
-            url('uploads/hero.png') center/cover no-repeat;
+            url('Uploads/hero.png') center/cover no-repeat;
             color: white;
             padding: 12rem 0;
             text-align: center;
@@ -267,11 +267,70 @@
             margin-bottom: 1.5rem;
             position: relative;
         }
+        .stream-video iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
         .stream-products {
             width: 100%;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
+        }
+        .cart-btn {
+            background: #4F46E5;
+            border: none;
+            border-radius: 10%;
+            width: 40px;
+            height: 40px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .cart-btn i {
+            font-size: 18px;
+            transition: transform 0.4s ease;
+        }
+        .cart-btn:hover {
+            background: #4338CA;
+            transform: scale(1.1);
+        }
+        .cart-btn.added {
+            background: #22c55e;
+        }
+        .cart-btn.added i {
+            animation: tiltCart 0.4s ease;
+        }
+        @keyframes tiltCart {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(15deg); }
+            75% { transform: rotate(-15deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .cart-btn.disabled {
+            background: #6B7280;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .cart-message {
+            display: none;
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 10;
         }
 
         footer {
@@ -337,6 +396,7 @@
             .hero h1 { font-size: 2.5rem; }
             .hero p { font-size: 1.2rem; }
             .featured-grid, .deals-grid { grid-template-columns: 1fr; }
+            .stream-video { height: 300px; }
         }
     </style>
 </head>
@@ -348,7 +408,11 @@
             <div class="hero-content">
                 <h1>Découvrez le Shopping en Direct</h1>
                 <p>Des offres exclusives, en temps réel</p>
-                <button class="cta-button">Rejoindre le Live <i class="fas fa-arrow-right"></i></button>
+                <form action="{{ path('app_client') }}" method="get" style="display: inline;">
+                    <button type="submit" class="cta-button">
+                        Rejoindre le Live <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </section>
@@ -368,7 +432,7 @@
                     <div style="display:flex; align-items:center; gap:8px;">
                         <i class="fa-solid fa-shopping-cart" style="color:#4F46E5; font-size:22px;"></i>
                         <span style="font-weight:600;">Panier</span>
-                        <span class="badge" style="background:#4F46E5; color:#fff; border-radius:12px; padding:4px 12px; font-weight:700; margin-left:4px;">{{ cart|length }}</span>
+                        <span class="badge cart-count" style="background:#4F46E5; color:#fff; border-radius:12px; padding:4px 12px; font-weight:700; margin-left:4px;">{{ cart|length }}</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <i class="fa-solid fa-gift" style="color:#10B981; font-size:22px;"></i>
@@ -404,33 +468,23 @@
                     <div class="product-card" data-cat="{{ product.category|default('') }}" data-price="{{ product.price|default(0) }}" style="position:relative; min-width:260px; max-width:340px; margin:auto;">
                         <div class="product-image" style="height:180px;">
                             {% if product.images %}
-                                <img src="/uploads/{{ product.images }}" alt="{{ product.name }}" style="width:100%; height:100%; object-fit:cover;">
+                                <img src="/Uploads/{{ product.images }}" alt="{{ product.name }}" style="width:100%; height:100%; object-fit:cover;">
                             {% else %}
                                 <i class="fas fa-gift fa-3x" style="color: #4F46E5;"></i>
                             {% endif %}
                         </div>
                         <div class="product-info">
-    <div class="product-rating" style="margin-bottom:6px;">
-        {% set rating = product.rating|default(0) %}
-        {% for i in 1..5 %}
-            <i class="fa-star{% if i <= rating %} fas{% else %} far{% endif %}" style="color:#FFD600; font-size:18px;"></i>
-        {% endfor %}
-        <span style="font-size:13px; color:#888; margin-left:6px;">({{ product.rating_count|default(0) }} avis)</span>
-    </div>
-    <form method="post" action="{{ path('app_client_rate_product', {'id': product.id}) }}" style="margin-bottom:8px;">
-        <label for="rating-{{ product.id }}" style="font-size:13px; color:#4F46E5; margin-right:6px;">Noter :</label>
-        <select name="rating" id="rating-{{ product.id }}" style="padding:2px 6px; border-radius:6px;">
-            {% for i in 1..5 %}
-                <option value="{{ i }}">{{ i }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit" style="background:#FFD600; color:#231f20; border:none; border-radius:6px; padding:2px 10px; font-size:13px; font-weight:600; margin-left:6px; cursor:pointer;">Valider</button>
-    </form>
+                            <div class="product-rating" style="margin-bottom:6px;">
+                                <span style="font-size:13px; color:#888; margin-left:6px;">Rating : </span>
+                                {% set rating = product.rating|default(0) %}
+                                {% for i in 1..5 %}
+                                    <i class="fa-star{% if i <= rating %} fas{% else %} far{% endif %}" style="color:#FFD600; font-size:18px;"></i>
+                                {% endfor %}
+                            </div>
                             <h3 class="product-title" style="font-size:1.15rem;">{{ product.name }}</h3>
                             <div style="font-size:0.95rem; color:#888; margin-bottom:4px;">Vendeur : {{ product.seller|default('N/A') }}</div>
-                                {# <p class="product-desc" style="min-height:38px;">{{ product.desc }}</p> #}
                             <div class="product-price" style="margin-bottom:8px;">${{ product.price }}</div>
-                            <div style="margin:8px 0; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <div style="margin:8px 0; display:flex; align-items:center; gap:12px; flex-wrap:wrap; position: relative;">
                                 <button class="fav-btn" data-id="{{ product.id }}" style="background:none; border:none; cursor:pointer;" title="Ajouter aux favoris">
                                     <i class="fa{{ product.id in favorites ? 's' : 'r' }} fa-bookmark" style="color:#FFD600; font-size:22px;"></i>
                                 </button>
@@ -439,11 +493,11 @@
                                     <input type="hidden" name="price" value="{{ product.price }}">
                                     <input type="hidden" name="images" value="{{ product.images }}">
                                     <input type="hidden" name="quantity" value="1">
-                                    <button type="submit" class="cart-btn" title="Ajouter au panier" style="background:none; border:none; cursor:pointer;">
-                                        <i class="fa{{ product.id in cart ? 's' : 'r' }} fa-shopping-cart" style="color:#4F46E5; font-size:22px;"></i>
+                                    <button type="submit" class="cart-btn {{ product.id in cart ? 'disabled' : '' }}" title="{{ product.id in cart ? 'Déjà dans le panier' : 'Ajouter au panier' }}" {{ product.id in cart ? 'disabled' : '' }}>
+                                        <i class="fas fa-shopping-basket"></i>
+                                        <span class="cart-message">Déjà dans le panier</span>
                                     </button>
                                 </form>
-                                {# Le bouton fidélité est retiré, les points sont affichés globalement #}
                             </div>
                             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
                                 {% if product.badges is defined %}
@@ -470,80 +524,110 @@
                     </div>
                 </div>
                 <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const filterForm = document.getElementById('filter-form');
-                    const productList = document.getElementById('product-list');
-                    filterForm.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        const cat = document.getElementById('cat').value.toLowerCase();
-                        const minprice = parseFloat(document.getElementById('minprice').value) || 0;
-                        const maxprice = parseFloat(document.getElementById('maxprice').value) || Infinity;
-                        productList.querySelectorAll('.product-card').forEach(function(card) {
-                            const cardCat = card.getAttribute('data-cat').toLowerCase();
-                            const cardPrice = parseFloat(card.getAttribute('data-price')) || 0;
-                            let show = true;
-                            if (cat && cardCat !== cat) show = false;
-                            if (cardPrice < minprice) show = false;
-                            if (cardPrice > maxprice) show = false;
-                            card.style.display = show ? '' : 'none';
-                        });
-                        productList.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    });
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filter-form');
+    const productList = document.getElementById('product-list');
 
-                    // Favoris, Panier, Fidélité JS
-                    productList.addEventListener('click', function(e) {
-                        if (e.target.closest('.fav-btn')) {
-                            const btn = e.target.closest('.fav-btn');
-                            btn.classList.toggle('active');
-                            btn.querySelector('i').classList.toggle('fas');
-                            btn.querySelector('i').classList.toggle('far');
-                        }
-                        if (e.target.closest('.cart-btn')) {
-                            const btn = e.target.closest('.cart-btn');
-                            btn.classList.toggle('active');
-                            btn.querySelector('i').classList.toggle('fas');
-                            btn.querySelector('i').classList.toggle('far');
-                        }
-                        if (e.target.closest('.fidelity-btn')) {
-                            const btn = e.target.closest('.fidelity-btn');
-                            btn.classList.add('active');
-                            btn.querySelector('i').style.color = '#FFD600';
-                            // Optionnel : afficher un message ou badge
-                            alert('Point fidélité ajouté !');
-                        }
-                    });
-                });
-                </script>
-                <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const filterForm = document.getElementById('filter-form');
-                    const productList = document.getElementById('product-list');
-                    if (filterForm && productList) {
-                        filterForm.addEventListener('submit', function(e) {
-                            e.preventDefault();
-                            const formData = new FormData(filterForm);
-                            const params = new URLSearchParams(formData).toString();
-                            fetch(window.location.pathname + '?' + params, {
-                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                            })
-                            .then(res => res.text())
-                            .then(html => {
-                                // Extraire le nouveau bloc produits du HTML retourné
-                                const tempDiv = document.createElement('div');
-                                tempDiv.innerHTML = html;
-                                const newList = tempDiv.querySelector('#product-list');
-                                if (newList) {
-                                    productList.innerHTML = newList.innerHTML;
-                                    productList.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }
-                            });
-                        });
-                    }
-                });
+    // --- Filtrage local ---
+    if (filterForm && productList) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const cat = document.getElementById('cat').value.toLowerCase();
+            const minprice = parseFloat(document.getElementById('minprice').value) || 0;
+            const maxprice = parseFloat(document.getElementById('maxprice').value) || Infinity;
+            productList.querySelectorAll('.product-card').forEach(function(card) {
+                const cardCat = card.getAttribute('data-cat').toLowerCase();
+                const cardPrice = parseFloat(card.getAttribute('data-price')) || 0;
+                let show = true;
+                if (cat && cardCat !== cat) show = false;
+                if (cardPrice < minprice) show = false;
+                if (cardPrice > maxprice) show = false;
+                card.style.display = show ? '' : 'none';
+            });
+            productList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        // --- Filtrage AJAX ---
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams(formData).toString();
+            fetch(window.location.pathname + '?' + params, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.text())
+            .then(html => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const newList = tempDiv.querySelector('#product-list');
+                if (newList) {
+                    productList.innerHTML = newList.innerHTML;
+                    productList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    }
+
+    // --- Favoris et Panier dynamique ---
+    if (productList) {
+        productList.addEventListener('click', function(e) {
+            // Favoris
+            if (e.target.closest('.fav-btn')) {
+                const btn = e.target.closest('.fav-btn');
+                btn.classList.toggle('active');
+                btn.querySelector('i').classList.toggle('fas');
+                btn.querySelector('i').classList.toggle('far');
+            }
+
+            // Panier dynamique
+            if (e.target.closest('.cart-btn')) {
+                e.preventDefault();
+                const form = e.target.closest('form');
+                const btn = form.querySelector('.cart-btn');
+                const icon = btn.querySelector('i');
+                const cartBadge = document.querySelector('.cart-count');
+
+                if (btn.classList.contains('disabled')) {
+                    const message = btn.querySelector('.cart-message');
+                    message.style.display = 'block';
+                    setTimeout(() => { message.style.display = 'none'; }, 2000);
+                    return;
+                }
+
+                let cartCount = parseInt(cartBadge.textContent) || 0;
+
+                // Animation visuelle - Inclinaison du panier
+                btn.classList.add('added');
+                setTimeout(() => {
+                    btn.classList.remove('added');
+                    btn.classList.add('disabled');
+                    btn.disabled = true;
+                    btn.setAttribute('title', 'Déjà dans le panier');
+                }, 800);
+
+                // Mise à jour du compteur panier
+                cartBadge.textContent = cartCount + 1;
+
+                // Envoi AJAX
+                fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form)
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error("Erreur serveur");
+                    return res.text();
+                })
+                .then(data => {
+                    console.log("Produit ajouté au panier :", data);
+                })
+                .catch(err => console.error(err));
+            }
+        });
+    }
+});
                 </script>
             </section>
         </div>
-
 
         <div class="promo-section">
             <div class="promo-content">
@@ -599,7 +683,7 @@
             </div>
             <div class="stream-content">
                 <div class="stream-video">
-                    <i class="fas fa-video fa-5x" style="color: #333;"></i>
+                    <iframe src="https://www.youtube.com/embed/ohmajJTcpNk?autoplay=1&mute=1" allowfullscreen></iframe>
                     <div class="live-badge" style="position: absolute; top: 1rem; right: 1rem;">
                         <i class="fas fa-broadcast-tower"></i> LIVE
                     </div>

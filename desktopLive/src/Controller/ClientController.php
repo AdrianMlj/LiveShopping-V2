@@ -97,6 +97,11 @@ class ClientController extends AbstractController
         $session = $request->getSession();
         $cart = $session->get('cart', []);
         $cartTotal = 0;
+        $userSession = $session->get('user');
+
+        if (!$userSession) {
+            return $this->redirectToRoute('app_connection');
+        }
         foreach ($cart as $item) {
             $cartTotal += ($item['price'] ?? 0) * ($item['quantity'] ?? 1);
         }
@@ -119,7 +124,7 @@ class ClientController extends AbstractController
         $userSession = $session->get('user');
 
         if (!$userSession) {
-            $userSession = $usersRepository->find(7); // Anthony
+            $userSession = $usersRepository->find(7);
             $session->set('user', $userSession);
         }
 
