@@ -17,14 +17,14 @@ class ItemsStock
     private ?int $outItem = null;
 
     #[ORM\Column(name: 'in_item', type: 'integer', nullable: true)]
-    private ?string $inItem = null;
+    private ?int $inItem = null;
 
     #[ORM\Column(name: 'date_move', type: 'datetime')]
     private ?\DateTimeInterface $dateMove = null;
 
-    #[ORM\ManyToOne(targetEntity: ItemSize::class)]
-    #[ORM\JoinColumn(name: 'id_item_size', referencedColumnName: 'id_item_size', nullable: false)]
-    private ?ItemSize $itemSize = null;
+    #[ORM\ManyToOne(targetEntity: ItemSizeColor::class)]
+    #[ORM\JoinColumn(name: 'id_item_size_color', referencedColumnName: 'id_item_size_color', nullable: false)]
+    private ?ItemSizeColor $itemSizeColor = null;
 
     // Getters & Setters
 
@@ -44,12 +44,12 @@ class ItemsStock
         return $this;
     }
 
-    public function getInItem(): ?string
+    public function getInItem(): ?int
     {
         return $this->inItem;
     }
 
-    public function setInItem(?string $inItem): static
+    public function setInItem(?int $inItem): static
     {
         $this->inItem = $inItem;
         return $this;
@@ -66,14 +66,14 @@ class ItemsStock
         return $this;
     }
 
-    public function getItemSize(): ?ItemSize
+    public function getItemSizeColor(): ?ItemSizeColor
     {
-        return $this->itemSize;
+        return $this->itemSizeColor;
     }
 
-    public function setItemSize(ItemSize $itemSize): static
+    public function setItemSizeColor(ItemSizeColor $itemSizeColor): static
     {
-        $this->itemSize = $itemSize;
+        $this->itemSizeColor = $itemSizeColor;
         return $this;
     }
 }

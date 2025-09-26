@@ -1,0 +1,935 @@
+{% extends 'admin/baseAdmin.html.twig' %}
+
+{% block title %}Suivi du Stock{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/stock.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="modern-dashboard">
+        <!-- Sidebar avec boutons de sélection -->
+        <div class="dashboard-sidebar">
+            <div class="button-group">
+                <button id="showMovements" class="toggle-btn active">
+                    <i class="fas fa-exchange-alt"></i> Mouvements de stock
+                </button>
+                <button id="showCurrent" class="toggle-btn inactive">
+                    <i class="fas fa-boxes"></i> Stock actuel
+                </button>
+                <button id="showImport" class="toggle-btn inactive">
+                    <i class="fas fa-download"></i> Importer de nouveaux stock
+                </button>
+                <button id="showExport" class="toggle-btn inactive">
+                    <i class="fas fa-upload"></i> Exporter de nouveaux stock
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="dashboard-content">
+            <div id="filterSection" class="filter-card">
+                <form method="post" class="filter-form">
+                    <div class="filter-group">
+                        <label for="dateD">Période</label>
+                        <div class="date-range">
+                            <input type="date" name="dateD" id="dateD" required class="modern-input" value="{{ dateD }}">
+                            <span class="date-separator">—</span>
+                            <input type="date" name="dateF" id="dateF" required class="modern-input" value="{{ dateF }}">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="modern-button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Appliquer
+                    </button>
+                </form>
+            </div>
+
+            <!-- Mouvements de stock -->
+            <div id="movementsSection" class="stock-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-exchange-alt"></i> Mouvements entre {{ startDate|date('d/m/Y') }} et {{ endDate|date('d/m/Y') }}
+                    </h3>
+                    <div class="section-actions">
+                        <span class="pagination-info">
+                            {{ stockMovements|length }} sur {{ stockMovements.getTotalItemCount() }} mouvements
+                        </span>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Article</th>
+                                    <th>Taille</th>
+                                    <th>Couleur</th>
+                                    <th>Entrées</th>
+                                    <th>Sorties</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in stockMovements %}
+                                    <tr>
+                                        <td>{{ movement.name_item }}</td>
+                                        <td>{{ movement.value_size }}</td>
+                                        <td style="text-align:center;">
+                                            {% set colorMap = {
+                                                'rouge':'#e74c3c','red':'#e74c3c',
+                                                'vert':'#2ecc71','green':'#2ecc71',
+                                                'bleu':'#3498db','blue':'#3498db',
+                                                'noir':'#000000','black':'#000000',
+                                                'blanc':'#ffffff','white':'#ffffff',
+                                                'jaune':'#f1c40f','yellow':'#f1c40f',
+                                                'orange':'#e67e22',
+                                                'rose':'#ff69b4',
+                                                'violet':'#8e44ad',
+                                                'gris':'#7f8c8d',
+                                                'marron':'#8B4513','brown':'#8B4513'
+                                            } %}
+                                            {% set cname = (movement.name_color ?? '')|lower|trim %}
+                                            {% set hex = colorMap[cname] is defined ? colorMap[cname] : '#cccccc' %}
+                                            {% set isWhite = hex == '#ffffff' %}
+                                            {% set bg = isWhite
+                                                ? 'repeating-linear-gradient(45deg,#f1f1f1 0 4px,#dddddd 4px 8px)'
+                                                : hex %}
+                                            <span title="{{ movement.name_color }}"
+                                                  style="display:inline-block;width:18px;height:18px;border-radius:6px;
+                                                         border:1px solid #bfbfbf;background: {{ bg }};
+                                                         box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
+                                        </td>
+                                        <td class="{% if movement.in_item > 0 %}positive{% endif %}">
+                                            {{ movement.in_item ?? 0 }}
+                                        </td>
+                                        <td class="{% if movement.out_item > 0 %}negative{% endif %}">
+                                            {{ movement.out_item ?? 0 }}
+                                        </td>
+                                        <td>{{ movement.date_move|date('d/m/Y H:i') }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">Aucun mouvement enregistré</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination mouvements -->
+                    <div id="movements-pagination" class="pagination-container">
+                        <div class="pagination-info">
+                            Page {{ stockMovements.getCurrentPageNumber() }} sur {{ stockMovements.getPageCount() }}
+                            • {{ stockMovements.getTotalItemCount() }} mouvements
+                        </div>
+                        <div class="pagination">
+                            {{ knp_pagination_render(stockMovements, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
+                                'pageParameterName': 'movements_page',
+                                'sortFieldParameterName': 'movements_sort',
+                                'sortDirectionParameterName': 'movements_direction'
+                            }) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock actuel -->
+            <div id="currentSection" class="stock-section hidden-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-boxes"></i> Stock actuel
+                    </h3>
+                    <div class="section-actions">
+                        <span class="pagination-info">
+                            {{ currentStock|length }} sur {{ currentStock.getTotalItemCount() }} articles
+                        </span>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Sélection</th>
+                                    <th>Article</th>
+                                    <th>Taille</th>
+                                    <th>Couleur</th>
+                                    <th>Stock disponible</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in currentStock %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="check-demand" data-id="{{ row.itemsizecolorid }}" />
+                                            <input type="number" class="qty-input hidden" min="1" value="10" />
+                                        </td>
+                                        <td>{{ row.itemname }}</td>
+                                        <td>{{ row.valuesize }}</td>
+                                        <td style="text-align:center;">
+                                            {% set colorMap = {
+                                                'rouge':'#e74c3c','red':'#e74c3c',
+                                                'vert':'#2ecc71','green':'#2ecc71',
+                                                'bleu':'#3498db','blue':'#3498db',
+                                                'noir':'#000000','black':'#000000',
+                                                'blanc':'#ffffff','white':'#ffffff',
+                                                'jaune':'#f1c40f','yellow':'#f1c40f',
+                                                'orange':'#e67e22',
+                                                'rose':'#ff69b4',
+                                                'violet':'#8e44ad',
+                                                'gris':'#7f8c8d',
+                                                'marron':'#8B4513','brown':'#8B4513'
+                                            } %}
+                                            {% set cname = (row.colorname ?? '')|lower|trim %}
+                                            {% set hex = colorMap[cname] is defined ? colorMap[cname] : '#cccccc' %}
+                                            {% set isWhite = hex == '#ffffff' %}
+                                            {% set bg = isWhite
+                                                ? 'repeating-linear-gradient(45deg,#f1f1f1 0 4px,#dddddd 4px 8px)'
+                                                : hex %}
+                                            <span title="{{ row.colorname }}"
+                                                  style="display:inline-block;width:18px;height:18px;border-radius:6px;
+                                                         border:1px solid #bfbfbf;background: {{ bg }};
+                                                         box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
+                                        </td>
+                                        <td>
+                                            <strong class="{% if row.currentstock > 5 %}in-stock{% else %}out-of-stock{% endif %}">
+                                                {{ row.currentstock }}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">Aucun stock disponible</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination stock actuel -->
+                    <div id="current-pagination" class="pagination-container">
+                        <div class="pagination-info">
+                            Page {{ currentStock.getCurrentPageNumber() }} sur {{ currentStock.getPageCount() }}
+                            • {{ currentStock.getTotalItemCount() }} articles
+                        </div>
+                        <div class="pagination">
+                            {{ knp_pagination_render(currentStock, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
+                                'pageParameterName': 'stock_page',
+                                'sortFieldParameterName': 'stock_sort',
+                                'sortDirectionParameterName': 'stock_direction'
+                            }) }}
+                        </div>
+                    </div>
+
+                    <!-- Formulaire caché pour export -->
+                    <form id="exportForm" action="{{ path('app_export_csv') }}" method="POST">
+                        <input type="hidden" name="demandes" id="exportDemandes" />
+                        <button type="submit" id="btn-demande" class="modern-button">
+                            <i class="fas fa-file-export"></i> Supply
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Importer de nouveaux stocks -->
+            <div id="importSection" class="stock-section hidden-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-download"></i> Importer des stocks en masse
+                    </h3>
+                </div>
+                <div class="section-body">
+                    <form id="importForm" enctype="multipart/form-data" class="import-form">
+                        <div class="form-group">
+                            <label for="file1">Fichier des Catgorie</label>
+                            <input type="file" id="file1" name="file1" class="modern-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="file2">Fichier des Articles</label>
+                            <input type="file" id="file2" name="file2" class="modern-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="file3">Fichier des Tailles</label>
+                            <input type="file" id="file3" name="file3" class="modern-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="file4">Fichier des Couleurs et Stock</label>
+                            <input type="file" id="file4" name="file4" class="modern-input" required>
+                        </div>
+                        <button type="submit" class="modern-button">
+                            <i class="fas fa-upload"></i> Importer
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Exporter les stocks -->
+            <div id="exportSection" class="stock-section hidden-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-upload"></i> Export des stocks
+                    </h3>
+                    <div class="section-actions">
+                        <span class="pagination-info">
+                            {{ exportData|length }} sur {{ exportData.getTotalItemCount() }} articles
+                        </span>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Article</th>
+                                    <th>Catégorie</th>
+                                    <th>Taille</th>
+                                    <th>Couleur</th>
+                                    <th>Quantité</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in exportData %}
+                                    <tr>
+                                        <td>{{ row.itemName }}</td>
+                                        <td>{{ row.categoryName }}</td>
+                                        <td>{{ row.valueSize }}</td>
+                                        <td style="text-align:center;">
+                                            {% set colorMap = {
+                                                'rouge':'#e74c3c','red':'#e74c3c',
+                                                'vert':'#2ecc71','green':'#2ecc71',
+                                                'bleu':'#3498db','blue':'#3498db',
+                                                'noir':'#000000','black':'#000000',
+                                                'blanc':'#ffffff','white':'#ffffff',
+                                                'jaune':'#f1c40f','yellow':'#f1c40f',
+                                                'orange':'#e67e22',
+                                                'rose':'#ff69b4',
+                                                'violet':'#8e44ad',
+                                                'gris':'#7f8c8d',
+                                                'marron':'#8B4513','brown':'#8B4513'
+                                            } %}
+                                            {% set cname = (row.colorName ?? '')|lower|trim %}
+                                            {% set hex = colorMap[cname] is defined ? colorMap[cname] : '#cccccc' %}
+                                            {% set isWhite = hex == '#ffffff' %}
+                                            {% set bg = isWhite
+                                                ? 'repeating-linear-gradient(45deg,#f1f1f1 0 4px,#dddddd 4px 8px)'
+                                                : hex %}
+                                            <span title="{{ row.colorName }}"
+                                                  style="display:inline-block;width:18px;height:18px;border-radius:6px;
+                                                         border:1px solid #bfbfbf;background: {{ bg }};
+                                                         box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
+                                        </td>
+                                        <td>
+                                            <input
+                                                type="number"
+                                                class="export-qty-input"
+                                                min="1"
+                                                value="{{ row.quantity }}"
+                                                data-id="{{ row.id }}"
+                                            />
+                                        </td>
+                                        <td>
+                                            <button class="delete-row-btn btn btn-sm btn-danger" data-id="{{ row.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">Aucune donnée export disponible</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination export -->
+                    <div id="export-pagination" class="pagination-container">
+                        <div class="pagination-info">
+                            Page {{ exportData.getCurrentPageNumber() }} sur {{ exportData.getPageCount() }}
+                            • {{ exportData.getTotalItemCount() }} articles
+                        </div>
+                        <div class="pagination">
+                            {{ knp_pagination_render(exportData, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
+                                'pageParameterName': 'export_page',
+                                'sortFieldParameterName': 'export_sort',
+                                'sortDirectionParameterName': 'export_direction'
+                            }) }}
+                        </div>
+                    </div>
+
+                    <!-- Formulaire caché pour export -->
+                    <form id="exportCsvForm" action="{{ path('app_export_csv') }}" method="POST">
+                        <input type="hidden" name="demandes" id="exportDemandesCsv" value="" />
+                        <button type="submit" id="btn-export-csv" class="modern-button">
+                            <i class="fas fa-file-export"></i> Exporter CSV
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.initialQuantities = {};
+        {% for row in exportDataFull %}
+            window.initialQuantities["{{ row.id }}"] = {{ row.quantity }};
+        {% endfor %}
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const showMovementsBtn = document.getElementById('showMovements');
+            const showCurrentBtn = document.getElementById('showCurrent');
+            const showImportBtn = document.getElementById('showImport');
+            const showExportBtn = document.getElementById('showExport');
+            const movementsSection = document.getElementById('movementsSection');
+            const currentSection = document.getElementById('currentSection');
+            const filterSection = document.getElementById('filterSection');
+            const importSection = document.getElementById('importSection');
+
+            const allButtons = [showMovementsBtn, showCurrentBtn, showImportBtn, showExportBtn];
+
+            // Fonction pour gérer l'état visuel des boutons
+            function setActiveButton(activeBtn) {
+                allButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.classList.add('inactive');
+                });
+                activeBtn.classList.add('active');
+                activeBtn.classList.remove('inactive');
+            }
+
+            // Fonction pour afficher les sections
+            function showSection(section) {
+                // Masquer tout
+                movementsSection.classList.add('hidden-section');
+                currentSection.classList.add('hidden-section');
+                importSection.classList.add('hidden-section');
+                filterSection.classList.add('hidden-section');
+                document.getElementById('exportSection').classList.add('hidden-section');
+
+                switch(section) {
+                    case 'movements':
+                        movementsSection.classList.remove('hidden-section');
+                        filterSection.classList.remove('hidden-section');
+                        setActiveButton(showMovementsBtn);
+                        updateURL('movements');
+                        break;
+
+                    case 'current':
+                        currentSection.classList.remove('hidden-section');
+                        setActiveButton(showCurrentBtn);
+                        updateURL('current');
+                        break;
+
+                    case 'import':
+                        importSection.classList.remove('hidden-section');
+                        setActiveButton(showImportBtn);
+                        updateURL('import');
+                        break;
+
+                    case 'export':
+                        document.getElementById('exportSection').classList.remove('hidden-section');
+                        setActiveButton(showExportBtn);
+                        updateURL('export');
+                        break;
+                }
+            }
+
+            // Attacher les événements
+            showMovementsBtn.addEventListener('click', () => showSection('movements'));
+            showCurrentBtn.addEventListener('click', () => showSection('current'));
+            showImportBtn.addEventListener('click', () => showSection('import'));
+            showExportBtn.addEventListener('click', () => showSection('export'));
+
+            // Fonction pour mettre à jour l'URL
+            function updateURL(section) {
+                const url = new URL(window.location);
+                url.searchParams.set('section', section);
+                if (section === 'movements') {
+                    url.searchParams.delete('stock_page');
+                } else if (section === 'current') {
+                    url.searchParams.delete('movements_page');
+                } else if (section !== 'export') {
+                    url.searchParams.delete('export_page');
+                }
+                window.history.replaceState({}, '', url);
+            }
+
+            // 🔥 CORRECTION : Détecter la section active selon les paramètres d'URL
+            function detectActiveSection() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const section = urlParams.get('section');
+
+                // Si section explicite dans l'URL, l'utiliser
+                if (section) {
+                    return section;
+                }
+
+                // Sinon, détecter selon les paramètres de pagination
+                if (urlParams.has('stock_page')) {
+                    return 'current';
+                } else if (urlParams.has('movements_page')) {
+                    return 'movements';
+                } else if (urlParams.has('export_page')) {
+                    return 'export';
+                }
+
+                // Par défaut : movements
+                return 'movements';
+            }
+
+            // Charger la bonne section selon l'URL
+            const activeSection = detectActiveSection();
+            showSection(activeSection);
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            let demandes = JSON.parse(sessionStorage.getItem("demandes")) || [];
+
+            const saveDemandes = () => {
+                sessionStorage.setItem("demandes", JSON.stringify(demandes));
+            };
+
+            // ✅ Restaurer état au rechargement
+            demandes.forEach(d => {
+                const checkbox = document.querySelector(`.check-demand[data-id="${d.idItemSize}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    const qtyInput = checkbox.closest("tr").querySelector(".qty-input");
+                    qtyInput.classList.remove("hidden");
+                    qtyInput.value = d.qty;
+                }
+            });
+
+            // Gestion des checkbox
+            document.querySelectorAll(".check-demand").forEach((checkbox) => {
+                checkbox.addEventListener("change", (e) => {
+                    const row = e.target.closest("tr");
+                    const qtyInput = row.querySelector(".qty-input");
+                    const id = e.target.dataset.id;
+
+                    if (e.target.checked) {
+                        qtyInput.classList.remove("hidden");
+                        let existing = demandes.find(d => d.idItemSize === id);
+                        if (!existing) {
+                            demandes.push({
+                                idItemSize: id,
+                                qty: qtyInput.value
+                            });
+                        }
+                        let d = demandes.find(d => d.idItemSize === id);
+                        if (d) d.qty = qtyInput.value;
+                        saveDemandes();
+
+                        qtyInput.addEventListener("input", () => {
+                            let d = demandes.find(d => d.idItemSize === id);
+                            if (d) d.qty = qtyInput.value;
+                            saveDemandes();
+                        });
+
+                    } else {
+                        qtyInput.classList.add("hidden");
+                        demandes = demandes.filter(d => d.idItemSize !== id);
+                        saveDemandes();
+                    }
+                });
+            });
+
+            // ✅ Bouton "Demande" en AJAX - Version améliorée
+            const btnDemande = document.getElementById("btn-demande");
+            if (btnDemande) {
+                btnDemande.addEventListener("click", async (e) => {
+                    e.preventDefault();
+
+                    if (demandes.length === 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sélection requise',
+                            text: 'Veuillez sélectionner au moins un article !',
+                            confirmButtonText: 'Compris',
+                            background: '#ffffff',
+                            color: '#333333',
+                            confirmButtonColor: '#4361ee',
+                            iconColor: '#f59e0b'
+                        });
+                        return;
+                    }
+
+                    try {
+                        // Afficher un loader pendant le traitement
+                        Swal.fire({
+                            title: 'Traitement en cours',
+                            text: 'Enregistrement de votre demande...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            },
+                            background: '#ffffff',
+                            color: '#333333'
+                        });
+
+                        let response = await fetch("/export", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
+                            body: "demandes=" + encodeURIComponent(JSON.stringify(demandes))
+                        });
+
+                        // Fermer le loader
+                        Swal.close();
+
+                        if (response.ok) {
+                            let text = await response.text();
+
+                            // ✅ Pop-up succès améliorée
+                            Swal.fire({
+                                icon: 'success',
+                                title: '✅ Demande enregistrée',
+                                html: `
+                                    <div style="text-align: center;">
+                                        <p style="font-size: 16px; margin-bottom: 16px; color: #059669;">${text}</p>
+                                        <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; margin: 16px 0;">
+                                            <p style="margin: 0; color: #0369a1; font-size: 14px;">
+                                                <strong>${demandes.length}</strong> article(s) demandé(s)
+                                            </p>
+                                        </div>
+                                    </div>
+                                `,
+                                confirmButtonText: 'Fermer',
+                                confirmButtonColor: '#059669',
+                                background: '#ffffff',
+                                color: '#333333',
+                                iconColor: '#059669',
+                                customClass: {
+                                    popup: 'custom-swal-popup',
+                                    title: 'custom-swal-title',
+                                    htmlContainer: 'custom-swal-html'
+                                }
+                            }).then(() => {
+                                // 🔄 Recharge la page après avoir fermé l'alerte
+                                window.location.reload();
+                            });
+
+                            // 🔥 Vider stockage après succès
+                            sessionStorage.removeItem("demandes");
+                            demandes = [];
+
+                            // Décocher les cases et cacher les inputs
+                            document.querySelectorAll(".check-demand").forEach(cb => {
+                                cb.checked = false;
+                                const qtyInput = cb.closest("tr").querySelector(".qty-input");
+                                if (qtyInput) {
+                                    qtyInput.classList.add("hidden");
+                                    qtyInput.value = "1"; // Réinitialiser la valeur
+                                }
+                            });
+
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: '❌ Erreur',
+                                text: "Impossible d'enregistrer la demande. Veuillez réessayer.",
+                                confirmButtonText: 'Compris',
+                                confirmButtonColor: '#dc2626',
+                                background: '#ffffff',
+                                color: '#333333',
+                                iconColor: '#dc2626'
+                            });
+                        }
+                    } catch (err) {
+                        Swal.close();
+                        Swal.fire({
+                            icon: 'error',
+                            title: '🌐 Erreur réseau',
+                            text: "Problème de connexion avec le serveur. Vérifiez votre connexion internet.",
+                            confirmButtonText: 'Réessayer',
+                            confirmButtonColor: '#dc2626',
+                            background: '#ffffff',
+                            color: '#333333',
+                            iconColor: '#dc2626'
+                        });
+                    }
+                });
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const exportForm = document.getElementById("exportForm");
+            const exportDemandes = document.getElementById("exportDemandes");
+
+            exportForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+
+                const demandes = [];
+                document.querySelectorAll(".export-qty-input").forEach(input => {
+                    const id = input.dataset.id;
+                    const qty = parseInt(input.value, 10);
+                    if (qty > 0) {
+                        demandes.push({ idItemSize: id, qty: qty });
+                    }
+                });
+
+                if (demandes.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sélection requise',
+                        text: 'Veuillez entrer au moins une quantité !'
+                    });
+                    return;
+                }
+
+                // Remplir le champ caché et envoyer le formulaire
+                exportDemandes.value = JSON.stringify(demandes);
+                exportForm.submit();
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.delete-row-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const row = this.closest('tr');
+                    const id = this.dataset.id;
+
+                    if (confirm("Voulez-vous vraiment supprimer cet article ?")) {
+                        fetch('/delete_stock/' + id, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                row.remove(); // ✅ suppression en front
+                            } else {
+                                alert("Erreur : " + data.message);
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert("Erreur lors de la suppression");
+                        });
+                    }
+                });
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const exportForm = document.getElementById('exportCsvForm');
+            if (!exportForm) return;
+
+            // Charger depuis sessionStorage ou initialiser avec toutes les données
+            let allQuantities = JSON.parse(sessionStorage.getItem('allQuantities')) || {};
+
+            // Fusionner avec toutes les quantités par défaut envoyées par Twig
+            if (window.initialQuantities) {
+                for (const [id, qty] of Object.entries(window.initialQuantities)) {
+                    if (allQuantities[id] === undefined) {
+                        allQuantities[id] = qty;
+                    }
+                }
+                sessionStorage.setItem('allQuantities', JSON.stringify(allQuantities));
+            }
+
+            // 🔹 Synchroniser les inputs visibles (page courante)
+            document.querySelectorAll('.export-qty-input').forEach(input => {
+                const id = input.dataset.id;
+
+                // si on a déjà une valeur stockée → l’appliquer
+                if (allQuantities[id] !== undefined) {
+                    input.value = allQuantities[id];
+                }
+
+                // Mettre à jour si modifié
+                input.addEventListener('input', () => {
+                    allQuantities[id] = parseInt(input.value) || 0;
+                    sessionStorage.setItem('allQuantities', JSON.stringify(allQuantities));
+                });
+            });
+
+            exportForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const demandes = [];
+                for (const [id, quantity] of Object.entries(allQuantities)) {
+                    if (quantity > 0) demandes.push({ id, quantity });
+                }
+
+                if (demandes.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Aucune donnée',
+                        text: 'Veuillez entrer au moins une quantité !',
+                        confirmButtonColor: '#f59e0b',
+                        background: '#ffffff',
+                        color: '#333333',
+                        iconColor: '#f59e0b'
+                    });
+                    return;
+                }
+
+                try {
+                    Swal.fire({
+                        title: 'Export en cours...',
+                        text: 'Génération des fichiers CSV',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading(),
+                        background: '#ffffff',
+                        color: '#333333'
+                    });
+
+                    const response = await fetch(exportForm.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'demandes=' + encodeURIComponent(JSON.stringify(demandes))
+                    });
+
+                    const result = await response.json();
+                    Swal.close();
+
+                    if (result.status === 'success') {
+                        // 🔹 Déclencher le téléchargement de chaque fichier
+                        result.files.forEach(file => {
+                            const link = document.createElement('a');
+                            link.href = file;          // chemin du fichier côté public
+                            link.download = file.split('/').pop(); // nom du fichier
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        });
+
+                        // Afficher un message de succès
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ Export réussi',
+                            html: `
+                                <div style="text-align:center;">
+                                    <p style="font-size:16px; color:#059669; margin-bottom:12px;">
+                                        ${result.message}
+                                    </p>
+                                    <div style="background:#f0f9ff; padding:10px; border-radius:6px;">
+                                        <p style="margin:0; color:#0369a1; font-size:14px;">
+                                            Dossier : <strong>${result.folder}</strong><br>
+                                            Fichiers générés : <strong>${result.files.length}</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            `,
+                            confirmButtonText: 'Fermer',
+                            confirmButtonColor: '#059669',
+                            background: '#ffffff',
+                            color: '#333333',
+                            iconColor: '#059669'
+                        }).then(() => {
+                            window.location.reload(); // recharge la page après fermeture
+                        });
+
+                        sessionStorage.removeItem('allQuantities'); // nettoyer après succès
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '❌ Erreur',
+                            text: result.message || 'Une erreur est survenue lors de l\'export.',
+                            confirmButtonText: 'Fermer',
+                            confirmButtonColor: '#dc2626',
+                            background: '#ffffff',
+                            color: '#333333',
+                            iconColor: '#dc2626'
+                        });
+                    }
+                } catch (err) {
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: '🌐 Erreur réseau',
+                        text: 'Problème de connexion avec le serveur. Vérifiez votre connexion internet.',
+                        confirmButtonText: 'Réessayer',
+                        confirmButtonColor: '#dc2626',
+                        background: '#ffffff',
+                        color: '#333333',
+                        iconColor: '#dc2626'
+                    });
+                }
+            });
+        });
+
+        document.getElementById('importForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            try {
+                // Afficher un loader pendant le traitement
+                Swal.fire({
+                    title: 'Import en cours',
+                    text: 'Veuillez patienter...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                    background: '#ffffff',
+                    color: '#333333'
+                });
+
+                let response = await fetch('{{ path("app_import") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Fermer le loader
+                Swal.close();
+
+                let message = await response.text();
+                const isSuccess = message.includes("✅"); // true si succès
+
+                Swal.fire({
+                    icon: isSuccess ? 'success' : 'error',
+                    title: isSuccess ? '✅ Import réussi' : '❌ Erreur',
+                    html: `<div style="text-align: center;">
+                               <p style="font-size: 16px; margin-bottom: 16px; color: ${isSuccess ? '#059669' : '#721c24'};">
+                                   ${isSuccess ? 'Les fichiers ont été importés avec succès.' : message}
+                               </p>
+                           </div>`,
+                    confirmButtonText: 'Fermer',
+                    confirmButtonColor: isSuccess ? '#059669' : '#dc2626',
+                    background: '#ffffff',
+                    color: '#333333',
+                    iconColor: isSuccess ? '#059669' : '#dc2626',
+                    customClass: {
+                        popup: 'custom-swal-popup',
+                        title: 'custom-swal-title',
+                        htmlContainer: 'custom-swal-html'
+                    }
+                }).then(() => {
+                    // 🔄 Recharge la page après fermeture
+                    window.location.reload();
+                });
+
+            } catch (err) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: '🌐 Erreur réseau',
+                    text: "Problème de connexion avec le serveur. Vérifiez votre connexion internet.",
+                    confirmButtonText: 'Réessayer',
+                    confirmButtonColor: '#dc2626',
+                    background: '#ffffff',
+                    color: '#333333',
+                    iconColor: '#dc2626'
+                });
+            }
+        });
+    </script>
+{% endblock %}

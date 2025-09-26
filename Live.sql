@@ -25,10 +25,10 @@ CREATE TABLE Category(
 
 CREATE TABLE Item(
    id_item SERIAL,
-   images BIGINT,
    name_item VARCHAR(255)  NOT NULL,
    id_seller INTEGER NOT NULL,
    id_category INTEGER NOT NULL,
+   images VARCHAR(255),
    PRIMARY KEY(id_item),
    FOREIGN KEY(id_seller) REFERENCES Users(id_user),
    FOREIGN KEY(id_category) REFERENCES Category(id_category)
@@ -38,6 +38,11 @@ CREATE TABLE Size(
    id_size SERIAL,
    name_size VARCHAR(255)  NOT NULL,
    PRIMARY KEY(id_size)
+);
+
+CREATE TABLE Color (
+   id_color SERIAL PRIMARY KEY,
+   name_color VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE Item_size(
@@ -50,14 +55,30 @@ CREATE TABLE Item_size(
    FOREIGN KEY(id_item) REFERENCES Item(id_item)
 );
 
+CREATE TABLE Item_size_color(
+   id_item_size_color SERIAL,
+   id_item_size INTEGER NOT NULL,
+   id_color INTEGER NOT NULL,
+   images VARCHAR(255),
+   FOREIGN KEY(id_color) REFERENCES Color(id_color)
+);
+
+CREATE TABLE Export_temp(
+   id_export_temp SERIAL,
+   id_item_size_color INTEGER NOT NULL,
+   quantity INTEGER NOT NULL,
+   PRIMARY KEY(id_export_temp),
+   FOREIGN KEY(id_item_size_color) REFERENCES Item_size_color(id_item_size_color)
+);
+
 CREATE TABLE Items_stock(
    id_item_stock SERIAL,
    out_item INTEGER,
-   in_item VARCHAR(50) ,
+   in_item INTEGER ,
    date_move TIMESTAMP NOT NULL,
-   id_item_size INTEGER NOT NULL,
+   id_item_size_color INTEGER NOT NULL,
    PRIMARY KEY(id_item_stock),
-   FOREIGN KEY(id_item_size) REFERENCES Item_size(id_item_size)
+   FOREIGN KEY(id_item_size_color) REFERENCES Item_size_color(id_item_size_color)
 );
 
 CREATE TABLE Promotion(
@@ -125,15 +146,6 @@ CREATE TABLE Bag_details(
    FOREIGN KEY(id_bag) REFERENCES Bag(id_bag)
 );
 
--- CREATE TABLE Commande(
---    id_commande SERIAL,
---    id_state INTEGER NOT NULL,
---    id_bag INTEGER NOT NULL,
---    PRIMARY KEY(id_commande),
---    FOREIGN KEY(id_state) REFERENCES State_commande(id_state),
---    FOREIGN KEY(id_bag) REFERENCES Bag(id_bag)
--- );
-
 CREATE TABLE Commande(
    id_commande SERIAL PRIMARY KEY,
    id_state INTEGER NOT NULL,             -- ex: en attente, payé, livré
@@ -191,6 +203,15 @@ CREATE TABLE State_commande(
    PRIMARY KEY(id_state)
 );
 
+CREATE TABLE Sale(
+   id_sale SERIAL,
+   sale_date TIMESTAMP NOT NULL,
+   is_paid BOOLEAN,
+   id_commande INTEGER NOT NULL,
+   PRIMARY KEY(id_sale),
+   FOREIGN KEY(id_commande) REFERENCES Commande(id_commande)
+);
+
 CREATE TABLE Notification(
    id_notification SERIAL,
    title VARCHAR(500)  NOT NULL,
@@ -213,15 +234,37 @@ CREATE TABLE Liaison_notification(
    FOREIGN KEY(id_notification) REFERENCES Notification(id_notification)
 );
 
-CREATE TABLE Sale(
-   id_sale SERIAL,
-   sale_date TIMESTAMP NOT NULL,
-   is_paid BOOLEAN,
-   id_commande INTEGER NOT NULL,
-   PRIMARY KEY(id_sale),
-   FOREIGN KEY(id_commande) REFERENCES Commande(id_commande)
+CREATE TABLE Goals(
+   id_goal SERIAL,
+   id_seller INTEGER NOT NULL,
+   target_ca NUMERIC(15,2) NOT NULL,   
+   target_ventes INTEGER NOT NULL,
+   PRIMARY KEY(id_goal),
+   FOREIGN KEY(id_seller) REFERENCES Users(id_user)
 );
 
+SELECT
+    EXTRACT(YEAR FROM s.sale_date) AS annee,
+    EXTRACT(MONTH FROM s.sale_date) AS mois,
+    g.target_ca,
+    g.target_ventes,
+    COALESCE(SUM(cd.price * cd.quantity), 0) AS ca_realise,
+    COUNT(DISTINCT s.id_sale) AS ventes_realisees,
+    COALESCE(SUM(cd.price * cd.quantity), 0) - g.target_ca AS ecart_ca,
+    COUNT(DISTINCT s.id_sale) - g.target_ventes AS ecart_ventes
+FROM Goals g
+LEFT JOIN Commande c ON c.id_seller = g.id_seller
+LEFT JOIN Sale s ON s.id_commande = c.id_commande AND s.is_paid = TRUE
+LEFT JOIN Commande_details cd ON cd.id_commande = c.id_commande
+WHERE g.id_seller = :sellerId
+AND s.sale_date BETWEEN :dateDebut AND :dateFin
+GROUP BY annee, mois, g.target_ca, g.target_ventes
+ORDER BY annee, mois;
 
+$jours_passes = (new \DateTime())->format('d'); // jours écoulés du mois
+$jours_total = date('t'); // nombre total de jours dans le mois
+
+$projection_ca = $ca_realise / $jours_passes * $jours_total;
+$projection_ventes = $ventes_realisees / $jours_passes * $jours_total;
 
 https://dbdiagram.io/d/67dc43c975d75cc844dcaee2

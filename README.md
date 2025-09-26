@@ -16,8 +16,11 @@ npm install chart.js
 composer require symfony/mime
 composer require symfony/firebase-notifier
 
+composer require knplabs/knp-paginator-bundle
+composer require symfony/translation
 
 npm install ws
+npm install jspdf html2canvas
 
 symfony serve --allow-http --port=8000 --allow-all-ip
 netsh advfirewall firewall add rule name="WebSocket" dir=in action=allow protocol=TCP localport=9090
@@ -87,3 +90,85 @@ Cote mobile uniquement :
                 -etat(En attente,En cours de recuperation,En cours de livraison,Livré)
                 -notication de l'etat
             
+
+
+1️⃣ Liste des ventes (page principale de l’historique)
+
+👉 Colonnes à afficher :
+
+N° de vente (id_sale)
+
+Date de vente (sale_date)
+
+Client (nom/prénom → via Users.id_user)
+
+Vendeur (Users aussi)
+
+État de la commande (via State_commande.name_state → ex. "En attente", "Payé", "Livré")
+
+Montant total (somme des Commande_details.quantity * price)
+
+Statut paiement (is_paid)
+
+👉 Filtres utiles :
+
+Par date (intervalle)
+
+Par état de commande (payé, en attente, livré…)
+
+Par statut paiement (payé / non payé)
+
+2️⃣ Détails d’une vente (vue détaillée)
+
+Quand on clique sur une ligne, afficher :
+
+Infos commande (id_commande, date, état, vendeur, client)
+
+Liste des articles vendus (depuis Commande_details) :
+
+Produit (via Item_size → Item)
+
+Taille (si applicable)
+
+Quantité
+
+Prix unitaire
+
+Sous-total (quantité × prix)
+
+Total général
+
+3️⃣ Facture (vue imprimable / téléchargeable PDF)
+
+Format classique de facture :
+
+En-tête avec ton logo, date, numéro de facture (= id_sale ou généré)
+
+Infos client (nom, adresse, contact → Users)
+
+Détails commande (articles, quantités, prix)
+
+Montant total
+
+Mention paiement (Payé / Non payé)
+
+Signature / cachet si nécessaire
+
+4️⃣ Paiement (gestion ou affichage)
+
+Si is_paid = false → bouton Marquer comme payé
+
+Historique des paiements (si tu ajoutes une table Payment)
+Exemple de structure :
+
+CREATE TABLE Payment(
+   id_payment SERIAL PRIMARY KEY,
+   id_sale INTEGER NOT NULL,
+   amount NUMERIC(10,2) NOT NULL,
+   method VARCHAR(100),  -- ex: Cash, Carte, Virement
+   payment_date TIMESTAMP DEFAULT NOW(),
+   FOREIGN KEY(id_sale) REFERENCES Sale(id_sale)
+);
+
+
+Afficher la liste des paiements effectués + reste dû

@@ -1,0 +1,227 @@
+{% extends 'admin/baseAdmin.html.twig' %}
+
+{% block title %}Suivi des Objectifs Mensuels{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/objectif.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="modern-dashboard">
+    <!-- FILTRE DE PÉRIODE -->
+    <div class="filter-card">
+        <form class="filter-form" action="{{ path('app_objectif_mensuel') }}" method="post">
+            <div class="filter-group">
+                <label class="filter-label" for="dateD">Période</label>
+                <div class="date-range">
+                    <input type="date" name="dateD" id="dateD" required class="modern-input">
+                    <span class="date-separator">—</span>
+                    <input type="date" name="dateF" id="dateF" required class="modern-input">
+                </div>
+            </div>
+            <button type="submit" class="modern-button">
+                <i class="fas fa-search"></i> Appliquer
+            </button>
+        </form>
+    </div>
+
+    {% if monthlyGoals is not empty %}
+
+    <!-- CARTES DE SYNTHÈSE -->
+    <div class="summary-cards">
+        <div class="summary-card ca-card">
+            <div class="card-header">
+                <h3 class="card-title">Chiffre d'affaires</h3>
+                <div class="card-icon">
+                    <i class="fas fa-euro-sign"></i>
+                </div>
+            </div>
+            <div class="summary-content">
+                <div class="summary-item">
+                    <span class="summary-label">Objectif moyen:</span>
+                    <span class="summary-value">{{ (monthlyGoals|map(g => g.target_ca)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} €</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Réalisation moyenne:</span>
+                    <span class="summary-value">{{ (monthlyGoals|map(g => g.ca_realise)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} €</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-card ventes-card">
+            <div class="card-header">
+                <h3 class="card-title">Ventes</h3>
+                <div class="card-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+            </div>
+            <div class="summary-content">
+                <div class="summary-item">
+                    <span class="summary-label">Objectif moyen:</span>
+                    <span class="summary-value">{{ (monthlyGoals|map(g => g.target_ventes)|reduce((sum, v) => sum + v) / monthlyGoals|length)|number_format(0, ',', ' ') }}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Réalisation moyenne:</span>
+                    <span class="summary-value">{{ (monthlyGoals|map(g => g.ventes_realisees)|reduce((sum, v) => sum + v) / monthlyGoals|length)|number_format(0, ',', ' ') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRAPHIQUES -->
+    <div class="charts-section">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5 class="chart-title">Évolution du chiffre d'affaires</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="caChart" height="250"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5 class="chart-title">Évolution des ventes</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="ventesChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLEAU CHIFFRE D'AFFAIRES -->
+    <div class="table-section">
+        <div class="table-header">
+            <h3 class="table-title"><i class="fas fa-euro-sign"></i> Détail mensuel - Chiffre d'Affaires</h3>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Mois/Année</th>
+                        <th>Objectif CA (€)</th>
+                        <th>CA Réalisé (€)</th>
+                        <th>Projection CA (€)</th>
+                        <th>Écart CA (€)</th>
+                        <th>Réalisation CA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for goal in monthlyGoals %}
+                        {% set taux_ca = (goal.target_ca > 0) ? (goal.ca_realise / goal.target_ca * 100) : 0 %}
+                        <tr>
+                            <td class="period-cell">{{ goal.mois ~ '/' ~ goal.annee }}</td>
+                            <td class="target-cell">{{ goal.target_ca|number_format(2, ',', ' ') }}</td>
+                            <td class="actual-cell">{{ goal.ca_realise|number_format(2, ',', ' ') }}</td>
+                            <td class="projection-cell">{{ goal.projection_ca|number_format(2, ',', ' ') }}</td>
+                            <td class="{% if goal.ecart_ca < 0 %}negative-gap{% else %}positive-gap{% endif %}">
+                                {{ goal.ecart_ca|number_format(2, ',', ' ') }}
+                            </td>
+                            <td>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill {% if taux_ca >= 100 %}progress-success{% else %}progress-warning{% endif %}" style="width: {{ min(taux_ca, 100) }}%"></div>
+                                    </div>
+                                    <span class="progress-value">{{ taux_ca|number_format(1, ',', ' ') }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABLEAU VENTES -->
+    <div class="table-section">
+        <div class="table-header">
+            <h3 class="table-title"><i class="fas fa-shopping-cart"></i> Détail mensuel - Ventes</h3>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Mois/Année</th>
+                        <th>Objectif Ventes</th>
+                        <th>Ventes Réalisées</th>
+                        <th>Projection Ventes</th>
+                        <th>Écart Ventes</th>
+                        <th>Réalisation Ventes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for goal in monthlyGoals %}
+                        {% set taux_ventes = (goal.target_ventes > 0) ? (goal.ventes_realisees / goal.target_ventes * 100) : 0 %}
+                        <tr>
+                            <td class="period-cell">{{ goal.mois ~ '/' ~ goal.annee }}</td>
+                            <td class="target-cell">{{ goal.target_ventes }}</td>
+                            <td class="actual-cell">{{ goal.ventes_realisees }}</td>
+                            <td class="projection-cell">{{ goal.projection_ventes|number_format(0, ',', ' ') }}</td>
+                            <td class="{% if goal.ecart_ventes < 0 %}negative-gap{% else %}positive-gap{% endif %}">
+                                {{ goal.ecart_ventes }}
+                            </td>
+                            <td>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill {% if taux_ventes >= 100 %}progress-success{% else %}progress-warning{% endif %}" style="width: {{ min(taux_ventes, 100) }}%"></div>
+                                    </div>
+                                    <span class="progress-value">{{ taux_ventes|number_format(1, ',', ' ') }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="alert">
+        <i class="fas fa-info-circle"></i> Aucun objectif trouvé pour cette période.
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if monthlyGoals is not empty %}
+        const labels = {{ monthlyGoals|map(g => g.mois ~ '/' ~ g.annee)|json_encode|raw }};
+        const targetCA = {{ monthlyGoals|map(g => g.target_ca)|json_encode|raw }};
+        const realizedCA = {{ monthlyGoals|map(g => g.ca_realise)|json_encode|raw }};
+        const targetVentes = {{ monthlyGoals|map(g => g.target_ventes)|json_encode|raw }};
+        const realizedVentes = {{ monthlyGoals|map(g => g.ventes_realisees)|json_encode|raw }};
+
+        // Graphique CA
+        new Chart(document.getElementById('caChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Objectif CA', data: targetCA, borderColor: '#ff6384', backgroundColor: 'rgba(255, 99, 132, 0.2)', fill: true, tension: 0.3 },
+                    { label: 'CA Réalisé', data: realizedCA, borderColor: '#36a2eb', backgroundColor: 'rgba(54, 162, 235, 0.2)', fill: true, tension: 0.3 }
+                ]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('fr-FR') + ' €' } } } }
+        });
+
+        // Graphique Ventes
+        new Chart(document.getElementById('ventesChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Objectif Ventes', data: targetVentes, backgroundColor: 'rgba(255,159,64,0.7)' },
+                    { label: 'Ventes Réalisées', data: realizedVentes, backgroundColor: 'rgba(75,192,192,0.7)' }
+                ]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+    {% endif %}
+});
+</script>
+{% endblock %}
