@@ -129,6 +129,7 @@ class StockController extends AbstractController
             $request->files->get('file1'),
             $request->files->get('file2'),
             $request->files->get('file3'),
+            $request->files->get('file4'),
         ];
 
         $importResult = $this->itemsStockRepository->importCsv($sellerId, $files, $em);
@@ -200,8 +201,8 @@ class StockController extends AbstractController
         }
 
         try {
-            // Générer les données CSV
-            [$categoriesCsv, $itemsCsv, $sizesCsv] = $exportRepo->buildCsvData($demandes);
+            // Générer les données CSV (ajout color.csv)
+            [$categoriesCsv, $itemsCsv, $sizesCsv, $colorCsv] = $exportRepo->buildCsvData($demandes);
 
             // Timestamp pour le dossier
             $timestamp = date('Ymd_His');
@@ -214,6 +215,7 @@ class StockController extends AbstractController
             $exportRepo->arrayToCsv($categoriesCsv, $exportDir . 'categories.csv');
             $exportRepo->arrayToCsv($itemsCsv, $exportDir . 'items.csv');
             $exportRepo->arrayToCsv($sizesCsv, $exportDir . 'sizes.csv');
+            $exportRepo->arrayToCsv($colorCsv, $exportDir . 'color.csv');
 
             // 🔹 Supprimer les enregistrements exportés
             foreach ($demandes as $demande) {
@@ -233,7 +235,8 @@ class StockController extends AbstractController
                 'files'   => [
                     '/export_' . $timestamp . '/categories.csv',
                     '/export_' . $timestamp . '/items.csv',
-                    '/export_' . $timestamp . '/sizes.csv'
+                    '/export_' . $timestamp . '/sizes.csv',
+                    '/export_' . $timestamp . '/color.csv'
                 ]
             ]);
         } catch (\Exception $e) {

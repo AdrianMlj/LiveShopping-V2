@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\ExportTemp;
 use App\Entity\ItemSize;
+use App\Entity\ItemSizeColor;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\EntityManagerInterface;
@@ -30,23 +31,23 @@ class ExportTempRepository extends ServiceEntityRepository
 
         try {
             foreach ($demandes as $demande) {
-                $itemSizeId = $demande['idItemSize'] ?? null;
+                $itemSizeColorId = $demande['idItemSize'] ?? null;
                 $qty = (int)($demande['qty'] ?? 0);
 
-                if (!$itemSizeId || $qty <= 0) continue;
+                if (!$itemSizeColorId || $qty <= 0) continue;
 
-                // Vérifier si cet itemSize existe déjà
-                $existing = $this->findOneBy(['itemSize' => $itemSizeId]);
+                // Vérifier si cet itemSizeColor existe déjà
+                $existing = $this->findOneBy(['itemSizeColor' => $itemSizeColorId]);
 
                 if ($existing) {
                     // Ajouter la quantité si déjà existant
                     $existing->setQuantity($existing->getQuantity() + $qty);
                 } else {
-                    $itemSize = $this->em->getRepository(ItemSize::class)->find($itemSizeId);
-                    if (!$itemSize) continue;
+                    $itemSizeColor = $this->em->getRepository(ItemSizeColor::class)->find($itemSizeColorId);
+                    if (!$itemSizeColor) continue;
 
                     $export = new ExportTemp();
-                    $export->setItemSize($itemSize)
+                    $export->setItemSizeColor($itemSizeColor)
                            ->setQuantity($qty);
 
                     $this->em->persist($export);
@@ -79,9 +80,12 @@ class ExportTempRepository extends ServiceEntityRepository
                 'seller.username AS sellerName',
                 'size.id AS sizeId',
                 'size.nameSize AS sizeLabel',
-                'itemSize.valueSize AS valueSize'
+                'itemSize.valueSize AS valueSize',
+                'c.nameColor AS colorName'
             )
-            ->join('et.itemSize', 'itemSize')
+            ->join('et.itemSizeColor', 'isc')
+            ->join('isc.color', 'c')
+            ->join('isc.itemSize', 'itemSize')
             ->join('itemSize.item', 'item')
             ->join('itemSize.size', 'size')
             ->join('item.category', 'category')
@@ -125,18 +129,28 @@ class ExportTempRepository extends ServiceEntityRepository
                 }
             }
             $exportMap[$et->getId()] = [
-                'id_item_size' => $et->getItemSize()->getId(),
+                'id_item_size' => $et->getItemSizeColor()->getItemSize()->getId(),
                 'quantity'     => $quantity
             ];
         }
 
-        // 4️⃣ Récupérer tous les ItemSize concernés
+        // 4️⃣ Préparer le CSV des couleurs (refItemSize, color, inItem)
+        $colorCsv = [["refItemSize","color","inItem"]];
+        foreach ($exportTemps as $et) {
+            $refItemSize = $et->getItemSizeColor()->getItemSize()->getId();
+            $colorName   = $et->getItemSizeColor()->getColor()->getNameColor();
+            $qty         = $exportMap[$et->getId()]['quantity'] ?? 0;
+            $colorCsv[]  = [ $refItemSize, $colorName, $qty ];
+        }
+
+        // 5️⃣ Récupérer tous les ItemSize concernés
         $itemSizeIds = array_column($exportMap, 'id_item_size');
         if (empty($itemSizeIds)) {
             return [
                 [["refCategory","nameCategory","Description"]],
-                [["refItem","nameItem","refCategory","images","price","date"]],
-                [["refItem","size","valueSize","inItem"]]
+                [["refItem","nameItem","refCategory","price","date"]],
+                [["refItemSize","refItem","size","valueSize","inItem"]],
+                $colorCsv
             ];
         }
 
@@ -151,10 +165,10 @@ class ExportTempRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
-        // 5️⃣ Préparer les CSV
+        // 6️⃣ Préparer les CSV
         $categoriesCsv = [["refCategory","nameCategory","Description"]];
-        $itemsCsv      = [["refItem","nameItem","refCategory","images","price","date"]];
-        $sizesCsv      = [["refItem","size","valueSize","inItem"]];
+        $itemsCsv      = [["refItem","nameItem","refCategory","price","date"]];
+        $sizesCsv      = [["refItemSize","refItem","size","valueSize","inItem"]];
 
         foreach ($itemSizes as $itemSize) {
             $item = $itemSize->getItem();
@@ -186,20 +200,20 @@ class ExportTempRepository extends ServiceEntityRepository
                     $lastDate  = $price->getDatePrice();
                 }
             }
-            
+
             $today = (new \DateTime())->format('d/m/Y');
             // Item
             $itemsCsv[] = [
                 $item->getId(),
                 $item->getNameItem(),
                 $cat->getId(),
-                $item->getImages(),
                 $lastPrice ?? 0,
                 $today
             ];
 
             // Taille
             $sizesCsv[] = [
+                $itemSize->getId(),
                 $item->getId(),
                 $size->getNameSize(),
                 $itemSize->getValueSize(),
@@ -207,7 +221,7 @@ class ExportTempRepository extends ServiceEntityRepository
             ];
         }
 
-        return [$categoriesCsv, $itemsCsv, $sizesCsv];
+        return [$categoriesCsv, $itemsCsv, $sizesCsv, $colorCsv];
     }
 
     public function arrayToCsv(array $data, string $filename): void

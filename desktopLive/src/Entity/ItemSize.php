@@ -26,20 +26,24 @@ class ItemSize
     #[ORM\JoinColumn(name: 'id_item', referencedColumnName: 'id_item', nullable: false)]
     private ?Item $item = null;
 
-    #[ORM\OneToMany(mappedBy: 'itemSize', targetEntity: ItemsStock::class)]
-    private Collection $stocks;
+    // Relation de stock déplacée vers ItemSizeColor → ItemsStock
+
+    #[ORM\OneToMany(mappedBy: 'itemSize', targetEntity: ItemSizeColor::class, orphanRemoval: true)]
+    private Collection $itemSizeColors;
 
     public function __construct()
     {
-        $this->stocks = new ArrayCollection();
+        $this->itemSizeColors = new ArrayCollection();
     }
 
     // Getters et setters
-    public function getStocks(): Collection
+    // Note: plus de getStocks() ici; utilisez ItemSizeColor->getStocks()
+
+    public function getItemSizeColors(): Collection
     {
-        return $this->stocks;
+        return $this->itemSizeColors;
     }
-    
+
     public function getId(): ?int
     {
         return $this->id;

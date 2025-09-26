@@ -6,11 +6,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Knp\Component\Pager\PaginatorInterface;
-use App\Entity\ExportTemp;
-use App\Entity\ItemSize;
 use App\Repository\HistoryRepository;
 use App\Repository\StateCommandeRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class HistoriqueController extends AbstractController

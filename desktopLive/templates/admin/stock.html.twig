@@ -70,6 +70,7 @@
                                 <tr>
                                     <th>Article</th>
                                     <th>Taille</th>
+                                    <th>Couleur</th>
                                     <th>Entrées</th>
                                     <th>Sorties</th>
                                     <th>Date</th>
@@ -80,6 +81,31 @@
                                     <tr>
                                         <td>{{ movement.name_item }}</td>
                                         <td>{{ movement.value_size }}</td>
+                                        <td style="text-align:center;">
+                                            {% set colorMap = {
+                                                'rouge':'#e74c3c','red':'#e74c3c',
+                                                'vert':'#2ecc71','green':'#2ecc71',
+                                                'bleu':'#3498db','blue':'#3498db',
+                                                'noir':'#000000','black':'#000000',
+                                                'blanc':'#ffffff','white':'#ffffff',
+                                                'jaune':'#f1c40f','yellow':'#f1c40f',
+                                                'orange':'#e67e22',
+                                                'rose':'#ff69b4',
+                                                'violet':'#8e44ad',
+                                                'gris':'#7f8c8d',
+                                                'marron':'#8B4513','brown':'#8B4513'
+                                            } %}
+                                            {% set cname = (movement.name_color ?? '')|lower|trim %}
+                                            {% set hex = colorMap[cname] is defined ? colorMap[cname] : '#cccccc' %}
+                                            {% set isWhite = hex == '#ffffff' %}
+                                            {% set bg = isWhite
+                                                ? 'repeating-linear-gradient(45deg,#f1f1f1 0 4px,#dddddd 4px 8px)'
+                                                : hex %}
+                                            <span title="{{ movement.name_color }}"
+                                                  style="display:inline-block;width:18px;height:18px;border-radius:6px;
+                                                         border:1px solid #bfbfbf;background: {{ bg }};
+                                                         box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
+                                        </td>
                                         <td class="{% if movement.in_item > 0 %}positive{% endif %}">
                                             {{ movement.in_item ?? 0 }}
                                         </td>
@@ -134,6 +160,7 @@
                                     <th>Sélection</th>
                                     <th>Article</th>
                                     <th>Taille</th>
+                                    <th>Couleur</th>
                                     <th>Stock disponible</th>
                                 </tr>
                             </thead>
@@ -141,11 +168,36 @@
                                 {% for row in currentStock %}
                                     <tr>
                                         <td>
-                                            <input type="checkbox" class="check-demand" data-id="{{ row.itemsizeid }}" />
+                                            <input type="checkbox" class="check-demand" data-id="{{ row.itemsizecolorid }}" />
                                             <input type="number" class="qty-input hidden" min="1" value="10" />
                                         </td>
                                         <td>{{ row.itemname }}</td>
                                         <td>{{ row.valuesize }}</td>
+                                        <td style="text-align:center;">
+                                            {% set colorMap = {
+                                                'rouge':'#e74c3c','red':'#e74c3c',
+                                                'vert':'#2ecc71','green':'#2ecc71',
+                                                'bleu':'#3498db','blue':'#3498db',
+                                                'noir':'#000000','black':'#000000',
+                                                'blanc':'#ffffff','white':'#ffffff',
+                                                'jaune':'#f1c40f','yellow':'#f1c40f',
+                                                'orange':'#e67e22',
+                                                'rose':'#ff69b4',
+                                                'violet':'#8e44ad',
+                                                'gris':'#7f8c8d',
+                                                'marron':'#8B4513','brown':'#8B4513'
+                                            } %}
+                                            {% set cname = (row.colorname ?? '')|lower|trim %}
+                                            {% set hex = colorMap[cname] is defined ? colorMap[cname] : '#cccccc' %}
+                                            {% set isWhite = hex == '#ffffff' %}
+                                            {% set bg = isWhite
+                                                ? 'repeating-linear-gradient(45deg,#f1f1f1 0 4px,#dddddd 4px 8px)'
+                                                : hex %}
+                                            <span title="{{ row.colorname }}"
+                                                  style="display:inline-block;width:18px;height:18px;border-radius:6px;
+                                                         border:1px solid #bfbfbf;background: {{ bg }};
+                                                         box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
+                                        </td>
                                         <td>
                                             <strong class="{% if row.currentstock > 5 %}in-stock{% else %}out-of-stock{% endif %}">
                                                 {{ row.currentstock }}
@@ -204,8 +256,12 @@
                             <input type="file" id="file2" name="file2" class="modern-input" required>
                         </div>
                         <div class="form-group">
-                            <label for="file3">Fichier des Stocks</label>
+                            <label for="file3">Fichier des Tailles</label>
                             <input type="file" id="file3" name="file3" class="modern-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="file4">Fichier des Couleurs et Stock</label>
+                            <input type="file" id="file4" name="file4" class="modern-input" required>
                         </div>
                         <button type="submit" class="modern-button">
                             <i class="fas fa-upload"></i> Importer
@@ -234,6 +290,7 @@
                                     <th>Article</th>
                                     <th>Catégorie</th>
                                     <th>Taille</th>
+                                    <th>Couleur</th>
                                     <th>Quantité</th>
                                     <th>Action</th>
                                 </tr>
@@ -244,6 +301,31 @@
                                         <td>{{ row.itemName }}</td>
                                         <td>{{ row.categoryName }}</td>
                                         <td>{{ row.valueSize }}</td>
+                                        <td style="text-align:center;">
+                                            {% set colorMap = {
+                                                'rouge':'#e74c3c','red':'#e74c3c',
+                                                'vert':'#2ecc71','green':'#2ecc71',
+                                                'bleu':'#3498db','blue':'#3498db',
+                                                'noir':'#000000','black':'#000000',
+                                                'blanc':'#ffffff','white':'#ffffff',
+                                                'jaune':'#f1c40f','yellow':'#f1c40f',
+                                                'orange':'#e67e22',
+                                                'rose':'#ff69b4',
+                                                'violet':'#8e44ad',
+                                                'gris':'#7f8c8d',
+                                                'marron':'#8B4513','brown':'#8B4513'
+                                            } %}
+                                            {% set cname = (row.colorName ?? '')|lower|trim %}
+                                            {% set hex = colorMap[cname] is defined ? colorMap[cname] : '#cccccc' %}
+                                            {% set isWhite = hex == '#ffffff' %}
+                                            {% set bg = isWhite
+                                                ? 'repeating-linear-gradient(45deg,#f1f1f1 0 4px,#dddddd 4px 8px)'
+                                                : hex %}
+                                            <span title="{{ row.colorName }}"
+                                                  style="display:inline-block;width:18px;height:18px;border-radius:6px;
+                                                         border:1px solid #bfbfbf;background: {{ bg }};
+                                                         box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
+                                        </td>
                                         <td>
                                             <input
                                                 type="number"

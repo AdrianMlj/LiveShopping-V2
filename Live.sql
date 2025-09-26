@@ -25,10 +25,10 @@ CREATE TABLE Category(
 
 CREATE TABLE Item(
    id_item SERIAL,
-   images BIGINT,
    name_item VARCHAR(255)  NOT NULL,
    id_seller INTEGER NOT NULL,
    id_category INTEGER NOT NULL,
+   images VARCHAR(255),
    PRIMARY KEY(id_item),
    FOREIGN KEY(id_seller) REFERENCES Users(id_user),
    FOREIGN KEY(id_category) REFERENCES Category(id_category)
@@ -38,6 +38,11 @@ CREATE TABLE Size(
    id_size SERIAL,
    name_size VARCHAR(255)  NOT NULL,
    PRIMARY KEY(id_size)
+);
+
+CREATE TABLE Color (
+   id_color SERIAL PRIMARY KEY,
+   name_color VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE Item_size(
@@ -50,12 +55,20 @@ CREATE TABLE Item_size(
    FOREIGN KEY(id_item) REFERENCES Item(id_item)
 );
 
+CREATE TABLE Item_size_color(
+   id_item_size_color SERIAL,
+   id_item_size INTEGER NOT NULL,
+   id_color INTEGER NOT NULL,
+   images VARCHAR(255),
+   FOREIGN KEY(id_color) REFERENCES Color(id_color)
+);
+
 CREATE TABLE Export_temp(
    id_export_temp SERIAL,
-   id_item_size INTEGER NOT NULL,
+   id_item_size_color INTEGER NOT NULL,
    quantity INTEGER NOT NULL,
    PRIMARY KEY(id_export_temp),
-   FOREIGN KEY(id_item_size) REFERENCES Item_size(id_item_size)
+   FOREIGN KEY(id_item_size_color) REFERENCES Item_size_color(id_item_size_color)
 );
 
 CREATE TABLE Items_stock(
@@ -63,9 +76,9 @@ CREATE TABLE Items_stock(
    out_item INTEGER,
    in_item INTEGER ,
    date_move TIMESTAMP NOT NULL,
-   id_item_size INTEGER NOT NULL,
+   id_item_size_color INTEGER NOT NULL,
    PRIMARY KEY(id_item_stock),
-   FOREIGN KEY(id_item_size) REFERENCES Item_size(id_item_size)
+   FOREIGN KEY(id_item_size_color) REFERENCES Item_size_color(id_item_size_color)
 );
 
 CREATE TABLE Promotion(
@@ -190,6 +203,15 @@ CREATE TABLE State_commande(
    PRIMARY KEY(id_state)
 );
 
+CREATE TABLE Sale(
+   id_sale SERIAL,
+   sale_date TIMESTAMP NOT NULL,
+   is_paid BOOLEAN,
+   id_commande INTEGER NOT NULL,
+   PRIMARY KEY(id_sale),
+   FOREIGN KEY(id_commande) REFERENCES Commande(id_commande)
+);
+
 CREATE TABLE Notification(
    id_notification SERIAL,
    title VARCHAR(500)  NOT NULL,
@@ -210,15 +232,6 @@ CREATE TABLE Liaison_notification(
    id_notification INTEGER NOT NULL,
    PRIMARY KEY(id_liaison),
    FOREIGN KEY(id_notification) REFERENCES Notification(id_notification)
-);
-
-CREATE TABLE Sale(
-   id_sale SERIAL,
-   sale_date TIMESTAMP NOT NULL,
-   is_paid BOOLEAN,
-   id_commande INTEGER NOT NULL,
-   PRIMARY KEY(id_sale),
-   FOREIGN KEY(id_commande) REFERENCES Commande(id_commande)
 );
 
 CREATE TABLE Goals(

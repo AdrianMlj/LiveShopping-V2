@@ -15,9 +15,6 @@ class Item
     #[ORM\Column(name: 'id_item')]
     private ?int $id = null;
 
-    #[ORM\Column(length: 500, nullable: true)]
-    private ?string $images = null;
-
     #[ORM\Column(name: 'name_item', length: 255)]
     private ?string $nameItem = null;
 
@@ -104,14 +101,18 @@ class Item
         return $this;
     }
 
+    #[ORM\Column(name: 'images', length: 255, nullable: true)]
+    private ?string $images = null;
+
     public function getImages(): ?string
     {
         return $this->images;
     }
 
-    public function setImages(?string $images): self
+    public function setImages(?string $images): static
     {
         $this->images = $images;
         return $this;
     }
+
 }

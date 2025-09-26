@@ -29,11 +29,11 @@ class ItemsStockRepository extends ServiceEntityRepository
 
         $sql = "
             SELECT
-                s.*,
-                i.name_item,
-                isz.value_size
+                s.*, i.name_item, isz.value_size, c.name_color
             FROM items_stock s
-            INNER JOIN item_size isz ON s.id_item_size = isz.id_item_size
+            INNER JOIN item_size_color isc ON s.id_item_size_color = isc.id_item_size_color
+            INNER JOIN color c ON isc.id_color = c.id_color
+            INNER JOIN item_size isz ON isc.id_item_size = isz.id_item_size
             INNER JOIN item i ON isz.id_item = i.id_item
             WHERE s.date_move BETWEEN :start AND :end
             AND i.id_seller = :idSeller
@@ -60,14 +60,18 @@ class ItemsStockRepository extends ServiceEntityRepository
                 i.name_item AS itemName,
                 isz.id_item_size AS itemSizeId,
                 isz.value_size AS valueSize,
+                c.name_color AS colorName,
+                isc.id_item_size_color AS itemSizeColorId,
                 COALESCE(SUM(s.in_item),0) - COALESCE(SUM(s.out_item),0) AS currentStock
             FROM items_stock s
-            INNER JOIN item_size isz ON s.id_item_size = isz.id_item_size
+            INNER JOIN item_size_color isc ON s.id_item_size_color = isc.id_item_size_color
+            INNER JOIN color c ON isc.id_color = c.id_color
+            INNER JOIN item_size isz ON isc.id_item_size = isz.id_item_size
             INNER JOIN item i ON isz.id_item = i.id_item
             WHERE i.id_seller = :idSeller
-            GROUP BY i.id_item, i.name_item, isz.id_item_size, isz.value_size
+            GROUP BY i.id_item, i.name_item, isz.id_item_size, isz.value_size, c.name_color, isc.id_item_size_color
             HAVING COALESCE(SUM(s.in_item),0) - COALESCE(SUM(s.out_item),0) > 0
-            ORDER BY i.name_item ASC
+            ORDER BY i.name_item ASC, isz.value_size ASC, c.name_color ASC
         ";
 
         $stmt = $conn->prepare($sql);
@@ -115,21 +119,27 @@ class ItemsStockRepository extends ServiceEntityRepository
         $validateItemRow = function(array $row, int $index) use ($addError): bool {
             $valid = true;
 
-            if (count($row) < 6) {
-                $addError($index, "Items : Format invalide (attendu: refItem, nameItem, refCategory, images, price, date)");
+            // Accepte 5 ou 6 colonnes (images optionnel)
+            if (count($row) < 5) {
+                $addError($index, "Items : Format invalide (attendu: refItem, nameItem, refCategory, [images], price, date)");
                 $valid = false;
             }
 
-            if (!is_numeric($row[4])) {
-                $addError($index, "Items : Prix invalide (pas un nombre) : {$row[4]}");
+            // Détecter l'index du prix et de la date en fonction de la présence d'images
+            $hasImagesColumn = count($row) >= 6;
+            $priceIndex = $hasImagesColumn ? 4 : 3;
+            $dateIndex = $hasImagesColumn ? 5 : 4;
+
+            if (!is_numeric($row[$priceIndex])) {
+                $addError($index, "Items : Prix invalide (pas un nombre) : {$row[$priceIndex]}");
                 $valid = false;
-            } elseif ((float)$row[4] < 0) {
-                $addError($index, "Items : Prix négatif interdit : {$row[4]}");
+            } elseif ((float)$row[$priceIndex] < 0) {
+                $addError($index, "Items : Prix négatif interdit : {$row[$priceIndex]}");
                 $valid = false;
             }
 
-            if (!\DateTime::createFromFormat('d/m/Y', $row[5])) {
-                $addError($index, "Items : Date invalide (attendu format d/m/Y) : {$row[5]}");
+            if (!\DateTime::createFromFormat('d/m/Y', $row[$dateIndex])) {
+                $addError($index, "Items : Date invalide (attendu format d/m/Y) : {$row[$dateIndex]}");
                 $valid = false;
             }
 
@@ -145,27 +155,39 @@ class ItemsStockRepository extends ServiceEntityRepository
             $valid = true;
 
             if (count($row) < 4) {
-                $addError($index, "Stock : Format invalide (attendu: refItem, sizeName, valueSize, inItem)");
+                $addError($index, "Tailles : Format invalide (attendu: refItemSize, refItem, sizeName, valueSize)");
                 $valid = false;
             }
 
             if (empty($row[0])) {
-                $addError($index, "Stock : refItem vide");
+                $addError($index, "Tailles : refItemSize vide");
+                $valid = false;
+            }
+            if (empty($row[2])) {
+                $addError($index, "Tailles : Nom de taille vide");
+                $valid = false;
+            }
+            return $valid;
+        };
+
+        $validateColorRow = function(array $row, int $index) use ($addError): bool {
+            $valid = true;
+            if (count($row) < 3) {
+                $addError($index, "Couleurs : Format invalide (attendu: refItemSize, color, inItem)");
+                $valid = false;
+            }
+            if (empty($row[0])) {
+                $addError($index, "Couleurs : refItemSize vide");
                 $valid = false;
             }
             if (empty($row[1])) {
-                $addError($index, "Stock : Nom de taille vide");
+                $addError($index, "Couleurs : Nom de couleur vide");
                 $valid = false;
             }
-
-            if (!is_numeric($row[3])) {
-                $addError($index, "Stock : Quantité invalide (pas un nombre) : {$row[3]}");
-                $valid = false;
-            } elseif ((int)$row[3] < 0) {
-                $addError($index, "Stock : Quantité négative interdite : {$row[3]}");
+            if (!is_numeric($row[2])) {
+                $addError($index, "Couleurs : Quantité invalide (pas un nombre) : {$row[2]}");
                 $valid = false;
             }
-
             return $valid;
         };
 
@@ -200,7 +222,7 @@ class ItemsStockRepository extends ServiceEntityRepository
                 $addError(0, "Fichier catégories manquant ou invalide");
             }
 
-            // === 2. FILE2 (Items + Prices) ===
+            // === 2. FILE2 (Items + Prices [+ Images optionnel]) ===
             $file2 = $files[1] ?? null;
             $dateFromFile2 = null;
             if ($file2 && $file2->isValid()) {
@@ -215,7 +237,14 @@ class ItemsStockRepository extends ServiceEntityRepository
                     if ($index === 0) continue;
                     if (!$validateItemRow($row, $index)) continue;
 
-                    [$refItem, $nameItem, $refCategory, $images, $price, $date] = $row;
+                    // Support deux formats: avec ou sans images
+                    $hasImagesColumn = count($row) >= 6;
+                    if ($hasImagesColumn) {
+                        [$refItem, $nameItem, $refCategory, $images, $price, $date] = $row;
+                    } else {
+                        [$refItem, $nameItem, $refCategory, $price, $date] = $row;
+                        $images = null;
+                    }
 
                     $item = $em->getRepository(Item::class)->findOneBy([
                         'nameItem' => $nameItem,
@@ -256,7 +285,7 @@ class ItemsStockRepository extends ServiceEntityRepository
                 $addError(0, "Fichier items manquant ou invalide");
             }
 
-            // === 3. FILE3 (Sizes + Stock) ===
+            // === 3. FILE3 (Sizes uniquement) ===
             $file3 = $files[2] ?? null;
             if ($file3 && $file3->isValid()) {
                 $csvData = array_map('str_getcsv', file($file3->getPathname()));
@@ -265,7 +294,7 @@ class ItemsStockRepository extends ServiceEntityRepository
                     if ($index === 0) continue;
                     if (!$validateSizeRow($row, $index)) continue;
 
-                    [$refItem, $sizeName, $valueSize, $inItem] = $row;
+                    [$refItemSize, $refItem, $sizeName, $valueSize] = $row;
 
                     $size = $em->getRepository(Size::class)->findOneBy(['nameSize' => $sizeName]);
                     if (!$size) {
@@ -295,21 +324,69 @@ class ItemsStockRepository extends ServiceEntityRepository
                         $em->persist($itemSize);
                         $em->flush();
                     }
-                    $itemSizeMap[$refItem . '-' . $valueSize] = $itemSize->getId();
+                    // Map par refItemSize (nouveau identifiant de la taille dans CSV)
+                    $itemSizeMap[$refItemSize] = $itemSize->getId();
+                }
 
+                $result['file3'] = $itemSizeMap;
+            } else {
+                $addError(0, "Fichier tailles manquant ou invalide");
+            }
+
+            // === 4. FILE4 (Couleurs + Stock) ===
+            $file4 = $files[3] ?? null;
+            if ($file4 && $file4->isValid()) {
+                $csvData = array_map('str_getcsv', file($file4->getPathname()));
+
+                foreach ($csvData as $index => $row) {
+                    if ($index === 0) continue;
+                    if (!$validateColorRow($row, $index)) continue;
+
+                    [$refItemSize, $colorName, $inItem] = $row;
+
+                    if (!isset($itemSizeMap[$refItemSize])) {
+                        $addError($index, "refItemSize inconnu pour la couleur : $refItemSize");
+                        continue;
+                    }
+
+                    $itemSize = $em->getRepository(ItemSize::class)->find($itemSizeMap[$refItemSize]);
+
+                    // Créer/trouver la couleur
+                    $color = $em->getRepository(\App\Entity\Color::class)->findOneBy(['nameColor' => $colorName]);
+                    if (!$color) {
+                        $color = new \App\Entity\Color();
+                        $color->setNameColor($colorName);
+                        $em->persist($color);
+                        $em->flush();
+                    }
+
+                    // Lier ItemSize et Color
+                    $itemSizeColor = $em->getRepository(\App\Entity\ItemSizeColor::class)->findOneBy([
+                        'itemSize' => $itemSize,
+                        'color' => $color,
+                    ]);
+                    if (!$itemSizeColor) {
+                        $itemSizeColor = new \App\Entity\ItemSizeColor();
+                        $itemSizeColor->setItemSize($itemSize);
+                        $itemSizeColor->setColor($color);
+                        $em->persist($itemSizeColor);
+                        $em->flush();
+                    }
+
+                    // Créer le mouvement de stock pour cette couleur
                     $stock = new ItemsStock();
-                    $stock->setItemSize($itemSize);
+                    $stock->setItemSizeColor($itemSizeColor);
                     $stock->setOutItem(0);
-                    $stock->setInItem($inItem);
+                    $stock->setInItem((int)$inItem);
                     $stock->setDateMove($dateFromFile2 ?? new \DateTime());
 
                     $em->persist($stock);
                     $em->flush();
                 }
 
-                $result['file3'] = $itemSizeMap;
+                $result['file4'] = true;
             } else {
-                $addError(0, "Fichier tailles manquant ou invalide");
+                $addError(0, "Fichier couleurs manquant ou invalide");
             }
 
             // === FIN : commit si aucune erreur ===
