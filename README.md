@@ -16,8 +16,11 @@ npm install chart.js
 composer require symfony/mime
 composer require symfony/firebase-notifier
 
+composer require knplabs/knp-paginator-bundle
+composer require symfony/translation
 
 npm install ws
+npm install jspdf html2canvas
 
 symfony serve --allow-http --port=8000 --allow-all-ip
 netsh advfirewall firewall add rule name="WebSocket" dir=in action=allow protocol=TCP localport=9090

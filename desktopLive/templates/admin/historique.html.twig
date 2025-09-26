@@ -1,0 +1,424 @@
+{% extends 'admin/baseAdmin.html.twig' %}
+
+{% block title %}Historique des ventes{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/historique.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="historique-container">
+        {# === Filtres === #}
+        <div class="historique-filter-card">
+            <form method="get" class="historique-filter-grid">
+                <div class="historique-filter-group">
+                    <label for="date_start" class="historique-filter-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        Date début
+                    </label>
+                    <input type="date" name="date_start" id="date_start" class="historique-input"
+                        value="{{ app.request.query.get('date_start') }}">
+                </div>
+
+                <div class="historique-filter-group">
+                    <label for="date_end" class="historique-filter-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        Date fin
+                    </label>
+                    <input type="date" name="date_end" id="date_end" class="historique-input"
+                        value="{{ app.request.query.get('date_end') }}">
+                </div>
+
+                <div class="historique-filter-group">
+                    <label for="state" class="historique-filter-label">
+                        <i class="fas fa-tag"></i>
+                        État commande
+                    </label>
+                    <select name="state" id="state" class="historique-input">
+                        <option value="">-- Tous --</option>
+                        {% for state in states %}
+                            <option value="{{ state.id }}"
+                                {{ app.request.query.get('state') == state.id ? 'selected' }}>
+                                {{ state.nameState }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="historique-filter-group">
+                    <label for="is_paid" class="historique-filter-label">
+                        <i class="fas fa-credit-card"></i>
+                        Paiement
+                    </label>
+                    <select name="is_paid" id="is_paid" class="historique-input">
+                        <option value="">-- Tous --</option>
+                        <option value="1" {{ app.request.query.get('is_paid') == '1' ? 'selected' }}>Payé</option>
+                        <option value="0" {{ app.request.query.get('is_paid') == '0' ? 'selected' }}>Non payé</option>
+                    </select>
+                </div>
+
+                <div class="historique-filter-actions">
+                    <button type="submit" class="historique-button">
+                        <i class="fas fa-search"></i>
+                        Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {# === Tableau des ventes === #}
+        <div class="historique-table-section">
+            <div class="historique-table-header">
+                <h3 class="historique-table-title">
+                    <i class="fas fa-history"></i>
+                    Historique des ventes
+                </h3>
+            </div>
+
+            <div class="historique-table-container">
+                <table class="historique-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Vendeur</th>
+                            <th>État commande</th>
+                            <th>Montant total</th>
+                            <th>Paiement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                            {% set total = 0 %}
+                            {% for detail in sale.commande.details %}
+                                {% set total = total + (detail.quantity * detail.price) %}
+                            {% endfor %}
+
+                            <tr class="clickable-row" data-sale-id="{{ sale.id }}">
+                                <td>{{ sale.saleDate|date('d/m/Y H:i') }}</td>
+                                <td>{{ sale.commande.client ? sale.commande.client.getUsername() : '-' }}</td>
+                                <td>{{ sale.commande.seller ? sale.commande.seller.getUsername() : '-' }}</td>
+                                <td>{{ sale.commande.state.nameState }}</td>
+                                <td class="historique-amount">{{ total|number_format(2, ',', ' ') }} €</td>
+                                <td>
+                                    {% if sale.isPaid %}
+                                        <span class="historique-badge historique-badge-success">Payé</span>
+                                    {% else %}
+                                        <span class="historique-badge historique-badge-danger">Non payé</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="historique-empty">Aucune vente trouvée.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="saleDetailsModal" class="custom-modal" style="display: none;">
+        <div class="modal-overlay">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h5>Détails de la vente</h5>
+                    <button type="button" id="exportPDF" class="export-btn">Download the invoice</button>
+                    <button type="button" class="close-btn" id="closeModal">&times;</button>
+                </div>
+                <div class="modal-body" id="saleDetailsContent">
+                    <!-- Contenu chargé via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variable globale pour stocker l'ID de la vente actuelle
+        let currentSaleId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('saleDetailsModal');
+            const closeBtn = document.getElementById('closeModal');
+            const modalContent = document.getElementById('saleDetailsContent');
+
+            function openModal() {
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                modal.classList.remove('closing');
+            }
+
+            function closeModal() {
+                modal.classList.add('closing');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                    modal.classList.remove('closing');
+                }, 200);
+            }
+
+            // Event listener pour fermer le modal
+            closeBtn.addEventListener('click', closeModal);
+
+            // Fermer le modal en cliquant sur l'overlay
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // Fermer avec la touche Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'block') {
+                    closeModal();
+                }
+            });
+
+            // Event listeners pour les lignes cliquables
+            document.querySelectorAll('.clickable-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    const saleId = row.dataset.saleId;
+                    currentSaleId = saleId; // Stocker l'ID de la vente
+
+                    fetch(`/historyDetails?sale_id=${saleId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.html) {
+                                modalContent.innerHTML = data.html;
+                                openModal();
+                            } else if (data.error) {
+                                alert(data.error);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Erreur:', err);
+                            alert('Une erreur est survenue lors du chargement des détails.');
+                        });
+                });
+            });
+
+            // Export PDF corrigé
+            document.getElementById('exportPDF').addEventListener('click', () => {
+                try {
+                    // VÉRIFICATION CRITIQUE : s'assurer que jsPDF est disponible
+                    if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+                        alert('La bibliothèque PDF n\'est pas chargée. Veuillez rafraîchir la page.');
+                        return;
+                    }
+
+                    // Récupérer jsPDF selon la version chargée
+                    const jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+
+                    // Vérifications de base
+                    if (!modalContent.innerHTML || modalContent.innerHTML.trim() === '' || !currentSaleId) {
+                        alert('Veuillez d\'abord sélectionner une vente en cliquant sur une ligne du tableau.');
+                        return;
+                    }
+
+                    // Créer un PDF professionnel avec design moderne
+                    const doc = new jsPDF();
+
+                    // Récupérer les données structurées du modal
+                    const modalHTML = modalContent.innerHTML;
+                    if (!modalHTML || modalHTML.trim() === '') {
+                        alert('Aucun contenu à exporter.');
+                        return;
+                    }
+
+                    // === EN-TÊTE PROFESSIONNEL ===
+                    // Fond coloré pour l'en-tête
+                    doc.setFillColor(41, 128, 185); // Bleu professionnel
+                    doc.rect(0, 0, 210, 40, 'F');
+
+                    // Logo/Titre principal
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(24);
+                    doc.text('LIVE SHOP', 105, 15, { align: 'center' });
+
+                    doc.setFontSize(14);
+                    doc.text('FACTURE', 105, 25, { align: 'center' });
+
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(10);
+                    doc.text(`N° ${currentSaleId}`, 105, 32, { align: 'center' });
+
+                    // === INFORMATIONS DE LA FACTURE ===
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(9);
+                    const today = new Date().toLocaleDateString('fr-FR');
+                    doc.text(`Date d'émission: ${today}`, 20, 50);
+                    doc.text(`Date de génération: ${new Date().toLocaleString('fr-FR')}`, 20, 55);
+
+                    // === EXTRACTION DES DONNÉES STRUCTURÉES ===
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = modalHTML;
+
+                    // Extraire les informations client
+                    const clientInfo = tempDiv.querySelector('.client');
+                    const sellerInfo = tempDiv.querySelector('.seller');
+                    const statusInfo = tempDiv.querySelector('.invoice-status');
+                    const tableRows = tempDiv.querySelectorAll('.invoice-table tbody tr');
+                    const totalInfo = tempDiv.querySelector('.invoice-totals h4');
+
+                    let yPos = 70;
+
+                    // === INFORMATIONS CLIENT/VENDEUR ===
+                    if (clientInfo && sellerInfo) {
+                        // Colonne client
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(10);
+                        doc.text('FACTURÉ À', 20, yPos);
+
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        const clientText = clientInfo.textContent.replace(/\s+/g, ' ').trim();
+                        const clientLines = doc.splitTextToSize(clientText, 80);
+                        doc.text(clientLines, 20, yPos + 8);
+
+                        // Colonne vendeur
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(10);
+                        doc.text('VENDU PAR', 110, yPos);
+
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        const sellerText = sellerInfo.textContent.replace(/\s+/g, ' ').trim();
+                        const sellerLines = doc.splitTextToSize(sellerText, 80);
+                        doc.text(sellerLines, 110, yPos + 8);
+
+                        yPos += Math.max(clientLines.length, sellerLines.length) * 5 + 15;
+                    }
+
+                    // === STATUT DE LA COMMANDE ===
+                    if (statusInfo) {
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(10);
+                        doc.text('STATUT:', 20, yPos);
+
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        const statusText = statusInfo.textContent.replace(/\s+/g, ' ').trim();
+                        doc.text(statusText, 50, yPos);
+                        yPos += 15;
+                    }
+
+                    // Ligne séparatrice
+                    doc.setDrawColor(200, 200, 200);
+                    doc.setLineWidth(0.5);
+                    doc.line(20, yPos, 190, yPos);
+                    yPos += 10;
+
+                    // === TABLEAU DES ARTICLES ===
+                    if (tableRows.length > 0) {
+                        // En-tête du tableau
+                        doc.setFillColor(248, 249, 250);
+                        doc.rect(20, yPos - 5, 170, 8, 'F');
+
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(9);
+                        doc.text('PRODUIT', 22, yPos);
+                        doc.text('TAILLE', 70, yPos);
+                        doc.text('QTÉ', 100, yPos);
+                        doc.text('PRIX UNIT.', 120, yPos);
+                        doc.text('TOTAL', 160, yPos);
+
+                        yPos += 10;
+
+                        // Ligne séparatrice
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(20, yPos - 2, 190, yPos - 2);
+
+                        // Articles
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(8);
+
+                        tableRows.forEach((row, index) => {
+                            const cells = row.querySelectorAll('td');
+                            if (cells.length >= 5) {
+                                // Alternance de couleurs pour les lignes
+                                if (index % 2 === 0) {
+                                    doc.setFillColor(250, 250, 250);
+                                    doc.rect(20, yPos - 3, 170, 6, 'F');
+                                }
+
+                                doc.text(cells[0].textContent.trim(), 22, yPos);
+                                doc.text(cells[1].textContent.trim(), 70, yPos);
+                                doc.text(cells[2].textContent.trim(), 100, yPos);
+                                doc.text(cells[3].textContent.trim(), 120, yPos);
+                                doc.text(cells[4].textContent.trim(), 160, yPos);
+
+                                yPos += 7;
+                            }
+                        });
+
+                        yPos += 10;
+                    }
+
+                    // === TOTAUX ===
+                    if (tableRows.length > 0) {
+                        // Ligne séparatrice épaisse
+                        doc.setDrawColor(0, 0, 0);
+                        doc.setLineWidth(0.8);
+                        doc.line(20, yPos, 190, yPos);
+                        yPos += 10;
+
+                        // Recalculer le total à partir des données du tableau
+                        let totalHT = 0;
+                        tableRows.forEach((row) => {
+                            const cells = row.querySelectorAll('td');
+                            if (cells.length >= 5) {
+                                const quantity = parseFloat(cells[2].textContent.trim()) || 0;
+                                const price = parseFloat(cells[3].textContent.replace(/[€\s,]/g, '').replace(',', '.')) || 0;
+                                totalHT += quantity * price;
+                            }
+                        });
+
+                        // Afficher les détails des totaux
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(10);
+                        doc.text(`Sous-total HT: ${totalHT.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                        yPos += 8;
+
+                        const tva = totalHT * 0.2;
+                        doc.text(`TVA (20%): ${tva.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                        yPos += 8;
+
+                        // Total TTC en gras et plus grand
+                        const totalTTC = totalHT * 1.2;
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(12);
+                        doc.text(`TOTAL TTC: ${totalTTC.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                    }
+
+                    // === PIED DE PAGE PROFESSIONNEL ===
+                    const pageCount = doc.internal.getNumberOfPages();
+                    for (let i = 1; i <= pageCount; i++) {
+                        doc.setPage(i);
+
+                        // Fond gris pour le pied de page
+                        doc.setFillColor(240, 240, 240);
+                        doc.rect(0, 280, 210, 20, 'F');
+
+                        // Texte du pied de page
+                        doc.setTextColor(100, 100, 100);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(8);
+                        doc.text('Merci pour votre achat !', 20, 290);
+                        doc.text(`Page ${i} sur ${pageCount}`, 105, 290, { align: 'center' });
+                        doc.text('LiveShop - Votre partenaire shopping', 150, 290);
+                    }
+
+                    // Sauvegarder le PDF
+                    doc.save(`Facture_${currentSaleId}.pdf`);
+
+                } catch (error) {
+                    console.error('Erreur détaillée:', error);
+                    alert('Erreur lors de la génération du PDF: ' + error.message);
+                }
+            });
+        });
+    </script>
+{% endblock %}

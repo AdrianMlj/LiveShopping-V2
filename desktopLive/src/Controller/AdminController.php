@@ -27,8 +27,8 @@ class AdminController extends AbstractController
         SaleRepository $saleRepository
     ): Response {
         // :épingle: Valeurs par défaut
-        $defaultStart = new \DateTime('first day of January this year');
-        $defaultEnd = new \DateTime('last day of December this year');
+        $defaultStart = new \DateTime('first day of this month');
+        $defaultEnd = new \DateTime('last day of this month');
         // :épingle: Récupérer les valeurs du formulaire
         $dateD = $request->request->get('dateD') ? new \DateTime($request->request->get('dateD')) : $defaultStart;
         $dateF = $request->request->get('dateF') ? new \DateTime($request->request->get('dateF')) : $defaultEnd;
@@ -122,16 +122,23 @@ class AdminController extends AbstractController
             'bestSellers' => $bestSeller ?? null
         ]);
     }
+
     #[Route('/liveStart', name: 'admin_live_form')]
     public function startLiveSelect(
         Request $request,
-        ItemRepository $itemRepository
+        ItemRepository $itemRepository,
+        UsersRepository $usersRepository
     ): Response {
-        $items = $itemRepository->findAvailableItems();
+        $session = $request->getSession();
+        $user = $session->get('user');
+        $userID = $usersRepository->find($user->getId());
+
+        $items = $itemRepository->findAvailableItems($userID);
         return $this->render('admin/liveForm.html.twig', [
             'items' => $items
         ]);
     }
+
     #[Route('/liveConfirm', name: 'admin_live_confirm', methods: ['POST'])]
     public function confirmLive(
         Request $request,
@@ -169,6 +176,7 @@ class AdminController extends AbstractController
         $em->flush();
         return $this->redirectToRoute('app_live', ['id' => $live->getId()]);
     }
+
     #[Route('/stopLive/{id}', name: 'admin_live_stop')]
     public function stopLive(Request $request, Live $live, EntityManagerInterface $em, UsersRepository $usersRepository): Response
     {
@@ -184,6 +192,7 @@ class AdminController extends AbstractController
         $this->addFlash('success', 'Le live a été terminé avec succès.');
         return $this->redirectToRoute('app_dashboard');
     }
+
     #[Route('/enDirecte', name: 'app_live')]
     public function liveInterface(Request $request, EntityManagerInterface $em, UsersRepository $usersRepository): Response
     {
