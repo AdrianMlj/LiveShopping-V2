@@ -1,3 +1,35 @@
+/* Bouton "+" inline à côté du label Catégorie */
+.add-category-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--primary, #4361ee);
+  background: linear-gradient(135deg, var(--primary, #4361ee) 0%, var(--primary-dark, #3a0ca3) 100%);
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+.add-category-inline:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 6px 12px rgba(67, 97, 238, 0.35);
+  filter: brightness(1.05);
+}
+
+.add-category-inline:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.add-category-inline:focus {
+  outline: 2px solid rgba(67, 97, 238, 0.5);
+  outline-offset: 2px;
+}
 :root {
     --primary: #4361ee;
     --primary-light: #4895ef;
@@ -106,6 +138,65 @@ body.dark-theme .promotion-header h2 {
     flex-direction: column;
     height: 100%;
 }
+.add-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--gray-300);
+  background: linear-gradient(180deg, var(--gray-50), #fff);
+  min-height: 200px;
+}
+
+.add-item-trigger {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.add-item-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--gray-500);
+}
+
+.add-item-plus {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  font-size: 48px;
+  line-height: 72px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+}
+
+.add-item-text {
+  font-weight: 700;
+  color: var(--gray-600);
+}
+
+.add-item-card:hover .add-item-plus {
+  transform: scale(1.06);
+  box-shadow: var(--shadow-lg);
+}
+
+body.dark-theme .add-item-card {
+  border-color: var(--gray-700);
+  background: linear-gradient(180deg, var(--gray-800), var(--gray-900));
+}
+
+body.dark-theme .add-item-content { color: var(--gray-400); }
 
 body.dark-theme .product-card {
     background: var(--gray-800);
@@ -167,6 +258,43 @@ body.dark-theme .product-card {
     font-weight: 700;
     box-shadow: 0 2px 8px rgba(247, 37, 133, 0.3);
     animation: pulse 2s infinite;
+}
+
+/* Petit bouton d'édition dans chaque item */
+.edit-item-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--gray-300);
+  background: rgba(255,255,255,0.85);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.edit-item-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+body.dark-theme .edit-item-btn {
+  background: rgba(31, 41, 55, 0.9);
+  border-color: var(--gray-600);
+  color: var(--gray-200);
+}
+
+body.dark-theme .edit-item-btn:hover {
+  border-color: var(--primary-light);
+  color: var(--primary-light);
 }
 
 .promotion-percentage {
@@ -852,7 +980,7 @@ body.dark-theme .form-group label {
 
 .form-group input,
 .form-group textarea {
-    width: 100%;
+    width: 90%;
     padding: 12px 16px;
     border: 2px solid var(--gray-200);
     border-radius: var(--radius-md);
@@ -1203,7 +1331,7 @@ body.dark-theme .form-group label {
 .form-group input,
 .form-group textarea,
 .form-group select {
-    width: 100%;
+    width: 90%;
     padding: 12px 16px;
     border: 2px solid var(--gray-200);
     border-radius: var(--radius-md);
