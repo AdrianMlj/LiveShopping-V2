@@ -124,7 +124,7 @@ class ClientController extends AbstractController
         $userSession = $session->get('user');
 
         if (!$userSession) {
-            $userSession = $usersRepository->find(7);
+            $userSession = $usersRepository->find($userSession['id']);
             $session->set('user', $userSession);
         }
 
