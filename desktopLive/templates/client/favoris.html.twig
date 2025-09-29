@@ -1,4 +1,3 @@
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% include 'components/navbarClient.html.twig' %}
 
@@ -10,267 +9,360 @@
         <p class="text-muted">Vous n’avez encore aucun favori.</p>
     {% else %}
         {% for fav in favoris %}
-        <div class="row align-items-center border-bottom py-3 position-relative">
+        <div class="row align-items-center border-bottom py-3 position-relative" id="fav-{{ fav.favoriteId }}">
             <!-- Icône favoris en haut à droite -->
-            <form method="post" action="{{ path('remove_favorite_by_id', { favId: fav.favoriteId }) }}" class="position-absolute" style="top:12px; right:18px; z-index:2;">
+            <form method="post"
+                  action="{{ path('remove_favorite_by_id', { favId: fav.favoriteId }) }}"
+                  class="remove-fav-form position-absolute"
+                  data-id="{{ fav.favoriteId }}"
+                  style="top:12px; right:18px; z-index:2;">
                 <button type="submit" class="btn-favorite active" aria-label="Retirer des favoris"
-                    style="background:transparent; border:none; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
+                        style="background:transparent; border:none; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
                     <i class="fa-solid fa-bookmark" style="font-size:28px; color:#FFD600;"></i>
                 </button>
             </form>
 
             <!-- Image -->
             <div class="col-md-2">
-                <img src="{{ fav.item.images ? '/uploads/' ~ fav.item.images : '/uploads/default-product.jpg' }}" alt="{{ fav.item.nameitem }}" class="img-fluid">
+                <img src="{{ fav.item.images ? '/uploads/' ~ fav.item.images : '/uploads/default-product.jpg' }}" 
+                     alt="{{ fav.item.nameitem }}" class="img-fluid">
             </div>
 
             <!-- Détails produit -->
             <div class="col-md-6">
                 <p><strong>Name :</strong> {{ fav.item.nameitem }}</p>
                 <p><strong>Price :</strong> ${{ fav.price }}</p>
-                                <p><strong>Size :</strong>
-                                    <select class="form-select w-auto d-inline">
-                                        {% for size in fav.item.itemSizes %}
-                                            <option value="{{ size.id }}" {% if size.id == fav.size.sizeId %}selected{% endif %}>
-                                                {{ size.valueSize }}{% if size.size %} ({{ size.size.nameSize }}){% endif %}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </p>
-                                <p style="color: #888; font-size: 13px;">[DEBUG] Article ID: {{ fav.item.id }}, Taille ID: {{ fav.size.sizeId }}</p>
+                <p><strong>Size :</strong>
+                    <select class="form-select w-auto d-inline">
+                        {% for size in fav.item.itemSizes %}
+                            <option value="{{ size.id }}" {% if size.id == fav.size.sizeId %}selected{% endif %}>
+                                {{ size.valueSize }}{% if size.size %} ({{ size.size.nameSize }}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </p>
+                <p style="color: #888; font-size: 13px;">
+                    [DEBUG] Article ID: {{ fav.item.id }}, Taille ID: {{ fav.size.sizeId }}
+                </p>
             </div>
         </div>
         {% endfor %}
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.remove-fav-form').forEach(form => {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const favId = this.dataset.id;
+
+            fetch(this.action, {
+                method: 'POST',
+                body: new FormData(this)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Disparition avec animation
+                    const block = document.getElementById('fav-' + favId);
+                    block.style.transition = "opacity 0.4s";
+                    block.style.opacity = "0";
+                    setTimeout(() => block.remove(), 400);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => console.error(err));
+        });
+    });
+});
+</script>
 {% endblock %}
+
 <style>
-    /* Styles pour la page de favoris */
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 15px;
-    }
+   /* Enhanced styles for the favorites page */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    animation: fadeIn 0.5s ease-in;
+}
 
-    .mt-4 {
-        margin-top: 2rem;
-    }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-    .mb-4 {
-        margin-bottom: 2rem;
-    }
+.mt-4 {
+    margin-top: 2.5rem;
+}
 
-    h2 {
-        font-family: 'Inter', Arial, sans-serif;
-        font-weight: 700;
-        color: #231f20;
-    }
+.mb-4 {
+    margin-bottom: 2.5rem;
+}
 
-    /* Bouton favoris (marque-page) */
-    .btn-favorite {
-        background: transparent;
-        border: none;
-        width: 36px;
-        height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.2s;
-        cursor: pointer;
-        box-shadow: none;
-        outline: none;
-        position: relative;
-        position: absolute;
-        top: 12px;
-        right: 18px;
-        z-index: 2;
-    }
-    .btn-favorite i {
-        font-size: 28px;
-        color: #FFD600;
-        transition: color 0.2s;
-    }
-    .btn-favorite.active i {
-        color: #FFD600;
-    }
-    .btn-favorite:not(.active) i {
-        color: #BDBDBD;
-    }
-    .btn-favorite:hover {
-        background: #fffbe6;
-    }
-    .row.position-relative {
-        position: relative;
-    }
-        font-size: 28px;
-        border-bottom: 2px solid #567AF4;
-        padding-bottom: 10px;
-        display: inline-block;
-    }
+h2 {
+    font-family: 'Inter', Arial, sans-serif;
+    font-weight: 700;
+    font-size: 2.2rem;
+    color: #231f20;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 10px;
+}
 
-    .text-muted {
-        color: #6c757d;
-        font-style: normal;
-        font-size: 18px;
-        text-align: center;
-        margin-top: 40px;
-    }
+h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #567AF4, #FFD600);
+    transform: scaleX(0);
+    transform-origin: left;
+    animation: underline 0.8s ease-out forwards;
+}
 
-    /* Styles pour les éléments favoris */
+@keyframes underline {
+    to { transform: scaleX(1); }
+}
+
+.text-muted {
+    color: #6c757d;
+    font-size: 1.2rem;
+    text-align: center;
+    margin-top: 3rem;
+    animation: fadeIn 0.8s ease-in;
+}
+
+/* Favorite button (bookmark) */
+.btn-favorite {
+    background: transparent;
+    border: none;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    z-index: 2;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.btn-favorite i {
+    font-size: 1.8rem;
+    color: #FFD600;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-favorite.active i {
+    color: #FFD600;
+    transform: scale(1.1);
+}
+
+.btn-favorite:not(.active) i {
+    color: #BDBDBD;
+}
+
+.btn-favorite:hover {
+    background: #fffbe6;
+    border-radius: 50%;
+    transform: scale(1.15);
+}
+
+/* Favorite item row */
+.row {
+    margin: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    background: #fff;
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.row:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.border-bottom {
+    border-bottom: 1px solid #e9ecef !important;
+}
+
+.py-3 {
+    padding: 1.5rem 0;
+}
+
+.img-fluid {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+}
+
+.img-fluid:hover {
+    transform: scale(1.05);
+}
+
+.col-md-6 p {
+    margin-bottom: 10px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 1rem;
+    color: #333;
+}
+
+.col-md-6 p strong {
+    color: #231f20;
+    font-weight: 600;
+}
+
+.form-select {
+    display: inline-block;
+    width: auto;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background-color: #fff;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-select:focus {
+    border-color: #567AF4;
+    box-shadow: 0 0 0 3px rgba(86, 122, 244, 0.2);
+}
+
+.btn-dark {
+    background: linear-gradient(135deg, #231f20, #3a3637);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-dark:hover {
+    background: linear-gradient(135deg, #000, #231f20);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-link {
+    color: #567AF4;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-link:hover {
+    color: #ff6b6b;
+    transform: scale(1.15);
+}
+
+/* Dark theme styles */
+body.dark-theme .container {
+    background-color: #121212;
+}
+
+body.dark-theme h2 {
+    color: #ffffff;
+}
+
+body.dark-theme h2::after {
+    background: linear-gradient(90deg, #567AF4, #FFD600);
+}
+
+body.dark-theme .text-muted {
+    color: #adb5bd;
+}
+
+body.dark-theme .row {
+    background-color: #1e1e1e;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme .border-bottom {
+    border-bottom: 1px solid #444 !important;
+}
+
+body.dark-theme .col-md-6 p {
+    color: #e0e0e0;
+}
+
+body.dark-theme .col-md-6 p strong {
+    color: #ffffff;
+}
+
+body.dark-theme .form-select {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+body.dark-theme .form-select:focus {
+    border-color: #567AF4;
+    box-shadow: 0 0 0 3px rgba(86, 122, 244, 0.2);
+}
+
+body.dark-theme .btn-dark {
+    background: linear-gradient(135deg, #567AF4, #4565d3);
+}
+
+body.dark-theme .btn-dark:hover {
+    background: linear-gradient(135deg, #4565d3, #3347b0);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
     .row {
-        margin: 0;
-        transition: all 0.3s ease;
-        border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 15px;
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
     }
 
-    .row:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
-
-    .border-bottom {
-        border-bottom: 1px solid #e9ecef !important;
-    }
-
-    .py-3 {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-
-    .img-fluid {
+    .col-md-2, .col-md-6, .col-md-4 {
+        width: 100%;
         max-width: 100%;
-        height: auto;
-        border-radius: 8px;
-        object-fit: cover;
-        height: 120px;
-        width: 120px;
-    }
-
-    .col-md-6 p {
-        margin-bottom: 8px;
-        font-family: 'Inter', Arial, sans-serif;
-    }
-
-    .col-md-6 p strong {
-        color: #231f20;
-        font-weight: 600;
-    }
-
-    .form-select {
-        display: inline-block;
-        width: auto;
-        padding: 6px 12px;
-        font-size: 14px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        background-color: #fff;
-        margin-top: 10px;
-    }
-
-    .btn-dark {
-        background-color: #231f20;
-        border-color: #231f20;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-weight: 600;
-        transition: all 0.2s ease;
-    }
-
-    .btn-dark:hover {
-        background-color: #000;
-        border-color: #000;
-        transform: translateY(-1px);
-    }
-
-    .btn-link {
-        color: #567AF4;
-        font-size: 24px;
-        transition: all 0.2s ease;
-    }
-
-    .btn-link:hover {
-        color: #ff6b6b;
-        transform: scale(1.1);
-    }
-
-    .ms-2 {
-        margin-left: 0.5rem;
+        margin-bottom: 1rem;
     }
 
     .text-end {
-        text-align: right;
+        text-align: center;
     }
 
-    .d-inline {
-        display: inline;
+    .img-fluid {
+        width: 200px;
+        height: 200px;
     }
 
-    /* Styles pour le mode sombre */
-    body.dark-theme .h2 {
-        color: #ffffff;
-    }
-    body.dark-theme .mb-4 {
-        color: #ffffff;
-    }
-    body.dark-theme .text-muted {
-        color: #adb5bd;
+    .btn-favorite {
+        top: 5px;
+        right: 5px;
     }
 
-    body.dark-theme .row {
-        background-color: #1e1e1e;
+    h2 {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .img-fluid {
+        width: 160px;
+        height: 160px;
     }
 
-    body.dark-theme .border-bottom {
-        border-bottom: 1px solid #444 !important;
+    .form-select {
+        width: 100%;
+        max-width: 200px;
     }
-
-    body.dark-theme .col-md-6 p strong {
-        color: #ffffff;
-    }
-
-    body.dark-theme .col-md-6 p {
-        color: #e0e0e0;
-    }
-
-    body.dark-theme .form-select {
-        background-color: #2a2a2a;
-        border-color: #444;
-        color: #e0e0e0;
-    }
-
-    body.dark-theme .btn-dark {
-        background-color: #567AF4;
-        border-color: #567AF4;
-    }
-
-    body.dark-theme .btn-dark:hover {
-        background-color: #4565d3;
-        border-color: #4565d3;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .row {
-            flex-direction: column;
-            text-align: center;
-        }
-        
-        .col-md-2, .col-md-6, .col-md-4 {
-            width: 100%;
-            max-width: 100%;
-            margin-bottom: 15px;
-        }
-        
-        .text-end {
-            text-align: center;
-        }
-        
-        .img-fluid {
-            height: 180px;
-            width: 180px;
-        }
-    }
+}
 </style>

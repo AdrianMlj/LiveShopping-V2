@@ -22,7 +22,7 @@ class ItemsStock
     #[ORM\Column(name: 'date_move', type: 'datetime')]
     private ?\DateTimeInterface $dateMove = null;
 
-    #[ORM\ManyToOne(targetEntity: ItemSizeColor::class)]
+    #[ORM\ManyToOne(targetEntity: ItemSizeColor::class, inversedBy: 'stocks')]
     #[ORM\JoinColumn(name: 'id_item_size_color', referencedColumnName: 'id_item_size_color', nullable: false)]
     private ?ItemSizeColor $itemSizeColor = null;
 

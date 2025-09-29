@@ -18,8 +18,8 @@ class Goals
     #[ORM\JoinColumn(name: "id_seller", referencedColumnName: "id_user", nullable: false, onDelete: "CASCADE")]
     private ?\App\Entity\Users $seller = null;
 
-    #[ORM\Column(type: "decimal", precision: 15, scale: 2)]
-    private float $target_ca;
+    #[ORM\Column(type: 'decimal', precision: 12, scale: 2)]
+    private ?string $targetCa = null;
 
     #[ORM\Column(type: "integer")]
     private int $target_ventes;
@@ -42,14 +42,14 @@ class Goals
         return $this;
     }
 
-    public function getTargetCa(): float
+    public function getTargetCa(): ?string
     {
-        return $this->target_ca;
+        return $this->targetCa;
     }
 
-    public function setTargetCa(float $target_ca): self
+    public function setTargetCa(string $targetCa): static
     {
-        $this->target_ca = $target_ca;
+        $this->targetCa = $targetCa;
         return $this;
     }
 

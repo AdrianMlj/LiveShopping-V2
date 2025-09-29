@@ -17,9 +17,10 @@ class BagDetails
     #[ORM\JoinColumn(name: 'id_item_size', referencedColumnName: 'id_item_size', nullable: false)]
     private ?ItemSize $itemSize = null;
 
-    #[ORM\ManyToOne(targetEntity: Bag::class)]
+   #[ORM\ManyToOne(targetEntity: Bag::class, inversedBy: 'bagDetails')]
     #[ORM\JoinColumn(name: 'id_bag', referencedColumnName: 'id_bag', nullable: false)]
     private ?Bag $bag = null;
+
 
     #[ORM\Column(type: 'decimal', precision: 15, scale: 2)]
     private ?string $price = null;

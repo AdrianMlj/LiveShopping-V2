@@ -19,9 +19,10 @@ class PriceItems
     #[ORM\Column(name: 'date_price', type: 'date')]
     private ?\DateTimeInterface $datePrice = null;
 
-    #[ORM\ManyToOne(targetEntity: Item::class)]
+    #[ORM\ManyToOne(targetEntity: Item::class, inversedBy: 'priceItems')]
     #[ORM\JoinColumn(name: 'id_item', referencedColumnName: 'id_item', nullable: false)]
     private ?Item $item = null;
+
 
     // Getters & Setters
 

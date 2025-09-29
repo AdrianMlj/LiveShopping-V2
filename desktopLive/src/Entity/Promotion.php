@@ -28,9 +28,10 @@ class Promotion
     #[ORM\Column(name: 'end_date', type: 'date', nullable: true)]
     private ?\DateTimeInterface $endDate = null;
 
-    #[ORM\ManyToOne(targetEntity: Item::class)]
+   #[ORM\ManyToOne(targetEntity: Item::class, inversedBy: 'promotions')]
     #[ORM\JoinColumn(name: 'id_item', referencedColumnName: 'id_item', nullable: false)]
     private ?Item $item = null;
+
 
     // Getters & Setters
 

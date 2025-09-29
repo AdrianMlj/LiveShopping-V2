@@ -22,9 +22,10 @@ class ItemSize
     #[ORM\JoinColumn(name: 'id_size', referencedColumnName: 'id_size', nullable: false)]
     private ?Size $size = null;
 
-    #[ORM\ManyToOne(targetEntity: Item::class)]
+    #[ORM\ManyToOne(targetEntity: Item::class, inversedBy: 'itemSizes')]
     #[ORM\JoinColumn(name: 'id_item', referencedColumnName: 'id_item', nullable: false)]
     private ?Item $item = null;
+
 
     // Relation de stock déplacée vers ItemSizeColor → ItemsStock
 

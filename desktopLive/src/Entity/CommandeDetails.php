@@ -25,7 +25,7 @@ class CommandeDetails
     private int $quantity = 1;
 
     #[ORM\Column(type: "decimal", precision: 10, scale: 2)]
-    private float $price;
+    private string $price;
 
     public function getId(): ?int
     {
@@ -65,12 +65,12 @@ class CommandeDetails
         return $this;
     }
 
-    public function getPrice(): float
+    public function getPrice(): string
     {
         return $this->price;
     }
 
-    public function setPrice(float $price): static
+    public function setPrice(string $price): static
     {
         $this->price = $price;
         return $this;
