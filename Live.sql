@@ -29,6 +29,7 @@ CREATE TABLE Item(
    id_seller INTEGER NOT NULL,
    id_category INTEGER NOT NULL,
    images VARCHAR(255),
+   Description TEXT,
    PRIMARY KEY(id_item),
    FOREIGN KEY(id_seller) REFERENCES Users(id_user),
    FOREIGN KEY(id_category) REFERENCES Category(id_category)

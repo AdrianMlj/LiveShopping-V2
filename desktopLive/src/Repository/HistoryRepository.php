@@ -83,5 +83,4 @@ class HistoryRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getOneOrNullResult();
     }
-
 }

@@ -365,29 +365,36 @@
                         doc.line(20, yPos, 190, yPos);
                         yPos += 10;
 
-                        // Recalculer le total à partir des données du tableau
-                        let totalHT = 0;
+                        // Recalculer les totaux à partir des données du tableau
+                        let totalTTC = 0;
                         tableRows.forEach((row) => {
                             const cells = row.querySelectorAll('td');
                             if (cells.length >= 5) {
-                                const quantity = parseFloat(cells[2].textContent.trim()) || 0;
-                                const price = parseFloat(cells[3].textContent.replace(/[€\s,]/g, '').replace(',', '.')) || 0;
-                                totalHT += quantity * price;
+                                // La colonne TOTAL (cells[4]) affiche le TTC actuel
+                                // On parse pour obtenir un numérique en euros
+                                const lineTTC = parseFloat(cells[4].textContent.replace(/[^0-9,.-]/g, '').replace(',', '.')) || 0;
+                                totalTTC += lineTTC;
                             }
                         });
 
+                        // Calculer HT et TVA à partir du TTC
+                        const tvaRate = 0.20; // 20%
+                        const totalHT = totalTTC / (1 + tvaRate);
+                        const tva = totalTTC - totalHT;
+
                         // Afficher les détails des totaux
+                        // HT et TVA en plus discret (gris + plus petit)
                         doc.setFont('helvetica', 'normal');
-                        doc.setFontSize(10);
+                        doc.setTextColor(120, 120, 120);
+                        doc.setFontSize(9);
                         doc.text(`Sous-total HT: ${totalHT.toFixed(2).replace('.', ',')} €`, 120, yPos);
                         yPos += 8;
 
-                        const tva = totalHT * 0.2;
                         doc.text(`TVA (20%): ${tva.toFixed(2).replace('.', ',')} €`, 120, yPos);
                         yPos += 8;
 
                         // Total TTC en gras et plus grand
-                        const totalTTC = totalHT * 1.2;
+                        doc.setTextColor(0, 0, 0);
                         doc.setFont('helvetica', 'bold');
                         doc.setFontSize(12);
                         doc.text(`TOTAL TTC: ${totalTTC.toFixed(2).replace('.', ',')} €`, 120, yPos);

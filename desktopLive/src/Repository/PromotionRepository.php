@@ -40,4 +40,33 @@ class PromotionRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    /**
+     * Trouve la promotion active pour un article donné
+     */
+    public function findActivePromotionForItem(int $itemId): ?Promotion
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.item = :itemId')
+            ->andWhere('p.startDate <= CURRENT_DATE()')
+            ->andWhere('(p.endDate IS NULL OR p.endDate >= CURRENT_DATE())')
+            ->setParameter('itemId', $itemId)
+            ->orderBy('p.startDate', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Trouve toutes les promotions actives
+     */
+    public function findActivePromotions(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.startDate <= CURRENT_DATE()')
+            ->andWhere('(p.endDate IS NULL OR p.endDate >= CURRENT_DATE())')
+            ->orderBy('p.startDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

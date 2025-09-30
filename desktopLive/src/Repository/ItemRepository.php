@@ -78,6 +78,7 @@ class ItemRepository extends ServiceEntityRepository
             ->select(
                 'i.id AS item_id',
                 'i.nameItem AS item_name',
+                'i.description AS item_description',
                 'i.images AS images',
                 'c.id AS category_id',
                 'c.nameCategory AS category_name',
@@ -85,16 +86,28 @@ class ItemRepository extends ServiceEntityRepository
                 'isize.valueSize AS size_value',
                 'color.id AS color_id',
                 'color.nameColor AS color_name',
-                $availableExpr . ' AS qty_available'
+                'MIN(isc.images) AS color_image',
+                $availableExpr . ' AS qty_available',
+                'promo.id AS promotion_id',
+                'promo.namePromotion AS promotion_name',
+                'promo.percentage AS promotion_percentage',
+                'promo.description AS promotion_description',
+                'promo.startDate AS promotion_start_date',
+                'promo.endDate AS promotion_end_date',
+                'price.price AS original_price'
             )
             ->join('i.category', 'c')
             ->join('i.itemSizes', 'isize')
             ->join('isize.itemSizeColors', 'isc')
             ->join('isc.stocks', 's')
             ->join('isc.color', 'color')
+            ->leftJoin('i.priceItems', 'price', 'WITH',
+                'price.datePrice = (SELECT MAX(p2.datePrice) FROM App\Entity\PriceItems p2 WHERE p2.item = i.id)')
+            ->leftJoin('i.promotions', 'promo', 'WITH',
+                'promo.startDate <= CURRENT_DATE() AND (promo.endDate IS NULL OR promo.endDate >= CURRENT_DATE())')
             ->andWhere('IDENTITY(i.seller) = :sellerId')
             ->setParameter('sellerId', $sellerId)
-            ->groupBy('i.id, i.nameItem, c.id, c.nameCategory, isize.id, isize.valueSize, color.id, color.nameColor')
+            ->groupBy('i.id, i.nameItem, i.images, c.id, c.nameCategory, isize.id, isize.valueSize, color.id, color.nameColor, promo.id, promo.namePromotion, promo.percentage, promo.description, promo.startDate, promo.endDate, price.price')
             ->having($availableExpr . ' > 0')
             ->orderBy('c.nameCategory', 'ASC')
             ->addOrderBy('i.nameItem', 'ASC')
@@ -126,12 +139,39 @@ class ItemRepository extends ServiceEntityRepository
                 $grouped[$itemId] = [
                     'item_id' => $itemId,
                     'item_name' => $row['item_name'],
+                    'item_description' => $row['item_description'] ?? null,
+                    'image' => $row['images'] ?? null,
                     'category' => [
                         'id' => (int)$row['category_id'],
                         'name' => $row['category_name']
                     ],
-                    'sizes' => []
+                    'sizes' => [],
+                    'colors' => [], // Ajout des couleurs groupées au niveau item
+                    'promotion' => null // Ajout des promotions
                 ];
+
+                // Ajouter les informations de prix
+                $grouped[$itemId]['original_price'] = (float)$row['original_price'];
+
+                // Ajouter la promotion si elle existe
+                if (!empty($row['promotion_id'])) {
+                    $originalPrice = (float)$row['original_price'];
+                    $percentage = (float)$row['promotion_percentage'];
+                    $discountAmount = $originalPrice * ($percentage / 100);
+                    $promoPrice = $originalPrice - $discountAmount;
+
+                    $grouped[$itemId]['promotion'] = [
+                        'id' => (int)$row['promotion_id'],
+                        'name' => $row['promotion_name'],
+                        'percentage' => $percentage,
+                        'description' => $row['promotion_description'],
+                        'start_date' => $row['promotion_start_date'],
+                        'end_date' => $row['promotion_end_date'],
+                        'original_price' => $originalPrice,
+                        'promo_price' => $promoPrice,
+                        'discount_amount' => $discountAmount
+                    ];
+                }
             }
 
             if (!isset($grouped[$itemId]['sizes'][$sizeId])) {
@@ -146,10 +186,23 @@ class ItemRepository extends ServiceEntityRepository
             $grouped[$itemId]['sizes'][$sizeId]['colors'][$colorId] = [
                 'color_id' => $colorId,
                 'color_name' => $row['color_name'],
+                'color_image' => $row['color_image'] ?? null,
             ];
 
             // Accumuler la quantité dispo au niveau taille
             $grouped[$itemId]['sizes'][$sizeId]['qty_available'] += (float)$row['qty_available'];
+
+            // Grouper les couleurs au niveau item avec quantité totale
+            if (!isset($grouped[$itemId]['colors'][$colorId])) {
+                $grouped[$itemId]['colors'][$colorId] = [
+                    'color_id' => $colorId,
+                    'color_name' => $row['color_name'],
+                    'color_image' => $row['color_image'] ?? null,
+                    'qty_total' => 0
+                ];
+            }
+            // Accumuler la quantité totale pour cette couleur
+            $grouped[$itemId]['colors'][$colorId]['qty_total'] += (float)$row['qty_available'];
         }
 
         // Convertir sous-tableaux associatifs en listes indexées pour une sortie plus propre
@@ -161,6 +214,10 @@ class ItemRepository extends ServiceEntityRepository
                 $sizes[] = $size;
             }
             $item['sizes'] = $sizes;
+
+            // Convertir aussi les couleurs en liste indexée
+            $item['colors'] = array_values($item['colors']);
+
             $result[] = $item;
         }
 

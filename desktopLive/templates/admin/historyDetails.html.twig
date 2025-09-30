@@ -61,7 +61,13 @@
     </div>
 
     <!-- Totaux -->
+    {% set tvaRate = 0.20 %}
+    {% set totalTTC = total %}
+    {% set totalHT = totalTTC / (1 + tvaRate) %}
+    {% set tva = totalTTC - totalHT %}
     <div class="invoice-totals">
-        <h4>Total TTC : {{ (total * 1.2)|number_format(2, ',', ' ') }} €</h4>
+        <p style="margin: 0; color: #6b7280; font-size: 0.9rem;">Total HT : {{ totalHT|number_format(2, ',', ' ') }} €</p>
+        <p style="margin: 4px 0 0; color: #6b7280; font-size: 0.9rem;">TVA ({{ (tvaRate * 100)|number_format(0, ',', ' ') }}%) : {{ tva|number_format(2, ',', ' ') }} €</p>
+        <h4 style="margin-top: 8px;">Total TTC : {{ totalTTC|number_format(2, ',', ' ') }} €</h4>
     </div>
 </div>

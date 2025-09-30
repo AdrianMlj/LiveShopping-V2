@@ -1229,7 +1229,7 @@ body.dark-theme .invoice-meta strong {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 32px;
-    padding: 16px;
+    padding: 5px;
     background: white;
 }
 
@@ -1423,7 +1423,6 @@ body.dark-theme .invoice-totals p {
     font-weight: 700;
     color: #111827;
     border-top: 1px solid #e5e7eb;
-    padding-top: 16px;
 }
 
 body.dark-theme .invoice-totals h4 {
@@ -1517,12 +1516,6 @@ body.dark-theme .modal-body::-webkit-scrollbar-thumb {
 
     .invoice-meta {
         text-align: center;
-    }
-
-    .invoice-infos {
-        grid-template-columns: 1fr;
-        gap: 16px;
-        padding: 24px;
     }
 
     .invoice-table-container {
