@@ -94,6 +94,8 @@ class PromotionController extends AbstractController
         $itemId = (int)($data['item_id'] ?? 0);
         $name = isset($data['name']) ? trim($data['name']) : null;
         $price = $data['price'] ?? null;
+        $hasDescriptionKey = array_key_exists('description', $data);
+        $description = $hasDescriptionKey ? (isset($data['description']) ? trim((string)$data['description']) : null) : null;
 
         if ($itemId <= 0 || $name === null || $name === '' || $price === null || !is_numeric($price)) {
             return $this->json([
@@ -113,6 +115,11 @@ class PromotionController extends AbstractController
 
         // Mettre à jour le nom
         $item->setNameItem($name);
+
+        // Mettre à jour la description (si fournie)
+        if ($hasDescriptionKey) {
+            $item->setDescription($description !== '' ? $description : null);
+        }
 
         // Ajouter un nouvel enregistrement de prix (historisé)
         $priceEntity = new PriceItems();

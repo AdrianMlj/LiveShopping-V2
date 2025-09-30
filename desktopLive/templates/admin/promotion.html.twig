@@ -70,7 +70,7 @@
                                 <span class="promo-text">Promo</span>
                             {% endif %}
                         </div>
-                        <button type="button" class="edit-item-btn" title="Edit item" data-item-id="{{ item.item_id }}" data-item-name="{{ item.item_name }}" data-item-price="{{ item.original_price|default(0) }}" aria-label="Edit">
+                        <button type="button" class="edit-item-btn" title="Edit item" data-item-id="{{ item.item_id }}" data-item-name="{{ item.item_name }}" data-item-price="{{ item.original_price|default(0) }}" data-item-description="{{ item.item_description|default('') }}" aria-label="Edit">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -80,6 +80,16 @@
 
                     <div class="product-info">
                         <h3 class="product-title">{{ item.item_name }}</h3>
+                        {% if item.item_description %}
+                            {% set _desc = item.item_description %}
+                            <p class="product-description" title="{{ _desc }}">
+                                {% if _desc|length > 90 %}
+                                    {{ _desc|slice(0, 90) ~ '…' }}
+                                {% else %}
+                                    {{ _desc }}
+                                {% endif %}
+                            </p>
+                        {% endif %}
 
                         <div class="product-meta">
                             <div class="pricing-info">
@@ -244,6 +254,10 @@
                 <div class="form-group">
                     <label for="editItemPrice">Price</label>
                     <input type="number" step="0.01" min="0" id="editItemPrice" name="price" placeholder="0.00" required />
+                </div>
+                <div class="form-group">
+                    <label for="editItemDescription">Description</label>
+                    <textarea id="editItemDescription" name="description" rows="3" placeholder="Item description (optional)"></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel">Cancel</button>
@@ -440,12 +454,14 @@
             const editItemClose = editItemModal ? editItemModal.querySelector('.modal-close') : null;
             const editItemCancel = editItemModal ? editItemModal.querySelector('.btn-cancel') : null;
 
-            function openEditItemModal(itemId, itemName, itemPrice) {
+            function openEditItemModal(itemId, itemName, itemPrice, itemDescription) {
                 if (!editItemModal) return;
                 editItemForm.reset();
                 editItemForm.querySelector('#editItemId').value = itemId;
                 editItemForm.querySelector('#editItemName').value = itemName || '';
                 editItemForm.querySelector('#editItemPrice').value = (typeof itemPrice !== 'undefined' && itemPrice !== null) ? itemPrice : '';
+                const descField = editItemForm.querySelector('#editItemDescription');
+                if (descField) descField.value = (typeof itemDescription !== 'undefined' && itemDescription !== null) ? itemDescription : '';
                 editItemTitle.textContent = 'Edit item – ' + (itemName || ('#' + itemId));
                 editItemModal.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
@@ -463,7 +479,8 @@
                     const id = this.getAttribute('data-item-id');
                     const name = this.getAttribute('data-item-name');
                     const price = this.getAttribute('data-item-price');
-                    openEditItemModal(id, name, price);
+                    const description = this.getAttribute('data-item-description');
+                    openEditItemModal(id, name, price, description);
                 });
             });
 
@@ -493,7 +510,8 @@
                         body: JSON.stringify({
                             item_id: parseInt(data.item_id),
                             name: data.name,
-                            price: parseFloat(data.price)
+                            price: parseFloat(data.price),
+                            description: (data.description && data.description.trim().length > 0) ? data.description.trim() : null
                         })
                     })
                     .then(r => r.json())

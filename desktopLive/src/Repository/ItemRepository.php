@@ -78,6 +78,7 @@ class ItemRepository extends ServiceEntityRepository
             ->select(
                 'i.id AS item_id',
                 'i.nameItem AS item_name',
+                'i.description AS item_description',
                 'i.images AS images',
                 'c.id AS category_id',
                 'c.nameCategory AS category_name',
@@ -138,6 +139,7 @@ class ItemRepository extends ServiceEntityRepository
                 $grouped[$itemId] = [
                     'item_id' => $itemId,
                     'item_name' => $row['item_name'],
+                    'item_description' => $row['item_description'] ?? null,
                     'image' => $row['images'] ?? null,
                     'category' => [
                         'id' => (int)$row['category_id'],
