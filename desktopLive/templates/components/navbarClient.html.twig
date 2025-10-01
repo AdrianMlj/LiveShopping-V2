@@ -12,18 +12,6 @@
     </span>
 
     <div class="right-group">
-        {% if user is defined and user %}
-        {% set userImage = (user.images is defined and user.images) ? user.images : null %}
-        {% set userName = (user.username is defined and user.username) ? user.username : 'U' %}
-        <div class="user-avatar" title="Connecté">
-            {% if userImage %}
-                <img src="/uploads/{{ userImage }}" alt="avatar" />
-            {% else %}
-                <span>{{ userName|slice(0,1)|upper }}</span>
-            {% endif %}
-            <span class="status-dot" aria-hidden="true"></span>
-        </div>
-        {% endif %}
         <form id="globalSearchForm" action="{{ path('app_search') }}" method="get" class="search-form" autocomplete="off" style="position:relative;">
             <input id="globalSearchInput" class="search-bar" name="q" type="text" placeholder="Recherche..." data-i18n-placeholder="search">
             <div id="searchSuggest" class="suggest-box" style="display:none;"></div>
@@ -63,8 +51,27 @@
     <!-- SIDE MENU -->
     <div class="side-menu" id="sideMenu">
         <div class="user-profile">
+            {% if user is defined and user %}
+                {% set userImage = (user.images is defined and user.images) ? user.images : null %}
+                {% set userName = (user.username is defined and user.username) ? user.username : 'U' %}
+                <div class="user-info" style="display: flex; align-items: center; gap: 12px;">
+                    <div class="user-avatar" title="Connecté">
+                        {% if userImage %}
+                            <img src="/uploads/{{ userImage }}" alt="avatar" />
+                        {% else %}
+                            <span>U</span>
+                        {% endif %}
+                        {# <span class="status-dot" aria-hidden="true"></span> #}
+                    </div>
+                    <span class="username">{{ userName }}</span>
+                </div>
+            {% else %}
+                <a href="{{ path('app_login') }}" class="login-link" data-i18n="login">Se connecter</a>
+            {% endif %}
             <div class="user-menu">
-                <a href="/users/profil" data-i18n="profile">Your profile</a>
+                {% if user is defined and user %}
+                    <a href="/users/profil" data-i18n="profile">Your profile</a>
+                {% endif %}
                 <div class="theme-toggle-container">
                     <a data-i18n="theme">Theme change</a>
                     <label class="theme-toggle">
@@ -80,7 +87,9 @@
                     </div>
                 </div>
                 <a href="{{ path('app_home') }}">E-Commerce</a>
-                <a href="{{ path('app_logout') }}" data-i18n="logout">Log out</a>
+                {% if user is defined and user %}
+                    <a href="{{ path('app_logout') }}" data-i18n="logout">Log out</a>
+                {% endif %}
             </div>
         </div>
         <div class="side-menu-links">
@@ -228,6 +237,7 @@
         background: #22c55e; /* vert connecté */
         border: 2px solid #231f20; /* bord du navbar */
         border-radius: 50%;
+        z-index: 2000;
     }
 
     .side-menu {
@@ -274,7 +284,19 @@
     .username {
         font-weight: bold;
         font-size: 18px;
-        color: black;
+        color: white;
+    }
+
+    .login-link {
+        color: #567AF4;
+        text-decoration: none;
+        font-family: 'Inter', Arial, sans-serif;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .login-link:hover {
+        color: white;
     }
 
     .user-menu {
@@ -401,6 +423,8 @@
 
     body.dark-theme .user-menu a:hover { color: #000000ff; }
     body.dark-theme .user-menu span:hover { color: #000000ff; }
+    body.dark-theme .login-link { color: #567AF4; }
+    body.dark-theme .login-link:hover { color: #000000ff; }
 </style>
 
 <script>
@@ -457,6 +481,7 @@
                 cancel: 'Annuler',
                 save: 'Enregistrer',
                 profil_picture: 'Photo de profil',
+                login: 'Se connecter'
             },
             en: {
                 home: 'Home',
@@ -476,6 +501,7 @@
                 cancel: 'Cancel',
                 save: 'Save',
                 profil_picture: 'Profile picture',
+                login: 'Login'
             }
         };
 
