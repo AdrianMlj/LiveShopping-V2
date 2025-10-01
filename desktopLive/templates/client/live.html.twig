@@ -365,6 +365,10 @@
                 {% if items is defined and items|length > 0 %}
                     {% for product in items %}
                         <div class="product">
+                <button class="btn-favorite {% if product.getItem.getId in favorisIds %}active{% endif %}"
+                    aria-label="Basculer favori"
+                    data-item-id="{{ product.getItem.getId }}"
+                    onclick="toggleFavoriteProduct(this)"></button>
                 <img src="{{ product.getItem.getImages ? '/uploads/' ~ product.getItem.getImages : '/uploads/default-product.jpg' }}" alt="{{ product.getItem.getNameItem }}">
                 <div class="product-info">
                   <div class="name">{{ product.getItem.getNameItem }}</div>
@@ -373,11 +377,6 @@
                     {% if product.getItem.getItemSizes|length > 0 %}
                       {% for size in product.getItem.getItemSizes %}
                         <span class="badge bg-secondary me-1">{{ size.getValueSize }}{% if size.getSize %} ({{ size.getSize.getNameSize }}){% endif %}</span>
-                        <button class="btn-favorite"
-                            aria-label="Ajouter aux favoris"
-                            data-item-size-id="{{ size.getId }}"
-                            onclick="toggleFavorite(this)">
-                        </button>
                       {% endfor %}
                     {% else %}
                       <span class="text-muted">Aucune taille</span>
@@ -412,6 +411,26 @@
       btn.textContent = 'Erreur';
       btn.style.background = '#dc3545';
     });
+  }
+  </script>
+  <script>
+  function toggleFavoriteProduct(button){
+    const itemId = button.dataset.itemId;
+    const isActive = button.classList.contains('active');
+    const url = isActive ? `/client/favorite/remove-all-sizes/${itemId}` : `/client/favorite/toggle-all-sizes/${itemId}`;
+    fetch(url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => {
+      if(!res.ok) throw new Error('Erreur serveur: ' + res.status);
+      return res.json();
+    })
+    .then(data => {
+      if (!data.success) return;
+      button.classList.toggle('active');
+    })
+    .catch(err => console.error('Favori erreur:', err));
   }
   </script>
                         </div>

@@ -68,6 +68,7 @@ class HomeController extends AbstractController
                 'images' => $item->getImages(),
                 'price' => $price,
                 'sizes' => $sizes,
+                'description' => $item->getDescription() ?: 'Pas de description disponible',
                 'seller' => $sellerName
             ];
         }

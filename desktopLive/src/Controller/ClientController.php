@@ -61,14 +61,51 @@ class ClientController extends AbstractController
         return $this->redirectToRoute('app_client_panier');
     }
     #[Route('/client/add-cart/{id}', name: 'app_client_add_cart', methods: ['POST'])]
-    public function addCart(Request $request, $id): Response
+    public function addCart(Request $request, $id, \App\Repository\ItemRepository $itemRepository, \App\Repository\PriceItemsRepository $priceItemsRepository): Response
     {
         $session = $request->getSession();
         $cart = $session->get('cart', []);
         $name = $request->request->get('name');
-        $price = $request->request->get('price');
+        $priceInput = $request->request->get('price');
         $images = $request->request->get('images');
-        $quantity = $request->request->get('quantity', 1);
+        $quantityInput = $request->request->get('quantity', 1);
+
+        $quantity = (int) $quantityInput;
+        if ($quantity <= 0) {
+            $quantity = 1;
+        }
+
+        $price = is_numeric($priceInput) ? (float) $priceInput : null;
+        if ($price === null || $price <= 0) {
+            $item = $itemRepository->find($id);
+            if ($item) {
+                $lastPrice = null;
+                foreach ($item->getPriceItems() as $p) {
+                    if ($lastPrice === null || $p->getDatePrice() > $lastPrice->getDatePrice()) {
+                        $lastPrice = $p;
+                    }
+                }
+                if ($lastPrice) {
+                    $price = (float) $lastPrice->getPrice();
+                } else {
+                    // Tentative via repository si relation paresseuse indisponible
+                    $prices = $priceItemsRepository->findBy(['item' => $item], ['datePrice' => 'DESC'], 1);
+                    if ($prices && count($prices) > 0) {
+                        $price = (float) $prices[0]->getPrice();
+                    } else {
+                        $price = 0.0;
+                    }
+                }
+                if (!$name) {
+                    $name = $item->getNameItem();
+                }
+                if (!$images && method_exists($item, 'getImages')) {
+                    $images = $item->getImages();
+                }
+            } else {
+                $price = 0.0;
+            }
+        }
         // Vérifie si le produit existe déjà dans le panier
         $found = false;
         foreach ($cart as &$item) {
@@ -103,7 +140,7 @@ class ClientController extends AbstractController
             return $this->redirectToRoute('app_connection');
         }
         foreach ($cart as $item) {
-            $cartTotal += ($item['price'] ?? 0) * ($item['quantity'] ?? 1);
+            $cartTotal += ((float)($item['price'] ?? 0)) * ((int)($item['quantity'] ?? 1));
         }
         return $this->render('client/panier.html.twig', [
             'cart' => $cart,
@@ -124,8 +161,7 @@ class ClientController extends AbstractController
         $userSession = $session->get('user');
 
         if (!$userSession) {
-            $userSession = $usersRepository->find($userSession['id']);
-            $session->set('user', $userSession);
+            return $this->json(['success' => false, 'message' => 'Non connecté'], 401);
         }
 
         $user = $usersRepository->find($userSession->getId());
@@ -158,6 +194,58 @@ class ClientController extends AbstractController
         $favDetailRepo->getEntityManager()->flush();
 
         return $this->json(['success' => true, 'action' => 'added', 'count' => $added]);
+    }
+    
+    #[Route('/client/favorite/remove-all-sizes/{itemId}', name: 'remove_favorite_all_sizes', methods: ['POST'])]
+    public function removeFavoriteAllSizes(
+        int $itemId,
+        UsersRepository $usersRepository,
+        FavoritesRepository $favRepo,
+        FavoriteDetailsRepository $favDetailRepo,
+        ItemSizeRepository $itemSizeRepo,
+        Request $request,
+        \Doctrine\ORM\EntityManagerInterface $entityManager
+    ): JsonResponse {
+        $session = $request->getSession();
+        $userSession = $session->get('user');
+        if (!$userSession) {
+            return $this->json(['success' => false, 'message' => 'Non connecté'], 401);
+        }
+
+        try {
+            $user = $usersRepository->find($userSession->getId());
+            if (!$user) {
+                return $this->json(['success' => false, 'message' => 'Utilisateur introuvable'], 404);
+            }
+
+            $favorite = $favRepo->findOneBy(['client' => $user]);
+            if (!$favorite) {
+                return $this->json(['success' => false, 'message' => 'Aucun favori pour cet utilisateur'], 404);
+            }
+
+            $itemSizes = $itemSizeRepo->findBy(['item' => $itemId]);
+            if (!$itemSizes || count($itemSizes) === 0) {
+                return $this->json(['success' => false, 'message' => 'Aucune taille trouvée pour cet article'], 404);
+            }
+
+            $removed = 0;
+            foreach ($itemSizes as $itemSize) {
+                $detail = $favDetailRepo->findOneBy(['favorites' => $favorite, 'itemSize' => $itemSize]);
+                if ($detail) {
+                    $entityManager->remove($detail);
+                    $removed++;
+                }
+            }
+            $entityManager->flush();
+
+            return $this->json(['success' => true, 'action' => 'removed', 'count' => $removed]);
+        } catch (\Throwable $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Exception',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
     // ...existing code...
 
@@ -360,42 +448,50 @@ class ClientController extends AbstractController
         }
         $user = $usersRepository->find($userSession->getId());
 
-        $favorisData = [];
+        // Regrouper les favoris par article pour éviter les doublons
+        $grouped = [];
         $favorites = $favRepo->findBy(['client' => $user]);
         foreach ($favorites as $favorite) {
             $details = $favDetailRepo->findBy(['favorites' => $favorite]);
             foreach ($details as $detail) {
                 $itemSize = $detail->getItemSize();
                 $item = $itemSize->getItem();
-                $favoriteId = $favorite->getId();
-                // Récupérer le dernier prix
-                $price = null;
-                $priceItems = $item->getPriceItems();
-                if (count($priceItems) > 0) {
-                    $lastPrice = null;
-                    foreach ($priceItems as $p) {
-                        if ($lastPrice === null || $p->getDatePrice() > $lastPrice->getDatePrice()) {
-                            $lastPrice = $p;
+                $itemId = $item->getId();
+
+                if (!isset($grouped[$itemId])) {
+                    // Récupérer le dernier prix
+                    $price = null;
+                    $priceItems = $item->getPriceItems();
+                    if (count($priceItems) > 0) {
+                        $lastPrice = null;
+                        foreach ($priceItems as $p) {
+                            if ($lastPrice === null || $p->getDatePrice() > $lastPrice->getDatePrice()) {
+                                $lastPrice = $p;
+                            }
+                        }
+                        if ($lastPrice) {
+                            $price = $lastPrice->getPrice();
                         }
                     }
-                    if ($lastPrice) {
-                        $price = $lastPrice->getPrice();
-                    }
+
+                    $grouped[$itemId] = [
+                        'favoriteId' => $favorite->getId(),
+                        'item' => $item,
+                        'price' => $price,
+                        'description' => $item->getDescription() ?: 'Pas de description disponible',
+                        'sizes' => []
+                    ];
                 }
-                $favorisData[] = [
-                    'favoriteId' => $favoriteId,
-                    'item' => $item,
-                    'price' => $price,
-                    'size' => [
-                        'sizeId' => $itemSize->getId(),
-                        'sizeLabel' => $itemSize->getValueSize() . ($itemSize->getSize() ? ' (' . $itemSize->getSize()->getNameSize() . ')' : ''),
-                    ]
+
+                $grouped[$itemId]['sizes'][] = [
+                    'sizeId' => $itemSize->getId(),
+                    'sizeLabel' => $itemSize->getValueSize() . ($itemSize->getSize() ? ' (' . $itemSize->getSize()->getNameSize() . ')' : ''),
                 ];
             }
         }
 
         return $this->render('client/favoris.html.twig', [
-            'favoris' => $favorisData
+            'favoris' => array_values($grouped)
         ]);
     }
 

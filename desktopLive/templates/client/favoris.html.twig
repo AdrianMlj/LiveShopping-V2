@@ -9,12 +9,12 @@
         <p class="text-muted">Vous n’avez encore aucun favori.</p>
     {% else %}
         {% for fav in favoris %}
-        <div class="row align-items-center border-bottom py-3 position-relative" id="fav-{{ fav.favoriteId }}">
+        <div class="row align-items-center border-bottom py-3 position-relative" id="fav-item-{{ fav.item.id }}">
             <!-- Icône favoris en haut à droite -->
             <form method="post"
-                  action="{{ path('remove_favorite_by_id', { favId: fav.favoriteId }) }}"
+                  action="{{ path('remove_favorite_all_sizes', { itemId: fav.item.id }) }}"
                   class="remove-fav-form position-absolute"
-                  data-id="{{ fav.favoriteId }}"
+                  data-id="{{ fav.item.id }}"
                   style="top:12px; right:18px; z-index:2;">
                 <button type="submit" class="btn-favorite active" aria-label="Retirer des favoris"
                         style="background:transparent; border:none; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
@@ -31,18 +31,33 @@
             <!-- Détails produit -->
             <div class="col-md-6">
                 <p><strong>Name :</strong> {{ fav.item.nameitem }}</p>
+                <p><strong>Description :</strong> {{ fav.item.description|raw }}</p>
                 <p><strong>Price :</strong> ${{ fav.price }}</p>
                 <p><strong>Size :</strong>
+                    {% set selectedIds = [] %}
+                    {% for s in fav.sizes %}
+                        {% set selectedIds = selectedIds|merge([s.sizeId]) %}
+                    {% endfor %}
                     <select class="form-select w-auto d-inline">
                         {% for size in fav.item.itemSizes %}
-                            <option value="{{ size.id }}" {% if size.id == fav.size.sizeId %}selected{% endif %}>
+                            <option value="{{ size.id }}" {% if size.id in selectedIds %}selected{% endif %}>
                                 {{ size.valueSize }}{% if size.size %} ({{ size.size.nameSize }}){% endif %}
                             </option>
                         {% endfor %}
                     </select>
                 </p>
+                <form method="post" action="{{ path('app_client_add_cart', { id: fav.item.id }) }}" class="d-inline">
+                    <input type="hidden" name="name" value="{{ fav.item.nameitem }}">
+                    <input type="hidden" name="price" value="{{ fav.price }}">
+                    <input type="hidden" name="images" value="{{ fav.item.images }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="btn btn-dark cart-btn" title="Ajouter au panier" style="display:inline-flex; align-items:center; gap:8px;">
+                        <i class="fas fa-shopping-basket"></i>
+                        Ajouter au panier
+                    </button>
+                </form>
                 <p style="color: #888; font-size: 13px;">
-                    [DEBUG] Article ID: {{ fav.item.id }}, Taille ID: {{ fav.size.sizeId }}
+                    [DEBUG] Article ID: {{ fav.item.id }}, Tailles IDs: {{ selectedIds|join(', ') }}
                 </p>
             </div>
         </div>
@@ -66,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     // Disparition avec animation
-                    const block = document.getElementById('fav-' + favId);
+                    const block = document.getElementById('fav-item-' + favId);
                     block.style.transition = "opacity 0.4s";
                     block.style.opacity = "0";
                     setTimeout(() => block.remove(), 400);
