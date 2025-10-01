@@ -620,33 +620,26 @@
             </div>
 
             <div class="conversation-list">
-                <!-- Conversations simulées -->
-                <div class="conversation-item active" data-type="person">
-                    <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=500&q=60" alt="avatar">
-                    <div class="conversation-info">
-                        <strong>Jeroen Zoet</strong>
-                        <p>We need to start a new plan...</p>
-                    </div>
-                    <span class="time">2 h</span>
-                </div>
-
-                <div class="conversation-item" data-type="person">
-                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=500&q=60" alt="avatar">
-                    <div class="conversation-info">
-                        <strong>Kate Johnson</strong>
-                        <p>Total land hire discounted $...</p>
-                    </div>
-                    <span class="time">5 min</span>
-                </div>
-
-                <div class="conversation-item" data-type="group" style="display:none;">
-                    <img src="https://images.unsplash.com/photo-1568992687947-868a62a9f521?auto=format&fit=crop&w=500&q=60" alt="group">
-                    <div class="conversation-info">
-                        <strong>Team Project <span class="group-indicator">Groupe</span></strong>
-                        <p>Meeting tomorrow at 10am</p>
-                    </div>
-                    <span class="time">3 h</span>
-                </div>
+                {% if followedSellers is defined and followedSellers|length > 0 %}
+                    {% for seller in followedSellers %}
+                        <div class="conversation-item" data-type="person">
+                            {% if seller.images %}
+                                <img src="{{ '/uploads/' ~ seller.images }}" alt="avatar">
+                            {% else %}
+                                <div class="avatar-circle" style="width:42px; height:42px; border-radius:50%; background:#567AF4; display:flex; align-items:center; justify-content:center; color:white; font-weight:700;">
+                                    {{ seller.username ? seller.username|first|upper : 'U' }}
+                                </div>
+                            {% endif %}
+                            <div class="conversation-info">
+                                <strong>{{ seller.username }}</strong>
+                                <p>Discuter avec ce vendeur</p>
+                            </div>
+                            <span class="time">now</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted" style="padding: 12px;">Vous ne suivez encore aucun vendeur.</div>
+                {% endif %}
             </div>
         </div>
 

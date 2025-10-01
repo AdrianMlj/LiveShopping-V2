@@ -233,6 +233,26 @@
         tryNext();
         if (!signaling) return;
 
+        // Suivre/Ne plus suivre le vendeur du live
+        const followBtn = document.getElementById('followBtn');
+        if (followBtn) {
+          const sellerId = {{ live.seller ? live.seller.id : 0 }};
+          const textEl = followBtn.querySelector('.follow-text');
+          followBtn.addEventListener('click', function(){
+            fetch(`/client/follow/toggle/${sellerId}`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+              .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+              .then(data => {
+                if (!data.success) return;
+                if (data.action === 'followed') {
+                  textEl.textContent = 'Following';
+                } else if (data.action === 'unfollowed') {
+                  textEl.textContent = 'Follow';
+                }
+              })
+              .catch(err => console.error('Follow error:', err));
+          });
+        }
+
         function createPeerConnection(){
           pc = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -334,10 +354,9 @@
                             <div class="username-chip">{{ live.seller ? live.seller.username : 'Username' }}</div>
                         </div>
                         <div class="follow-wrap">
-                            <button class="btn btn-follow">
-                                <!-- play icon -->
+                            <button class="btn btn-follow" id="followBtn">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                                Follow
+                                <span class="follow-text">{{ isFollowing ? 'Following' : 'Follow' }}</span>
                             </button>
                         </div>
                     </div>

@@ -147,6 +147,147 @@ class ClientController extends AbstractController
             'cartTotal' => $cartTotal
         ]);
     }
+
+    #[Route('/search', name: 'app_search', methods: ['GET'])]
+    public function search(
+        Request $request,
+        \App\Repository\ItemRepository $itemRepo,
+        \App\Repository\UsersRepository $usersRepo,
+        \App\Repository\LiveRepository $liveRepo,
+        \App\Repository\PriceItemsRepository $priceRepo,
+        \App\Repository\FollowSellerRepository $followRepo
+    ): Response {
+        $session = $request->getSession();
+        $userSession = $session->get('user');
+        $currentUser = $userSession ? $usersRepo->find($userSession->getId()) : null;
+
+        $q = trim((string)$request->query->get('q', ''));
+        $sort = (string)$request->query->get('sort', 'name_asc');
+
+        // Articles
+        $items = $itemRepo->findAll();
+        $articleResults = [];
+        foreach ($items as $it) {
+            $hay = strtolower(($it->getNameItem() ?? '') . ' ' . ($it->getCategory() ? $it->getCategory()->getNameCategory() : ''));
+            if ($q === '' || str_contains($hay, strtolower($q))) {
+                $last = null;
+                foreach ($it->getPriceItems() as $p) {
+                    if ($last === null || $p->getDatePrice() > $last->getDatePrice()) { $last = $p; }
+                }
+                $price = $last ? $last->getPrice() : null;
+                $articleResults[] = [
+                    'id' => $it->getId(),
+                    'name' => $it->getNameItem(),
+                    'image' => method_exists($it, 'getImages') ? $it->getImages() : null,
+                    'price' => $price,
+                ];
+            }
+        }
+
+        // Vendeurs (suivables)
+        $users = $usersRepo->findAll();
+        $sellerResults = [];
+        $followingIds = [];
+        if ($currentUser) {
+            $links = $followRepo->findBy(['client' => $currentUser]);
+            foreach ($links as $lnk) { $followingIds[] = $lnk->getSeller()->getId(); }
+        }
+        foreach ($users as $u) {
+            if (!$u->isSeller()) continue;
+            $hay = strtolower(($u->getUsername() ?? '') . ' ' . ($u->getCountry() ?? ''));
+            if ($q === '' || str_contains($hay, strtolower($q))) {
+                $sellerResults[] = [
+                    'id' => $u->getId(),
+                    'username' => $u->getUsername(),
+                    'images' => $u->getImages(),
+                    'following' => in_array($u->getId(), $followingIds, true)
+                ];
+            }
+        }
+
+        // Lives
+        $lives = $liveRepo->findAll();
+        $liveResults = [];
+        foreach ($lives as $lv) {
+            $seller = $lv->getSeller();
+            $hay = strtolower(($seller ? $seller->getUsername() : '') . ' live');
+            if ($q === '' || str_contains($hay, strtolower($q))) {
+                $liveResults[] = [
+                    'id' => $lv->getId(),
+                    'isLive' => $lv->getEndLive() === null,
+                    'seller' => $seller ? [
+                        'id' => $seller->getId(),
+                        'username' => $seller->getUsername(),
+                        'images' => $seller->getImages(),
+                    ] : null
+                ];
+            }
+        }
+
+        // Tri simple par nom
+        $cmpAsc = fn($a,$b)=> strcmp(($a['name'] ?? $a['username'] ?? ''), ($b['name'] ?? $b['username'] ?? ''));
+        if ($sort === 'name_asc') {
+            usort($articleResults, $cmpAsc);
+            usort($sellerResults, $cmpAsc);
+        } elseif ($sort === 'name_desc') {
+            usort($articleResults, fn($a,$b)=> -$cmpAsc($a,$b));
+            usort($sellerResults, fn($a,$b)=> -$cmpAsc($a,$b));
+        }
+
+        return $this->render('search/index.html.twig', [
+            'user' => $currentUser,
+            'query' => $q,
+            'sort' => $sort,
+            'articles' => $articleResults,
+            'sellers' => $sellerResults,
+            'lives' => $liveResults,
+        ]);
+    }
+
+    #[Route('/search/suggest', name: 'app_search_suggest', methods: ['GET'])]
+    public function searchSuggest(
+        Request $request,
+        \App\Repository\ItemRepository $itemRepo,
+        \App\Repository\UsersRepository $usersRepo,
+        \App\Repository\LiveRepository $liveRepo
+    ): JsonResponse {
+        $q = trim((string)$request->query->get('q', ''));
+        if ($q === '') {
+            return $this->json(['articles' => [], 'sellers' => [], 'lives' => []]);
+        }
+        $qLower = strtolower($q);
+
+        $articles = [];
+        foreach ($itemRepo->findAll() as $it) {
+            $name = $it->getNameItem() ?? '';
+            if (str_contains(strtolower($name), $qLower)) {
+                $articles[] = ['id' => $it->getId(), 'name' => $name];
+                if (count($articles) >= 5) break;
+            }
+        }
+
+        $sellers = [];
+        foreach ($usersRepo->findAll() as $u) {
+            if (!$u->isSeller()) continue;
+            $name = $u->getUsername() ?? '';
+            if (str_contains(strtolower($name), $qLower)) {
+                $sellers[] = ['id' => $u->getId(), 'username' => $name];
+                if (count($sellers) >= 5) break;
+            }
+        }
+
+        $lives = [];
+        foreach ($liveRepo->findAll() as $lv) {
+            $seller = $lv->getSeller();
+            $label = $seller ? $seller->getUsername() : 'Live';
+            if (str_contains(strtolower($label), $qLower)) {
+                $lives[] = ['id' => $lv->getId(), 'label' => $label];
+                if (count($lives) >= 5) break;
+            }
+        }
+
+        return $this->json(['articles' => $articles, 'sellers' => $sellers, 'lives' => $lives]);
+    }
     #[Route('/client/favorite/toggle-all-sizes/{itemId}', name: 'toggle_favorite_all_sizes', methods: ['POST'])]
     public function toggleFavoriteAllSizes(
         int $itemId,
@@ -294,6 +435,46 @@ class ClientController extends AbstractController
         return $this->redirectToRoute('app_client_favoris');
     }
 
+    #[Route('/client/follow/toggle/{sellerId}', name: 'toggle_follow_seller', methods: ['POST'])]
+    public function toggleFollowSeller(
+        int $sellerId,
+        Request $request,
+        UsersRepository $usersRepository,
+        \App\Repository\FollowSellerRepository $followRepo,
+        \Doctrine\ORM\EntityManagerInterface $em
+    ): JsonResponse {
+        $session = $request->getSession();
+        $userSession = $session->get('user');
+        if (!$userSession) {
+            return $this->json(['success' => false, 'message' => 'Non connecté'], 401);
+        }
+
+        $client = $usersRepository->find($userSession->getId());
+        $seller = $usersRepository->find($sellerId);
+        if (!$seller) {
+            return $this->json(['success' => false, 'message' => 'Vendeur introuvable'], 404);
+        }
+        if ($client && $seller && $client->getId() === $seller->getId()) {
+            return $this->json(['success' => false, 'message' => 'Impossible de se suivre soi-même'], 400);
+        }
+
+        $existing = $followRepo->findOneBy(['client' => $client, 'seller' => $seller]);
+        if ($existing) {
+            $em->remove($existing);
+            $em->flush();
+            return $this->json(['success' => true, 'action' => 'unfollowed']);
+        }
+
+        $follow = new \App\Entity\FollowSeller();
+        $follow->setClient($client);
+        $follow->setSeller($seller);
+        $follow->setDateFollowing(new \DateTime());
+        $em->persist($follow);
+        $em->flush();
+
+        return $this->json(['success' => true, 'action' => 'followed']);
+    }
+
     #[Route('/client/remove-favorite/{itemSizeId}', name: 'remove_favorite', methods: ['POST'])]
     public function removeFavorite(
         int $itemSizeId,
@@ -391,6 +572,7 @@ class ClientController extends AbstractController
     FavoritesRepository $favRepo,
     FavoriteDetailsRepository $favDetailRepo,
     ItemSizeRepository $itemSizeRepo,
+    \App\Repository\FollowSellerRepository $followRepo,
     int $id
     ): Response
     {
@@ -424,12 +606,19 @@ class ClientController extends AbstractController
                 }
             }
         }
+        $isFollowing = false;
+        if ($currentUser && $live && $live->getSeller()) {
+            $follow = $followRepo->findOneBy(['client' => $currentUser, 'seller' => $live->getSeller()]);
+            $isFollowing = $follow ? true : false;
+        }
+
         return $this->render('client/live.html.twig', [
             'user' => $currentUser,
             'live' => $live,
             'items' => $items,
             'favorisIds' => $favorisIds,
             'favorisMap' => $favorisMap,
+            'isFollowing' => $isFollowing,
         ]);
     }
 

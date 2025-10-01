@@ -1,0 +1,123 @@
+{% include 'components/navbarClient.html.twig' %}
+
+<div class="container" style="max-width:1100px; margin:90px auto 24px; padding:0 16px;">
+  <form method="get" action="{{ path('app_search') }}" style="display:flex; gap:8px; align-items:center; margin-bottom:16px;">
+    <input type="text" name="q" value="{{ query }}" placeholder="Rechercher..." style="flex:1; padding:10px 12px; border:1px solid #ddd; border-radius:8px;">
+    <select name="sort" style="padding:10px 12px; border:1px solid #ddd; border-radius:8px;">
+      <option value="name_asc" {{ sort == 'name_asc' ? 'selected' : '' }}>Nom A→Z</option>
+      <option value="name_desc" {{ sort == 'name_desc' ? 'selected' : '' }}>Nom Z→A</option>
+    </select>
+    <button type="submit" class="btn" style="padding:10px 16px; border:none; background:#567AF4; color:#fff; border-radius:8px; font-weight:700;">Rechercher</button>
+  </form>
+
+  <h3 style="margin:16px 0 8px;">Articles</h3>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:12px;">
+    {% for a in articles %}
+      <div class="product-card" style="background:#fff; border:1px solid #eee; border-radius:10px; padding:10px; position:relative;">
+        <img src="{{ a.image ? '/uploads/' ~ a.image : '/uploads/default-product.jpg' }}" alt="{{ a.name }}" style="width:100%; height:140px; object-fit:cover; border-radius:8px;">
+        <div style="margin-top:8px; font-weight:700;">{{ a.name }}</div>
+        <div style="color:#444;">{{ a.price is not null ? (a.price ~ ' Ar') : '—' }}</div>
+        <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+            <button class="fav-btn" data-id="{{ a.id }}" style="background:none; border:none; cursor:pointer;" title="Ajouter aux favoris">
+                <i class="far fa-bookmark" style="color:#FFD600; font-size:20px;"></i>
+            </button>
+            <form method="post" action="{{ path('app_client_add_cart', { id: a.id }) }}" class="d-inline">
+                <input type="hidden" name="name" value="{{ a.name }}">
+                <input type="hidden" name="price" value="{{ a.price }}">
+                <input type="hidden" name="images" value="{{ a.image }}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn btn-dark" title="Ajouter au panier" style="display:inline-flex; align-items:center; gap:8px;">
+                    <i class="fas fa-shopping-basket"></i>
+                    Panier
+                </button>
+            </form>
+        </div>
+      </div>
+    {% else %}
+      <div>Aucun article.</div>
+    {% endfor %}
+  </div>
+
+  <h3 style="margin:24px 0 8px;">Vendeurs</h3>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:12px;">
+    {% for s in sellers %}
+      <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:10px; display:flex; gap:10px; align-items:center;">
+        {% if s.images %}
+          <img src="{{ '/uploads/' ~ s.images }}" alt="{{ s.username }}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+        {% else %}
+          <div style="width:48px; height:48px; border-radius:50%; background:#567AF4; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700;">{{ s.username ? s.username|first|upper : 'U' }}</div>
+        {% endif %}
+        <div style="flex:1;">
+          <div style="font-weight:700;">{{ s.username }}</div>
+          <button type="button" class="btn-follow" data-seller-id="{{ s.id }}" style="margin-top:6px; padding:6px 10px; border:none; border-radius:999px; font-weight:700; background: {{ s.following ? '#22c55e' : '#ff2d55' }}; color:#fff;">{{ s.following ? 'Following' : 'Follow' }}</button>
+        </div>
+      </div>
+    {% else %}
+      <div>Aucun vendeur.</div>
+    {% endfor %}
+  </div>
+
+  <h3 style="margin:24px 0 8px;">Lives</h3>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:12px;">
+    {% for l in lives %}
+      <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:10px; display:flex; gap:10px; align-items:center;">
+        {% if l.seller and l.seller.images %}
+          <img src="{{ '/uploads/' ~ l.seller.images }}" alt="{{ l.seller.username }}" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">
+        {% else %}
+          <div style="width:56px; height:56px; border-radius:50%; background:#567AF4; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700;">{{ l.seller and l.seller.username ? l.seller.username|first|upper : 'U' }}</div>
+        {% endif %}
+        <div style="flex:1;">
+          <div style="font-weight:700;">{{ l.seller ? l.seller.username : 'Live' }}</div>
+          <div style="color:#888;">{{ l.isLive ? 'En cours' : 'Terminé' }}</div>
+        </div>
+        {% if l.seller %}
+        <a href="{{ path('app_client_live', { id: l.id }) }}" class="btn" style="padding:8px 12px; border:none; border-radius:8px; background:#567AF4; color:#fff; font-weight:700; text-decoration:none;">Voir</a>
+        {% endif %}
+      </div>
+    {% else %}
+      <div>Aucun live.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // Favoris sur page de recherche
+  document.querySelectorAll('.fav-btn').forEach(btn => {
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      const itemId = this.dataset.id;
+      fetch(`/client/favorite/toggle-all-sizes/${itemId}`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+        .then(res => { if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
+        .then(data => {
+          if (!data.success) return;
+          const icon = this.querySelector('i');
+          icon.classList.toggle('fas');
+          icon.classList.toggle('far');
+          this.setAttribute('title', icon.classList.contains('fas') ? 'Retirer des favoris' : 'Ajouter aux favoris');
+        })
+        .catch(console.error);
+    });
+  });
+
+  document.querySelectorAll('.btn-follow').forEach(btn => {
+    btn.addEventListener('click', function(){
+      const sellerId = this.dataset.sellerId;
+      fetch(`/client/follow/toggle/${sellerId}`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+        .then(res => { if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
+        .then(data => {
+          if (!data.success) return;
+          if (data.action === 'followed') {
+            this.textContent = 'Following';
+            this.style.background = '#22c55e';
+          } else if (data.action === 'unfollowed') {
+            this.textContent = 'Follow';
+            this.style.background = '#ff2d55';
+          }
+        })
+        .catch(console.error);
+    });
+  });
+});
+</script>
+

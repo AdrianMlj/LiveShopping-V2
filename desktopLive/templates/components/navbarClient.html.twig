@@ -12,15 +12,29 @@
     </span>
 
     <div class="right-group">
-        <input class="search-bar" type="text" placeholder="Recherche..." data-i18n-placeholder="search">
+        {% if user is defined and user %}
+        {% set userImage = (user.images is defined and user.images) ? user.images : null %}
+        {% set userName = (user.username is defined and user.username) ? user.username : 'U' %}
+        <div class="user-avatar" title="Connecté">
+            {% if userImage %}
+                <img src="/uploads/{{ userImage }}" alt="avatar" />
+            {% else %}
+                <span>{{ userName|slice(0,1)|upper }}</span>
+            {% endif %}
+            <span class="status-dot" aria-hidden="true"></span>
+        </div>
+        {% endif %}
+        <form id="globalSearchForm" action="{{ path('app_search') }}" method="get" class="search-form" autocomplete="off" style="position:relative;">
+            <input id="globalSearchInput" class="search-bar" name="q" type="text" placeholder="Recherche..." data-i18n-placeholder="search">
+            <div id="searchSuggest" class="suggest-box" style="display:none;"></div>
+        </form>
         <div class="icons">
-            <span class="icon">
-                <!-- Loupe -->
+            <button class="icon" type="submit" form="globalSearchForm" aria-label="Rechercher">
                 <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
                     <circle cx="17" cy="17" r="10" />
                     <line x1="25" y1="25" x2="36" y2="36" />
                 </svg>
-            </span>
+            </button>
             <a class="icon" id="messagesIcon" href="{{ path('app_messages') }}">
                 <!-- Bulle -->
                 <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#567AF4" stroke-width="2">
@@ -151,13 +165,69 @@
         width: 38px;
         height: 38px;
         cursor: pointer;
+        background: transparent;
+        border: none;
+        padding: 0;
     }
+    .icons .icon:hover svg { stroke: #ffffff; transition: stroke 0.2s ease; }
+    .icons .icon:focus-visible { outline: 2px solid #567AF4; outline-offset: 2px; border-radius: 6px; }
+
+    .suggest-box {
+        position: absolute;
+        top: 42px;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        z-index: 2100;
+        max-height: 260px;
+        overflow: auto;
+        color:black;
+    }
+    .suggest-item { padding: 8px 12px; cursor: pointer; display:flex; gap:8px; align-items:center; }
+    .suggest-item:hover { background:#f3f4f6; }
+    .suggest-section { padding: 6px 12px; font-size:12px; color: #6b7280; }
 
     .right-group {
         display: flex;
         align-items: center;
         gap: 16px;
         margin-right: -50px;
+    }
+
+    .user-avatar {
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        overflow: hidden;
+        background: #2e2e2e;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .user-avatar .status-dot {
+        position: absolute;
+        right: -1px;
+        bottom: -1px;
+        width: 10px;
+        height: 10px;
+        background: #22c55e; /* vert connecté */
+        border: 2px solid #231f20; /* bord du navbar */
+        border-radius: 50%;
     }
 
     .side-menu {
@@ -291,6 +361,7 @@
         .nav-links {
             display: none;
         }
+        .search-bar { width: 160px; height: 36px; }
         .side-menu-links {
             display: flex !important;
         }
@@ -337,6 +408,9 @@
         const burger = document.getElementById('burgerMenu');
         const sideMenu = document.getElementById('sideMenu');
         const themeToggle = document.getElementById('themeToggle');
+        const input = document.getElementById('globalSearchInput');
+        const box = document.getElementById('searchSuggest');
+        const form = document.getElementById('globalSearchForm');
 
         // Utiliser une clé globale pour la persistance du thème sur tout le site
         const userThemeKey = 'site_theme';
@@ -429,5 +503,41 @@
                 setLanguage(lang);
             });
         });
+
+        // Autosuggestion minimaliste
+        let debounceTimer = null;
+        function renderSuggest(data){
+            const parts = [];
+            function section(title){ parts.push('<div class="suggest-section">'+title+'</div>'); }
+            function item(label){ parts.push('<div class="suggest-item" data-label="'+label.replace(/"/g,'&quot;')+'">'+label+'</div>'); }
+            if (data.articles && data.articles.length){ section('Articles'); data.articles.forEach(a=> item(a.name)); }
+            if (data.sellers && data.sellers.length){ section('Vendeurs'); data.sellers.forEach(s=> item(s.username)); }
+            if (data.lives && data.lives.length){ section('Lives'); data.lives.forEach(l=> item(l.label)); }
+            box.innerHTML = parts.join('');
+            box.style.display = parts.length ? 'block' : 'none';
+        }
+        function fetchSuggest(q){
+            if (!q || q.length < 2){ box.style.display='none'; return; }
+            fetch('/search/suggest?q='+encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+                .then(res => res.json())
+                .then(data => renderSuggest(data))
+                .catch(()=> { box.style.display='none'; });
+        }
+        if (input && box){
+            input.addEventListener('input', function(){
+                clearTimeout(debounceTimer);
+                const q = this.value.trim();
+                debounceTimer = setTimeout(()=> fetchSuggest(q), 200);
+            });
+            box.addEventListener('click', function(e){
+                const it = e.target.closest('.suggest-item');
+                if (!it) return;
+                input.value = it.getAttribute('data-label');
+                form.submit();
+            });
+            document.addEventListener('click', function(e){
+                if (!form.contains(e.target)) box.style.display='none';
+            });
+        }
     });
 </script>

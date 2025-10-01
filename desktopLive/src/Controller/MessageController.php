@@ -6,6 +6,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\Cache\CacheInterface;
+use App\Repository\FollowSellerRepository;
+use App\Repository\UsersRepository;
 
 class MessageController extends AbstractController
 {
@@ -17,7 +19,7 @@ class MessageController extends AbstractController
     }
 
     #[Route('/messages', name: 'app_messages', methods: ['GET'])]
-    public function index(Request $request): Response
+    public function index(Request $request, FollowSellerRepository $followRepo, UsersRepository $usersRepository): Response
     {
         // Récupère l'utilisateur connecté depuis la session
         $session = $request->getSession();
@@ -25,8 +27,21 @@ class MessageController extends AbstractController
         if (!$user) {
             return $this->redirectToRoute('app_connection');
         }
+        $client = $usersRepository->find($user->getId());
+        $followedSellers = [];
+        if ($client) {
+            $links = $followRepo->findBy(['client' => $client]);
+            foreach ($links as $link) {
+                $seller = $link->getSeller();
+                if ($seller) {
+                    $followedSellers[] = $seller;
+                }
+            }
+        }
+
         return $this->render('messages/index.html.twig', [
-            'user' => $user, // ← ton utilisateur connecté
+            'user' => $user,
+            'followedSellers' => $followedSellers,
         ]);
     }
 
