@@ -82,6 +82,44 @@ class ItemsStockRepository extends ServiceEntityRepository
         return $result->fetchAllAssociative();
     }
 
+    public function getSellerStockCapacity(int $idSeller): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "
+            SELECT
+                SUM(stockQty) AS capacity_units,
+                SUM(stockQty * latestPrice) AS capacity_ca
+            FROM (
+                SELECT
+                    i.id_item AS itemId,
+                    COALESCE(SUM(s.in_item),0) - COALESCE(SUM(s.out_item),0) AS stockQty,
+                    (
+                        SELECT p.price
+                        FROM price_items p
+                        WHERE p.id_item = i.id_item
+                        ORDER BY p.date_price DESC
+                        LIMIT 1
+                    ) AS latestPrice
+                FROM items_stock s
+                INNER JOIN item_size_color isc ON s.id_item_size_color = isc.id_item_size_color
+                INNER JOIN item_size isz ON isc.id_item_size = isz.id_item_size
+                INNER JOIN item i ON isz.id_item = i.id_item
+                WHERE i.id_seller = :idSeller
+                GROUP BY i.id_item
+            ) t
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $result = $stmt->executeQuery(['idSeller' => $idSeller]);
+        $row = $result->fetchAssociative();
+
+        return [
+            'capacity_units' => (float)($row['capacity_units'] ?? 0),
+            'capacity_ca' => (float)($row['capacity_ca'] ?? 0),
+        ];
+    }
+
     public function importCsv(int $idSeller, array $files, EntityManagerInterface $em): string
     {
         $errors = [];
