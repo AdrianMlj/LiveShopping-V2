@@ -39,7 +39,7 @@
                             <h2>{{ live.titre }}</h2>
                             <div class="stream-meta">
                                 <span class="live-badge">
-                                    <i class="fas fa-circle"></i> EN DIRECT
+                                    <i class="fas fa-circle"></i> <span data-i18n="live">EN DIRECT</span>
                                 </span>
                                 <span class="stream-date">
                                     <i class="far fa-calendar-alt"></i> {{ live.startLive|date('d/m/Y H:i') }}
@@ -48,7 +48,7 @@
                         </div>
 
                         <div class="stream-description">
-                            <h3><i class="fas fa-info-circle"></i> Description</h3>
+                            <h3><i class="fas fa-info-circle"></i> <span data-i18n="description">Description</span></h3>
                             <p>{{ live.description }}</p>
                         </div>
 
@@ -56,7 +56,7 @@
                             <div class="stats-grid">
                                 <div class="stat-card">
                                     <div class="stat-value">--:--</div>
-                                    <div class="stat-label">Durée</div>
+                                    <div class="stat-label" data-i18n="duration">Durée</div>
                                 </div>
                             </div>
                         </div>
@@ -64,12 +64,12 @@
 
                     <div class="stream-actions">
                         <a href="{{ path('admin_live_stop', {'id': live.id}) }}" class="stop-stream-btn">
-                            <i class="fas fa-stop"></i> Terminer le stream
+                            <i class="fas fa-stop"></i> <span data-i18n="end_stream">Terminer le stream</span>
                         </a>
                     </div>
 
                     <div class="debug-console">
-                        <h3><i class="fas fa-terminal"></i> Console technique</h3>
+                        <h3><i class="fas fa-terminal"></i> <span data-i18n="technical_console">Console technique</span></h3>
                         <div class="debug-logs" id="debugLogs"></div>
                     </div>
                 </div>
@@ -80,10 +80,10 @@
                     <div class="no-live-icon">
                         <i class="fas fa-video-slash"></i>
                     </div>
-                    <h2>Aucun live en cours</h2>
-                    <p>Commencez un nouveau stream pour interagir avec votre audience</p>
+                    <h2 data-i18n="no_live_active">Aucun live en cours</h2>
+                    <p data-i18n="start_new_stream">Commencez un nouveau stream pour interagir avec votre audience</p>
                     <a href="{{ path('admin_live_start') }}" class="start-stream-btn">
-                        <i class="fas fa-play"></i> Démarrer un live
+                        <i class="fas fa-play"></i> <span data-i18n="start_live">Démarrer un live</span>
                     </a>
                 </div>
             </div>

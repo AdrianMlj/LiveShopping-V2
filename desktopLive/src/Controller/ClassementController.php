@@ -95,103 +95,16 @@ class ClassementController extends AbstractController
             ? new \DateTime($request->request->get('dateF'))
             : new \DateTime('last day of this month');
 
-        // 1) Réalisé (sans Goals) – CA et ventes par mois
-        $conn = $this->entityManager->getConnection();
-        $sql = "
-            SELECT
-                EXTRACT(YEAR FROM s.sale_date) AS annee,
-                EXTRACT(MONTH FROM s.sale_date) AS mois,
-                COALESCE(SUM(cd.price * cd.quantity), 0) AS ca_realise,
-                COUNT(DISTINCT s.id_sale) AS ventes_realisees
-            FROM Commande c
-            INNER JOIN Sale s ON s.id_commande = c.id_commande AND s.is_paid = TRUE
-            INNER JOIN Commande_details cd ON cd.id_commande = c.id_commande
-            WHERE c.id_seller = :sellerId
-            AND s.sale_date BETWEEN :dateDebut AND :dateFin
-            GROUP BY annee, mois
-            ORDER BY annee, mois
-        ";
-        $result = $conn->executeQuery($sql, [
-            'sellerId' => $sellerId,
-            'dateDebut' => $startDate->format('Y-m-d'),
-            'dateFin' => $endDate->format('Y-m-d'),
-        ])->fetchAllAssociative();
+        // Récupérer la capacité de stock
+        $stockCapacity = $this->itemsStockRepository->getSellerStockCapacity($sellerId);
 
-        // 2) Capacité stock globale (pour donner une borne haute de CA)
-        $capacity = $this->itemsStockRepository->getSellerStockCapacity($sellerId);
-
-        // 3) Construire la structure attendue par le template, en utilisant la projection temporelle
-        $today = new \DateTime();
-        $monthlyGoals = [];
-        foreach ($result as $row) {
-            $annee = (int)$row['annee'];
-            $mois = (int)$row['mois'];
-            $dateMois = \DateTime::createFromFormat('Y-m-d', sprintf('%04d-%02d-01', $annee, $mois));
-            $jours_total = (int)$dateMois->format('t');
-            $moisCourant = $today->format('Y-m');
-
-            $ca_realise = (float)$row['ca_realise'];
-            $ventes_realisees = (int)$row['ventes_realisees'];
-
-            if ($dateMois->format('Y-m') < $moisCourant) {
-                $projection_ca = $ca_realise;
-                $projection_ventes = $ventes_realisees;
-            } elseif ($dateMois->format('Y-m') === $moisCourant) {
-                $jours_passes = (int)$today->format('d');
-                $projection_ca = $jours_passes > 0 ? ($ca_realise / $jours_passes) * $jours_total : 0;
-                $projection_ventes = $jours_passes > 0 ? ($ventes_realisees / $jours_passes) * $jours_total : 0;
-                // Borne par la capacité stock CA
-                if ($capacity['capacity_ca'] > 0) {
-                    $projection_ca = min($projection_ca, $capacity['capacity_ca']);
-                }
-            } else {
-                $projection_ca = 0;
-                $projection_ventes = 0;
-            }
-
-            $monthlyGoals[] = [
-                'annee' => $annee,
-                'mois' => $mois,
-                'target_ca' => $capacity['capacity_ca'], // cible = capacité stock CA
-                'target_ventes' => (int)$capacity['capacity_units'],
-                'ca_realise' => $ca_realise,
-                'ventes_realisees' => $ventes_realisees,
-                'projection_ca' => $projection_ca,
-                'projection_ventes' => (int)round($projection_ventes),
-                'ecart_ca' => $ca_realise - $capacity['capacity_ca'],
-                'ecart_ventes' => $ventes_realisees - (int)$capacity['capacity_units'],
-            ];
-        }
-
-        $today = new \DateTime();
-        /// PROJECTION = (realise jsq'a maintenant / j ecoule) * nbr total de j du mois ///
-        foreach ($monthlyGoals as &$goal) {
-            $annee = $goal['annee'] ?? date('Y');
-            $mois = str_pad($goal['mois'], 2, '0', STR_PAD_LEFT); // ex: "09"
-            $dateMois = \DateTime::createFromFormat('Y-m-d', "$annee-$mois-01");
-            $jours_total = (int) $dateMois->format('t');
-
-            $moisCourant = $today->format('Y-m');
-
-            if ($dateMois->format('Y-m') < $moisCourant) {
-                // mois passé → projection = réalisé
-                $goal['projection_ca'] = $goal['ca_realise'];
-                $goal['projection_ventes'] = $goal['ventes_realisees'];
-            } elseif ($dateMois->format('Y-m') === $moisCourant) {
-                // mois en cours → projection basée sur jours écoulés
-                $jours_passes = (int) $today->format('d');
-                $goal['projection_ca'] = $jours_passes > 0
-                    ? ($goal['ca_realise'] / $jours_passes) * $jours_total
-                    : 0;
-                $goal['projection_ventes'] = $jours_passes > 0
-                    ? ($goal['ventes_realisees'] / $jours_passes) * $jours_total
-                    : 0;
-            } else {
-                // mois futur → projection = 0
-                $goal['projection_ca'] = 0;
-                $goal['projection_ventes'] = 0;
-            }
-        }
+        // Récupérer les objectifs mensuels avec projections via le repository
+        $monthlyGoals = $this->goalsRepository->getMonthlyGoalsWithProjections(
+            $sellerId,
+            $startDate,
+            $endDate,
+            $stockCapacity
+        );
 
         return $this->render('admin/objectifMensuel.html.twig', [
             'monthlyGoals' => $monthlyGoals,
