@@ -8,7 +8,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Repository\HistoryRepository;
+use App\Repository\SaleRepository as HistoryRepository;
 use App\Repository\StateCommandeRepository;
 use App\Entity\Sale;
 
