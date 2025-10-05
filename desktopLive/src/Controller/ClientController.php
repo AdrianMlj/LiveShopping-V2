@@ -265,9 +265,17 @@ class ClientController extends AbstractController
             $groups[$sellerId][] = [$ci, $item];
         }
 
-        $defaultState = null;
-        $states = $stateRepo->findAll();
-        if ($states && count($states) > 0) { $defaultState = $states[0]; }
+        // Resolve a default state for new orders (create one if missing)
+        $pendingState = $stateRepo->findOneBy(['nameState' => 'En attente']);
+        if (!$pendingState) {
+            $pendingState = $stateRepo->findOneBy([]);
+        }
+        if (!$pendingState) {
+            $pendingState = new \App\Entity\StateCommande();
+            $pendingState->setNameState('En attente');
+            $em->persist($pendingState);
+            $em->flush();
+        }
 
         try {
             foreach ($groups as $sellerId => $items) {
@@ -276,9 +284,13 @@ class ClientController extends AbstractController
                 if ($sellerId) { $seller = $usersRepo->find($sellerId); }
 
                 $commande = new \App\Entity\Commande();
-                if ($defaultState) { $commande->setState($defaultState); }
+                $commande->setState($pendingState);
                 $commande->setClient($client);
-                if ($seller) { $commande->setSeller($seller); }
+                if ($seller) { 
+                    $commande->setSeller($seller); 
+                } else {
+                    throw new \InvalidArgumentException('Vendeur introuvable pour un article du panier');
+                }
                 $commande->setCreatedAt(new \DateTime());
 
                 // Details
@@ -294,7 +306,7 @@ class ClientController extends AbstractController
                         if ($sizes) { $itemSize = $sizes[0]; }
                     }
                     if (!$itemSize) {
-                        throw new \RuntimeException('Aucune taille sélectionnée pour l\'article '.$item->getNameItem());
+                        throw new \InvalidArgumentException('Veuillez choisir une taille pour l\'article "'.$item->getNameItem().'"');
                     }
                     $detail->setItemSize($itemSize);
                     $detail->setQuantity((int)($ci['quantity'] ?? 1));
@@ -317,7 +329,8 @@ class ClientController extends AbstractController
             $session->set('cart', []);
             return $this->json(['success' => true, 'redirect' => $this->generateUrl('app_client_history')]);
         } catch (\Throwable $e) {
-            return $this->json(['success' => false, 'message' => 'Erreur commande', 'error' => $e->getMessage()], 500);
+            $status = ($e instanceof \InvalidArgumentException) ? 400 : 500;
+            return $this->json(['success' => false, 'message' => $e->getMessage()], $status);
         }
     }
 
