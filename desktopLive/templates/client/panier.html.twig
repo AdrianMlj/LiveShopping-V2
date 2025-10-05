@@ -48,6 +48,29 @@
                         <div class="item-info">
                             <h3 class="item-name">{{ item.name }}</h3>
                             <p class="item-price-unit">{{ item.price|number_format(2, '.', ' ') }} €/unité</p>
+                            <div class="selectors">
+                                <div class="selector-group">
+                                    <label>Taille</label>
+                                    <select class="size-select" data-item-id="{{ item.id }}">
+                                        <option value="">Sélectionner</option>
+                                        {% set sizes = sizesByItem[item.id]|default([]) %}
+                                        {% for s in sizes %}
+                                            <option value="{{ s.id }}" {{ item.itemSizeId is defined and item.itemSizeId == s.id ? 'selected' }}>{{ s.label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="selector-group">
+                                    <label>Couleur</label>
+                                    {% set currentSizeId = item.itemSizeId ?? (sizes|length ? sizes[0].id : null) %}
+                                    {% set colors = currentSizeId ? (colorsBySize[currentSizeId]|default([])) : [] %}
+                                    <select class="color-select" data-item-id="{{ item.id }}" {{ (colors|length == 0) ? 'disabled' : '' }}>
+                                        <option value="">{{ (colors|length == 0) ? 'Non disponible' : 'Sélectionner' }}</option>
+                                        {% for c in colors %}
+                                            <option value="{{ c.id }}" {{ item.colorId is defined and item.colorId == c.id ? 'selected' }}>{{ c.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="item-controls">
@@ -141,22 +164,32 @@
                                     </div>
                                 </label>
                             </div>
+                            <div class="payment-method">
+                                <input type="radio" id="cod" name="payment" value="cod">
+                                <label for="cod" class="method-card">
+                                    <div class="method-icon" style="background:#374151"><i class="fa-solid fa-truck"></i></div>
+                                    <div class="method-info">
+                                        <span class="method-name">Paiement à la livraison</span>
+                                        <span class="method-desc">Payez au livreur</span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-section">
+                    <div class="form-section" id="phone-section">
                         <label for="phone" class="section-label">Numéro de téléphone</label>
                         <div class="input-group">
                             <span class="input-prefix">+261</span>
                             <input type="tel" id="phone" class="form-input" 
-                                   placeholder="34 12 345 67" pattern="[0-9]{9}" required>
+                                   placeholder="34 12 345 67" pattern="[0-9]{9}">
                         </div>
                     </div>
 
-                    <div class="form-section">
+                    <div class="form-section" id="code-section">
                         <label for="code" class="section-label">Code de confirmation</label>
                         <input type="text" id="code" class="form-input" 
-                               placeholder="Entrez le code reçu par SMS" required>
+                               placeholder="Entrez le code reçu par SMS">
                         <small class="input-hint">
                             <i class="fa-solid fa-info-circle"></i>
                             Un code de confirmation sera envoyé à votre numéro
@@ -1000,39 +1033,78 @@ document.addEventListener('DOMContentLoaded', function() {
             processPayment();
         });
     }
+    // Toggle phone/code sections when payment method changes
+    document.querySelectorAll('input[name="payment"]').forEach(r => {
+        r.addEventListener('change', () => {
+            const method = document.querySelector('input[name="payment"]:checked').value;
+            const phoneSection = document.getElementById('phone-section');
+            const codeSection = document.getElementById('code-section');
+            const showPhone = (method !== 'cod');
+            phoneSection.style.display = showPhone ? 'block' : 'none';
+            codeSection.style.display = showPhone ? 'block' : 'none';
+        });
+    });
     
     async function processPayment() {
         const formData = new FormData(paymentForm);
         const paymentMethod = formData.get('payment');
-        const phone = document.getElementById('phone').value;
-        const code = document.getElementById('code').value;
-        
-        if (!phone || !code) {
-            showNotification('Veuillez remplir tous les champs', 'warning');
-            return;
+        const phone = document.getElementById('phone').value.trim();
+        const code = document.getElementById('code').value.trim();
+
+        const phoneSection = document.getElementById('phone-section');
+        const codeSection = document.getElementById('code-section');
+        const showPhone = (paymentMethod !== 'cod');
+        phoneSection.style.display = showPhone ? 'block' : 'none';
+        codeSection.style.display = showPhone ? 'block' : 'none';
+
+        if (paymentMethod !== 'cod') {
+            if (!phone || !code) { showNotification('Téléphone et code requis', 'warning'); return; }
         }
-        
+
         try {
-            // Simulation de paiement
-            showNotification('Traitement du paiement...', 'info');
-            
-            // await fetch('/payment/process', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ paymentMethod, phone, code })
-            // });
-            
-            setTimeout(() => {
-                showNotification('Paiement effectué avec succès!', 'success');
-                // Redirection vers la page de confirmation
-                // window.location.href = '/order/confirmation';
-            }, 2000);
-            
+            showNotification('Validation de votre commande...', 'info');
+            const resp = await fetch('/client/checkout/submit', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams({ paymentMethod })
+            });
+            const data = await resp.json();
+            if (data && data.success) {
+                showNotification('Commande confirmée', 'success');
+                if (data.redirect) window.location.href = data.redirect;
+            } else {
+                showNotification(data.message || 'Erreur lors de la commande', 'error');
+            }
         } catch (error) {
             console.error('Erreur paiement:', error);
-            showNotification('Erreur lors du paiement', 'error');
+            showNotification('Erreur lors de la commande', 'error');
         }
     }
+
+    // Size and color change events
+    document.querySelectorAll('.size-select').forEach(sel => {
+        sel.addEventListener('change', async (e) => {
+            const itemId = e.target.getAttribute('data-item-id');
+            const itemSizeId = e.target.value;
+            if (!itemSizeId) return;
+            const fd = new FormData();
+            fd.append('itemId', itemId);
+            fd.append('itemSizeId', itemSizeId);
+            await fetch('/client/cart/update-size', { method: 'POST', body: fd });
+            location.reload();
+        });
+    });
+    document.querySelectorAll('.color-select').forEach(sel => {
+        sel.addEventListener('change', async (e) => {
+            const itemId = e.target.getAttribute('data-item-id');
+            const colorId = e.target.value;
+            if (!colorId) return;
+            const fd = new FormData();
+            fd.append('itemId', itemId);
+            fd.append('colorId', colorId);
+            await fetch('/client/cart/update-color', { method: 'POST', body: fd });
+        });
+    });
     
     function showNotification(message, type = 'info') {
         // Créer une notification toast
