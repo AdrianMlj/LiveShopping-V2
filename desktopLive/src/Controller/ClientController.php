@@ -60,6 +60,50 @@ class ClientController extends AbstractController
         $session->set('cart', array_values($cart));
         return $this->redirectToRoute('app_client_panier');
     }
+
+    #[Route('/client/cart/confirm', name: 'app_client_cart_confirm', methods: ['POST'])]
+    public function confirmCartSelection(Request $request): JsonResponse
+    {
+        $session = $request->getSession();
+        $userSession = $session->get('user');
+        if (!$userSession) {
+            return $this->json(['success' => false, 'message' => 'Non connecté'], 401);
+        }
+
+        $idsJson = (string) ($request->request->get('ids') ?? '[]');
+        $method = (string) ($request->request->get('payment_method') ?? 'mvola');
+        $ids = [];
+        try { $ids = json_decode($idsJson, true, flags: JSON_THROW_ON_ERROR); } catch (\Throwable $e) { $ids = []; }
+        if (!is_array($ids) || count($ids) === 0) {
+            return $this->json(['success' => false, 'message' => 'Aucun article sélectionné'], 400);
+        }
+
+        $cart = $session->get('cart', []);
+        $confirmedCount = 0;
+        $confirmedTotal = 0.0;
+        foreach ($cart as &$item) {
+            $id = $item['id'] ?? null;
+            if ($id !== null && in_array((string)$id, array_map('strval', $ids), true)) {
+                if (!isset($item['confirmed']) || $item['confirmed'] !== true) {
+                    $item['confirmed'] = true;
+                    $qty = (int)($item['quantity'] ?? 1);
+                    $price = (float)($item['price'] ?? 0);
+                    $confirmedCount += 1;
+                    $confirmedTotal += $qty * $price;
+                }
+            }
+        }
+        unset($item);
+        $session->set('cart', $cart);
+
+        // Note: la validation de paiement réelle sera traitée via un provider externe plus tard
+        return $this->json([
+            'success' => true,
+            'confirmed' => $confirmedCount,
+            'total' => $confirmedTotal,
+            'payment_method' => $method,
+        ]);
+    }
     #[Route('/client/add-cart/{id}', name: 'app_client_add_cart', methods: ['POST'])]
     public function addCart(Request $request, $id, \App\Repository\ItemRepository $itemRepository, \App\Repository\PriceItemsRepository $priceItemsRepository): Response
     {
