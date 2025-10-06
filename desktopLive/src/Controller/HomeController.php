@@ -61,6 +61,19 @@ class HomeController extends AbstractController
                 ];
             }
 
+            // Rating moyen et nombre
+            $ratingRepo = $em->getRepository(\App\Entity\Rating::class);
+            $avg = null; $count = 0;
+            if ($ratingRepo) {
+                $stats = $em->getRepository(\App\Entity\Rating::class)->createQueryBuilder('r')
+                    ->select('AVG(r.value) AS avg_rating, COUNT(r.id) AS cnt')
+                    ->andWhere('r.item = :item')
+                    ->setParameter('item', $item)
+                    ->getQuery()->getOneOrNullResult();
+                $avg = $stats && $stats['avg_rating'] !== null ? (float)$stats['avg_rating'] : null;
+                $count = $stats ? (int)$stats['cnt'] : 0;
+            }
+
             $sellerName = $item->getSeller() ? $item->getSeller()->getUsername() : 'N/A';
             $products[] = [
                 'id' => $item->getId(),
@@ -69,7 +82,10 @@ class HomeController extends AbstractController
                 'price' => $price,
                 'sizes' => $sizes,
                 'description' => $item->getDescription() ?: 'Pas de description disponible',
-                'seller' => $sellerName
+                'seller' => $sellerName,
+                'rating' => $avg ? round($avg) : 0,
+                'ratingAvg' => $avg,
+                'ratingCount' => $count,
             ];
         }
 

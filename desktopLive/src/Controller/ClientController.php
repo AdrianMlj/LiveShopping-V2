@@ -23,16 +23,54 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class ClientController extends AbstractController
 {
     #[Route('/client/rate-product/{id}', name: 'app_client_rate_product', methods: ['POST'])]
-    public function rateProduct(Request $request, $id): Response
-    {
+    public function rateProduct(
+        Request $request,
+        int $id,
+        \Doctrine\ORM\EntityManagerInterface $em,
+        \App\Repository\ItemRepository $itemRepo,
+        \App\Repository\UsersRepository $usersRepo,
+        \App\Repository\RatingRepository $ratingRepo
+    ): Response {
         $session = $request->getSession();
-        $ratings = $session->get('ratings', []);
-        $rating = (int)$request->request->get('rating', 0);
-        if ($rating >= 1 && $rating <= 5) {
-            $ratings[$id] = $rating;
-            $session->set('ratings', $ratings);
+        $userSession = $session->get('user');
+        if (!$userSession) {
+            return $this->json(['success' => false, 'message' => 'Non connecté'], 401);
         }
-        return $this->redirectToRoute('app_home');
+
+        $user = $usersRepo->find($userSession->getId());
+        if (!$user) {
+            return $this->json(['success' => false, 'message' => 'Utilisateur introuvable'], 404);
+        }
+
+        $item = $itemRepo->find($id);
+        if (!$item) {
+            return $this->json(['success' => false, 'message' => 'Article introuvable'], 404);
+        }
+
+        $value = (int) $request->request->get('rating', 0);
+        if ($value < 1 || $value > 5) {
+            return $this->json(['success' => false, 'message' => 'Note invalide'], 400);
+        }
+
+        // Upsert rating (unique user+item)
+        $existing = $ratingRepo->findOneBy(['user' => $user, 'item' => $item]);
+        if ($existing) {
+            $existing->setValue($value);
+            $existing->setUpdatedAt(new \DateTimeImmutable());
+            $em->persist($existing);
+        } else {
+            $rating = new \App\Entity\Rating();
+            $rating->setUser($user)->setItem($item)->setValue($value);
+            $em->persist($rating);
+        }
+        $em->flush();
+
+        $stats = $ratingRepo->getAvgAndCountForItem($item);
+        return $this->json([
+            'success' => true,
+            'avg' => $stats['avg'],
+            'count' => $stats['count'],
+        ]);
     }
     #[Route('/client/checkout', name: 'app_client_checkout')]
     public function checkout(Request $request): Response
