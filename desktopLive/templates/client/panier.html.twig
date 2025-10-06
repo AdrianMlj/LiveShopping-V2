@@ -95,95 +95,12 @@
             </div>
         </div>
 
-        {# Sidebar paiement #}
+        {# Sidebar paiement -> redirection vers Checkout #}
         <div class="cart-right">
-            <button class="toggle-sidebar" id="toggleSidebar">
+            <a href="{{ path('app_client_checkout') }}" class="toggle-sidebar">
                 <i class="fa-solid fa-credit-card"></i>
-                Paiement
-            </button>
-            <div class="payment-sidebar" id="paymentSidebar">
-                <div class="payment-header">
-                    <h3>
-                        <i class="fa-solid fa-credit-card"></i>
-                        Paiement sécurisé
-                    </h3>
-                    <div class="secure-badge">
-                        <i class="fa-solid fa-lock"></i>
-                        Sécurisé
-                    </div>
-                </div>
-
-                <form id="payment-form" class="payment-form">
-                    <div class="form-section">
-                        <label class="section-label">Moyen de paiement</label>
-                        <div class="payment-methods">
-                            <div class="payment-method">
-                                <input type="radio" id="mvola" name="payment" value="mvola" checked>
-                                <label for="mvola" class="method-card">
-                                    <div class="method-icon mvola">
-                                        <i class="fa-solid fa-mobile-screen"></i>
-                                    </div>
-                                    <div class="method-info">
-                                        <span class="method-name">Mvola</span>
-                                        <span class="method-desc">Paiement mobile</span>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="payment-method">
-                                <input type="radio" id="orange" name="payment" value="orange">
-                                <label for="orange" class="method-card">
-                                    <div class="method-icon orange">
-                                        <i class="fa-solid fa-mobile-screen"></i>
-                                    </div>
-                                    <div class="method-info">
-                                        <span class="method-name">Orange Money</span>
-                                        <span class="method-desc">Paiement mobile</span>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-section">
-                        <label for="phone" class="section-label">Numéro de téléphone</label>
-                        <div class="input-group">
-                            <span class="input-prefix">+261</span>
-                            <input type="tel" id="phone" class="form-input" 
-                                   placeholder="34 12 345 67" pattern="[0-9]{9}" required>
-                        </div>
-                    </div>
-
-                    <div class="form-section">
-                        <label for="code" class="section-label">Code de confirmation</label>
-                        <input type="text" id="code" class="form-input" 
-                               placeholder="Entrez le code reçu par SMS" required>
-                        <small class="input-hint">
-                            <i class="fa-solid fa-info-circle"></i>
-                            Un code de confirmation sera envoyé à votre numéro
-                        </small>
-                    </div>
-
-                    <div class="payment-actions">
-                        <button type="submit" class="btn-payment">
-                            <i class="fa-solid fa-lock"></i>
-                            Payer {{ cartTotal|number_format(2, '.', ' ') }} €
-                        </button>
-                        
-                        <div class="payment-security">
-                            <div class="security-features">
-                                <span class="security-item">
-                                    <i class="fa-solid fa-shield-check"></i>
-                                    Paiement 100% sécurisé
-                                </span>
-                                <span class="security-item">
-                                    <i class="fa-solid fa-rotate-left"></i>
-                                    Retour facile sous 30 jours
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
+                Procéder au paiement
+            </a>
         </div>
     </div>
     {% endif %}
@@ -982,100 +899,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Gestion de la sidebar paiement
-    const toggleSidebar = document.getElementById('toggleSidebar');
-    const paymentSidebar = document.getElementById('paymentSidebar');
-    
-    toggleSidebar.addEventListener('click', function() {
-        const isActive = paymentSidebar.classList.contains('active');
-        paymentSidebar.classList.toggle('active');
-        toggleSidebar.querySelector('i').style.transform = isActive ? 'rotate(0deg)' : 'rotate(180deg)';
-    });
-    
-    // Gestion du formulaire de paiement
-    const paymentForm = document.getElementById('payment-form');
-    if (paymentForm) {
-        paymentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            processPayment();
-        });
-    }
-    
-    async function processPayment() {
-        const formData = new FormData(paymentForm);
-        const paymentMethod = formData.get('payment');
-        const phone = document.getElementById('phone').value;
-        const code = document.getElementById('code').value;
-        
-        if (!phone || !code) {
-            showNotification('Veuillez remplir tous les champs', 'warning');
-            return;
-        }
-        
-        try {
-            // Simulation de paiement
-            showNotification('Traitement du paiement...', 'info');
-            
-            // await fetch('/payment/process', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ paymentMethod, phone, code })
-            // });
-            
-            setTimeout(() => {
-                showNotification('Paiement effectué avec succès!', 'success');
-                // Redirection vers la page de confirmation
-                // window.location.href = '/order/confirmation';
-            }, 2000);
-            
-        } catch (error) {
-            console.error('Erreur paiement:', error);
-            showNotification('Erreur lors du paiement', 'error');
-        }
-    }
-    
-    function showNotification(message, type = 'info') {
-        // Créer une notification toast
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <span>${message}</span>
-            <button onclick="this.parentElement.remove()">&times;</button>
-        `;
-        
-        // Styles pour la notification
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: slideInRight 0.3s ease-out;
-        `;
-        
-        const colors = {
-            success: '#10b981',
-            error: '#ef4444',
-            warning: '#f59e0b',
-            info: '#3b82f6'
-        };
-        
-        notification.style.background = colors[type] || colors.info;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            if (notification.parentElement) {
-                notification.remove();
-            }
-        }, 5000);
-    }
+    // Redirection checkout: aucune logique de paiement côté panier
 });
 </script>
 {% endblock %}

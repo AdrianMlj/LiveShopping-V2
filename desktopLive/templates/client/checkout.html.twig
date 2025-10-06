@@ -1,35 +1,105 @@
 {% include 'components/navbarClient.html.twig' %}
 
-{% block title %}Confirmation de commande{% endblock %}
-
 {% block content %}
-<div class="container" style="margin-top:80px; max-width:900px;">
-    <h1 style="font-size:2rem; font-weight:700; margin-bottom:2rem;">Merci pour votre commande !</h1>
-    <p style="font-size:1.1rem; color:#10B981; margin-bottom:2rem;">Votre commande a bien été enregistrée.</p>
-    <h2 style="font-size:1.3rem; font-weight:600; margin-bottom:1rem;">Récapitulatif :</h2>
-    <table class="table" style="width:100%; background:#fff; border-radius:12px; box-shadow:0 2px 8px #eee;">
-        <thead>
-            <tr>
-                <th>Produit</th>
-                <th>Prix</th>
-                <th>Quantité</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in cart %}
-            <tr>
-                <td>{{ item.name }}</td>
-                <td>{{ item.price|number_format(2, '.', ' ') }} €</td>
-                <td>{{ item.quantity }}</td>
-                <td>{{ (item.price * item.quantity)|number_format(2, '.', ' ') }} €</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <div style="text-align:right; margin-top:2rem;">
-        <span style="font-size:1.2rem; font-weight:700;">Total : {{ cartTotal|number_format(2, '.', ' ') }} €</span>
+<div class="checkout-container" style="max-width:1200px;margin:90px auto 40px;padding:0 20px;">
+  <div class="checkout-grid" style="display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;">
+    <div class="checkout-left" style="background:#fff;border-radius:12px;box-shadow:0 10px 20px rgba(0,0,0,.06);">
+      <div style="padding:20px 24px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;">
+        <h1 style="margin:0;font-size:22px;display:flex;align-items:center;gap:10px;">
+          <i class="fa-solid fa-lock" style="color:#16a34a;"></i>
+          Récapitulatif de commande
+        </h1>
+        <a href="{{ path('app_client_panier') }}" style="text-decoration:none;color:#2563eb;font-weight:600;">Modifier le panier</a>
+      </div>
+      <div style="padding:16px 24px;">
+        {% if cart|length == 0 %}
+          <p>Votre panier est vide.</p>
+        {% else %}
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:10px;border-bottom:1px solid #eee;">Article</th>
+                <th style="text-align:right;padding:10px;border-bottom:1px solid #eee;">Quantité</th>
+                <th style="text-align:right;padding:10px;border-bottom:1px solid #eee;">Prix</th>
+                <th style="text-align:right;padding:10px;border-bottom:1px solid #eee;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in cart %}
+                <tr>
+                  <td style="padding:12px 10px;">{{ item.name }}</td>
+                  <td style="padding:12px 10px;text-align:right;">{{ item.quantity }}</td>
+                  <td style="padding:12px 10px;text-align:right;">{{ item.price|number_format(2, '.', ' ') }} €</td>
+                  <td style="padding:12px 10px;text-align:right;font-weight:600;">{{ (item.price * item.quantity)|number_format(2, '.', ' ') }} €</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
     </div>
-    <a href="{{ path('app_home') }}" class="btn btn-primary" style="margin-top:2rem;">Retour à l'accueil</a>
+
+    <div class="checkout-right" style="position:relative;">
+      <div style="background:#0f172a;color:#e2e8f0;border-radius:12px;padding:18px 20px;box-shadow:0 10px 25px rgba(2,6,23,.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px;color:#f8fafc;">
+            <i class="fa-solid fa-credit-card" style="color:#f59e0b;"></i>
+            Paiement sécurisé
+          </h3>
+          <span style="background:#16a34a;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px;display:flex;align-items:center;gap:6px;">
+            <i class="fa-solid fa-shield-halved"></i>
+            Sécurisé
+          </span>
+        </div>
+
+        <div style="margin:12px 0 16px 0;">
+          <label style="display:block;font-weight:600;margin-bottom:8px;">Moyen de paiement</label>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label style="display:flex;align-items:center;gap:10px;background:#111827;border:1px solid #374151;padding:12px 14px;border-radius:10px;cursor:pointer;">
+              <input type="radio" name="payment_method" value="mvola" checked>
+              <span style="font-weight:600;color:#f9fafb;">Mvola</span>
+              <span style="color:#9ca3af;font-size:12px;">Paiement mobile</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;background:#111827;border:1px solid #374151;padding:12px 14px;border-radius:10px;cursor:pointer;">
+              <input type="radio" name="payment_method" value="orange">
+              <span style="font-weight:600;color:#f9fafb;">Orange Money</span>
+              <span style="color:#9ca3af;font-size:12px;">Paiement mobile</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;background:#111827;border:1px solid #374151;padding:12px 14px;border-radius:10px;cursor:pointer;">
+              <input type="radio" name="payment_method" value="cod">
+              <span style="font-weight:600;color:#f9fafb;">Paiement à la livraison</span>
+              <span style="color:#9ca3af;font-size:12px;">Encaissement par le livreur</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid #374151;margin:12px 0;padding-top:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span>Sous-total</span>
+            <span>{{ cartTotal|number_format(2, '.', ' ') }} €</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span>Livraison</span>
+            <span>Gratuit</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-weight:700;color:#f8fafc;">
+            <span>Total</span>
+            <span>{{ cartTotal|number_format(2, '.', ' ') }} €</span>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px;">
+          <button type="button" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:14px;border-radius:10px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+            <i class="fa-solid fa-lock"></i>
+            Confirmer et payer {{ cartTotal|number_format(2, '.', ' ') }} €
+          </button>
+          <small style="color:#9ca3af;display:flex;align-items:center;gap:6px;">
+            <i class="fa-solid fa-info-circle"></i>
+            Le paiement sera traité de manière sécurisée. (Intégration à venir)
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
