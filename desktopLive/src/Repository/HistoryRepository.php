@@ -151,8 +151,4 @@ class HistoryRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getOneOrNullResult();
     }
-<<<<<<< Updated upstream
 }
-=======
-}
->>>>>>> Stashed changes

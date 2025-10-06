@@ -1,410 +1,1019 @@
 {% include 'components/navbarClient.html.twig' %}
 
-<div class="container" style="max-width: 1100px; margin: 90px auto 24px; padding: 0 16px;">
-  <form method="get" action="{{ path('app_search') }}" class="search-form">
-    <div class="search-wrapper">
-      <input type="text" name="q" value="{{ query }}" placeholder="Rechercher..." class="search-input">
-      <select name="sort" class="sort-select">
-        <option value="name_asc" {{ sort == 'name_asc' ? 'selected' : '' }}>Nom A→Z</option>
-        <option value="name_desc" {{ sort == 'name_desc' ? 'selected' : '' }}>Nom Z→A</option>
-      </select>
-      <button type="submit" class="search-btn">Rechercher</button>
+<div class="search-container" style="max-width: 1200px; margin: 90px auto 24px; padding: 0 16px;">
+  <!-- Header amélioré -->
+  <div class="search-header">
+    <h1 class="search-title">Recherche</h1>
+    <p class="search-subtitle">Trouvez exactement ce que vous cherchez</p>
+  </div>
+
+  <!-- Formulaire de recherche amélioré -->
+  <form method="get" action="{{ path('app_search') }}" class="search-form-modern">
+    <div class="search-wrapper-modern">
+      <div class="search-input-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" name="q" value="{{ query }}" placeholder="Rechercher des produits, vendeurs, lives..." class="search-input-modern">
+        {% if query %}
+        <button type="button" class="clear-search-btn">
+          <i class="fas fa-times"></i>
+        </button>
+        {% endif %}
+      </div>
+      
+      <div class="search-controls-modern">
+        <select name="sort" class="sort-select-modern">
+          <option value="name_asc" {{ sort == 'name_asc' ? 'selected' : '' }}>Nom A→Z</option>
+          <option value="name_desc" {{ sort == 'name_desc' ? 'selected' : '' }}>Nom Z→A</option>
+          <option value="price_asc" {{ sort == 'price_asc' ? 'selected' : '' }}>Prix croissant</option>
+          <option value="price_desc" {{ sort == 'price_desc' ? 'selected' : '' }}>Prix décroissant</option>
+        </select>
+        
+        <button type="submit" class="search-btn-modern">
+          <i class="fas fa-search"></i>
+          Rechercher
+        </button>
+      </div>
     </div>
   </form>
 
-  <h3 class="section-title">Articles</h3>
-  <div class="grid-container products-grid">
-    {% for a in articles %}
-      <div class="product-card">
-        <div class="product-image">
-          <img src="{{ a.image ? '/uploads/' ~ a.image : '/uploads/default-product.jpg' }}" alt="{{ a.name }}" loading="lazy">
-        </div>
-        <div class="product-info">
-          <h4 class="product-name">{{ a.name }}</h4>
-          <p class="product-price">{{ a.price is not null ? (a.price ~ ' Ar') : '—' }}</p>
-          <div class="product-actions">
-            <button class="fav-btn" data-id="{{ a.id }}" title="Ajouter aux favoris">
-              <i class="far fa-bookmark"></i>
+  {% if query %}
+  <div class="results-info">
+    <p>Résultats pour : <strong>"{{ query }}"</strong></p>
+    <span class="total-results">{{ articles|length + sellers|length + lives|length }} résultats trouvés</span>
+  </div>
+  {% endif %}
+
+  <!-- Navigation par catégories -->
+  <div class="categories-nav">
+    <button class="category-btn active" data-target="articles">Produits ({{ articles|length }})</button>
+    <button class="category-btn" data-target="sellers">Vendeurs ({{ sellers|length }})</button>
+    <button class="category-btn" data-target="lives">Lives ({{ lives|length }})</button>
+  </div>
+
+  <!-- Section Articles - Design amélioré -->
+  <section id="articles" class="results-section active">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="fas fa-shopping-bag"></i>
+        Articles
+      </h3>
+    </div>
+
+    {% if articles|length > 0 %}
+    <div class="products-grid-modern">
+      {% for a in articles %}
+        <div class="product-card-enhanced">
+          <div class="product-image-container">
+            <img src="{{ a.image ? '/uploads/' ~ a.image : '/uploads/default-product.jpg' }}" alt="{{ a.name }}" loading="lazy">
+            <button class="fav-btn-enhanced" data-id="{{ a.id }}" title="Ajouter aux favoris">
+              <i class="far fa-heart"></i>
             </button>
-            <form method="post" action="{{ path('app_client_add_cart', { id: a.id }) }}" class="cart-form">
-              <input type="hidden" name="name" value="{{ a.name }}">
-              <input type="hidden" name="price" value="{{ a.price }}">
-              <input type="hidden" name="images" value="{{ a.image }}">
-              <input type="hidden" name="quantity" value="1">
-              <button type="submit" class="cart-btn" title="Ajouter au panier">
-                <i class="fas fa-shopping-basket"></i> Panier
-              </button>
-            </form>
+            <div class="product-overlay">
+              <button class="quick-view-btn">Voir détails</button>
+            </div>
+          </div>
+          
+          <div class="product-info-enhanced">
+            <h4 class="product-name-enhanced">{{ a.name }}</h4>
+            <p class="product-price-enhanced">{{ a.price is not null ? (a.price ~ ' Ar') : '—' }}</p>
+            
+            <div class="product-actions-enhanced">
+              <form method="post" action="{{ path('app_client_add_cart', { id: a.id }) }}" class="cart-form-enhanced">
+                <input type="hidden" name="name" value="{{ a.name }}">
+                <input type="hidden" name="price" value="{{ a.price }}">
+                <input type="hidden" name="images" value="{{ a.image }}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="add-to-cart-btn-enhanced">
+                  <i class="fas fa-shopping-basket"></i>
+                  Panier
+                </button>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
+      {% endfor %}
+    </div>
     {% else %}
-      <div class="no-results">Aucun article.</div>
-    {% endfor %}
-  </div>
+      <div class="empty-state">
+        <i class="fas fa-search empty-icon"></i>
+        <h4>Aucun article trouvé</h4>
+        <p>Aucun produit ne correspond à votre recherche "{{ query }}"</p>
+      </div>
+    {% endif %}
+  </section>
 
-  <h3 class="section-title">Vendeurs</h3>
-  <div class="grid-container sellers-grid">
-    {% for s in sellers %}
-      <div class="seller-card">
-        <div class="seller-avatar">
-          {% if s.images %}
-            <img src="{{ '/uploads/' ~ s.images }}" alt="{{ s.username }}" loading="lazy">
-          {% else %}
-            <div class="avatar-initial">{{ s.username ? s.username|first|upper : 'U' }}</div>
-          {% endif %}
-        </div>
-        <div class="seller-info">
-          <h4 class="seller-name">{{ s.username }}</h4>
-          <button type="button" class="btn-follow" data-seller-id="{{ s.id }}" style="background: {{ s.following ? '#22c55e' : '#ff2d55' }};">
-            {{ s.following ? 'Following' : 'Follow' }}
-          </button>
-        </div>
-      </div>
-    {% else %}
-      <div class="no-results">Aucun vendeur.</div>
-    {% endfor %}
-  </div>
+  <!-- Section Vendeurs - Design amélioré -->
+  <section id="sellers" class="results-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="fas fa-store"></i>
+        Vendeurs
+      </h3>
+    </div>
 
-  <h3 class="section-title">Lives</h3>
-  <div class="grid-container lives-grid">
-    {% for l in lives %}
-      <div class="live-card">
-        <div class="live-avatar">
-          {% if l.seller and l.seller.images %}
-            <img src="{{ '/uploads/' ~ l.seller.images }}" alt="{{ l.seller.username }}" loading="lazy">
-          {% else %}
-            <div class="avatar-initial">{{ l.seller and l.seller.username ? l.seller.username|first|upper : 'U' }}</div>
-          {% endif %}
+    {% if sellers|length > 0 %}
+    <div class="sellers-grid-modern">
+      {% for s in sellers %}
+        <div class="seller-card-enhanced">
+          <div class="seller-avatar-enhanced">
+            {% if s.images %}
+              <img src="{{ '/uploads/' ~ s.images }}" alt="{{ s.username }}" loading="lazy">
+            {% else %}
+              <div class="avatar-initial-enhanced">{{ s.username ? s.username|first|upper : 'U' }}</div>
+            {% endif %}
+            <div class="online-dot"></div>
+          </div>
+          
+          <div class="seller-info-enhanced">
+            <h4 class="seller-name-enhanced">{{ s.username }}</h4>
+            <p class="seller-stats">12 produits • 45 abonnés</p>
+            
+            <div class="seller-actions-enhanced">
+              <button type="button" class="follow-btn-enhanced {{ s.following ? 'following' : '' }}" data-seller-id="{{ s.id }}">
+                <i class="fas {{ s.following ? 'fa-user-check' : 'fa-user-plus' }}"></i>
+                {{ s.following ? 'Abonné' : 'Suivre' }}
+              </button>
+              
+              <a href="#" class="visit-store-btn">
+                <i class="fas fa-external-link-alt"></i>
+              </a>
+            </div>
+          </div>
         </div>
-        <div class="live-info">
-          <h4 class="live-name">{{ l.seller ? l.seller.username : 'Live' }}</h4>
-          <p class="live-status" style="color: {{ l.isLive ? '#22c55e' : '#888' }}">{{ l.isLive ? 'En cours' : 'Terminé' }}</p>
-        </div>
-        {% if l.seller %}
-          <a href="{{ path('app_client_live', { id: l.id }) }}" class="view-btn">Voir</a>
-        {% endif %}
-      </div>
+      {% endfor %}
+    </div>
     {% else %}
-      <div class="no-results">Aucun live.</div>
-    {% endfor %}
-  </div>
+      <div class="empty-state">
+        <i class="fas fa-store-slash empty-icon"></i>
+        <h4>Aucun vendeur trouvé</h4>
+        <p>Aucun vendeur ne correspond à votre recherche</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Section Lives - Design amélioré -->
+  <section id="lives" class="results-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="fas fa-video"></i>
+        Lives
+      </h3>
+    </div>
+
+    {% if lives|length > 0 %}
+    <div class="lives-grid-modern">
+      {% for l in lives %}
+        <div class="live-card-enhanced {{ l.isLive ? 'live-active' : 'live-ended' }}">
+          <div class="live-header">
+            <div class="streamer-avatar">
+              {% if l.seller and l.seller.images %}
+                <img src="{{ '/uploads/' ~ l.seller.images }}" alt="{{ l.seller.username }}" loading="lazy">
+              {% else %}
+                <div class="avatar-initial-enhanced">{{ l.seller and l.seller.username ? l.seller.username|first|upper : 'U' }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="live-status-badge {{ l.isLive ? 'live' : 'ended' }}">
+              <i class="fas {{ l.isLive ? 'fa-broadcast-tower' : 'fa-clock' }}"></i>
+              {{ l.isLive ? 'En direct' : 'Terminé' }}
+            </div>
+          </div>
+          
+          <div class="live-info-enhanced">
+            <h4 class="streamer-name">{{ l.seller ? l.seller.username : 'Streamer' }}</h4>
+            <p class="live-title">Live Shopping</p>
+            
+            {% if l.isLive %}
+            <div class="viewer-count">
+              <i class="fas fa-eye"></i>
+              128 spectateurs
+            </div>
+            {% endif %}
+          </div>
+          
+          <div class="live-actions-enhanced">
+            {% if l.seller %}
+              <a href="{{ path('app_client_live', { id: l.id }) }}" class="watch-live-btn {{ l.isLive ? '' : 'ended' }}">
+                <i class="fas {{ l.isLive ? 'fa-play' : 'fa-redo' }}"></i>
+                {{ l.isLive ? 'Regarder' : 'Replay' }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-video-slash empty-icon"></i>
+        <h4>Aucun live trouvé</h4>
+        <p>Aucun live ne correspond à votre recherche</p>
+      </div>
+    {% endif %}
+  </section>
 </div>
 
 <style>
-  :root {
-    --primary: #567AF4;
-    --success: #22c55e;
-    --danger: #ff2d55;
-    --gray-light: #eee;
-    --text-dark: #2d3748;
-    --text-gray: #888;
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
-  }
+:root {
+  --primary: #567AF4;
+  --primary-dark: #4a6be6;
+  --primary-light: #eef2ff;
+  --success: #22c55e;
+  --danger: #ff2d55;
+  --warning: #f59e0b;
+  --dark: #1f2937;
+  --light: #f8fafc;
+  --gray: #6b7280;
+  --gray-light: #e5e7eb;
+  --border: #d1d5db;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: all 0.3s ease;
+}
 
-  .container {
-    animation: fadeIn 0.5s ease-out;
-  }
+.search-container {
+  animation: fadeIn 0.5s ease-out;
+}
 
-  .search-form {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-    animation: slideDown 0.5s ease-out;
-  }
+/* Header */
+.search-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
 
-  .search-wrapper {
-    display: flex;
+.search-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.search-subtitle {
+  font-size: 1.1rem;
+  color: var(--gray);
+}
+
+/* Search Form Modern */
+.search-form-modern {
+  margin-bottom: 24px;
+}
+
+.search-wrapper-modern {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input-container {
+  flex: 1;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray);
+}
+
+.search-input-modern {
+  width: 100%;
+  padding: 16px 52px 16px 48px;
+  border: 2px solid var(--gray-light);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: white;
+  transition: var(--transition);
+}
+
+.search-input-modern:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(86, 122, 244, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.clear-search-btn:hover {
+  background: var(--gray-light);
+  color: var(--dark);
+}
+
+.search-controls-modern {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.sort-select-modern {
+  padding: 12px 16px;
+  border: 2px solid var(--gray-light);
+  border-radius: var(--radius-sm);
+  background: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sort-select-modern:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.search-btn-modern {
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.search-btn-modern:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+/* Results Info */
+.results-info {
+  background: var(--primary-light);
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  border-left: 4px solid var(--primary);
+}
+
+.results-info p {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.total-results {
+  font-size: 0.9rem;
+  color: var(--gray);
+}
+
+/* Categories Navigation */
+.categories-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--gray-light);
+  padding-bottom: 8px;
+}
+
+.category-btn {
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  color: var(--gray);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  position: relative;
+}
+
+.category-btn.active {
+  color: var(--primary);
+}
+
+.category-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+.category-btn:hover:not(.active) {
+  background: var(--gray-light);
+  color: var(--dark);
+}
+
+/* Sections */
+.results-section {
+  display: none;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.results-section.active {
+  display: block;
+}
+
+.section-header {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Products Grid Modern */
+.products-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.product-card-enhanced {
+  background: white;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  position: relative;
+}
+
+.product-card-enhanced:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.product-image-container {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.product-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: var(--transition);
+}
+
+.product-card-enhanced:hover .product-image-container img {
+  transform: scale(1.05);
+}
+
+.fav-btn-enhanced {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  color: var(--gray);
+}
+
+.fav-btn-enhanced:hover {
+  background: var(--danger);
+  color: white;
+  transform: scale(1.1);
+}
+
+.fav-btn-enhanced.favorited {
+  background: var(--danger);
+  color: white;
+}
+
+.product-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.product-card-enhanced:hover .product-overlay {
+  opacity: 1;
+}
+
+.quick-view-btn {
+  background: white;
+  color: var(--dark);
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.quick-view-btn:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.product-info-enhanced {
+  padding: 20px;
+}
+
+.product-name-enhanced {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--dark);
+}
+
+.product-price-enhanced {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+
+.product-actions-enhanced {
+  display: flex;
+  gap: 8px;
+}
+
+.add-to-cart-btn-enhanced {
+  flex: 1;
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.add-to-cart-btn-enhanced:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+/* Sellers Grid Modern */
+.sellers-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.seller-card-enhanced {
+  background: white;
+  border: 1px solid var(--gray-light);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+}
+
+.seller-card-enhanced:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.seller-avatar-enhanced {
+  position: relative;
+}
+
+.seller-avatar-enhanced img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-initial-enhanced {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.online-dot {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background: var(--success);
+  border: 2px solid white;
+  border-radius: 50%;
+}
+
+.seller-info-enhanced {
+  flex: 1;
+}
+
+.seller-name-enhanced {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--dark);
+}
+
+.seller-stats {
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.seller-actions-enhanced {
+  display: flex;
+  gap: 8px;
+}
+
+.follow-btn-enhanced {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.follow-btn-enhanced.following {
+  background: var(--success);
+}
+
+.follow-btn-enhanced:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.visit-store-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--gray-light);
+  background: white;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.visit-store-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Lives Grid Modern */
+.lives-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.live-card-enhanced {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  border-left: 4px solid var(--gray);
+}
+
+.live-card-enhanced.live-active {
+  border-left-color: var(--success);
+}
+
+.live-card-enhanced.live-ended {
+  border-left-color: var(--gray);
+}
+
+.live-card-enhanced:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.live-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.streamer-avatar img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.live-status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-status-badge.live {
+  background: var(--success);
+  color: white;
+}
+
+.live-status-badge.ended {
+  background: var(--gray-light);
+  color: var(--gray);
+}
+
+.live-info-enhanced {
+  margin-bottom: 16px;
+}
+
+.streamer-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--dark);
+}
+
+.live-title {
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.viewer-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.live-actions-enhanced {
+  display: flex;
+  gap: 8px;
+}
+
+.watch-live-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: var(--success);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.watch-live-btn.ended {
+  background: var(--gray-light);
+  color: var(--gray);
+  cursor: not-allowed;
+}
+
+.watch-live-btn:not(.ended):hover {
+  background: #1a9e5e;
+  transform: translateY(-1px);
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--gray);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h4 {
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+  color: var(--dark);
+}
+
+.empty-state p {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .search-wrapper-modern {
+    flex-direction: column;
+  }
+  
+  .search-controls-modern {
     width: 100%;
-    gap: 8px;
   }
-
-  .search-input, .sort-select {
+  
+  .sort-select-modern {
     flex: 1;
-    padding: 12px;
-    border: 1px solid var(--gray-light);
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: var(--transition);
   }
-
-  .search-input:focus, .sort-select:focus {
-    border-color: var(--primary);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(86, 122, 244, 0.2);
+  
+  .categories-nav {
+    flex-wrap: wrap;
   }
-
-  .search-btn {
-    padding: 12px 20px;
-    border: none;
-    background: var(--primary);
-    color: #fff;
-    border-radius: 8px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: var(--transition);
+  
+  .products-grid-modern {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
-
-  .search-btn:hover {
-    background: #4a6be6; /* Darker shade of primary */
-    transform: translateY(-2px);
+  
+  .sellers-grid-modern {
+    grid-template-columns: 1fr;
   }
-
-  .section-title {
-    margin: 24px 0 12px;
-    font-size: 1.5rem;
-    color: var(--text-dark);
-    animation: fadeInUp 0.5s ease-out;
-  }
-
-  .grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .product-card, .seller-card, .live-card {
-    background: #fff;
-    border: 1px solid var(--gray-light);
-    border-radius: 10px;
-    padding: 12px;
-    transition: var(--transition);
-    box-shadow: var(--shadow);
-    animation: cardPop 0.5s ease-out;
-  }
-
-  .product-card:hover, .seller-card:hover, .live-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .product-image img, .seller-avatar img, .live-avatar img {
-    width: 100%;
-    height: 140px;
-    object-fit: cover;
-    border-radius: 8px;
-    transition: var(--transition);
-  }
-
-  .product-image img:hover {
-    opacity: 0.9;
-  }
-
-  .product-info, .seller-info, .live-info {
-    margin-top: 12px;
-  }
-
-  .product-name, .seller-name, .live-name {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 6px;
-    color: var(--text-dark);
-  }
-
-  .product-price {
-    color: var(--text-gray);
-    font-size: 0.95rem;
-    margin-bottom: 12px;
-  }
-
-  .product-actions, .live-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .fav-btn, .cart-btn, .view-btn, .btn-follow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 999px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: var(--transition);
-  }
-
-  .fav-btn {
-    background: none;
-    color: #FFD600;
-  }
-
-  .fav-btn:hover i {
-    color: #d9b200; /* Darker shade of yellow */
-    transform: scale(1.1);
-  }
-
-  .fav-btn i.fas {
-    color: #FFD600;
-  }
-
-  .cart-btn {
-    background: var(--primary);
-    color: #fff;
-  }
-
-  .cart-btn:hover {
-    background: #4a6be6; /* Darker shade of primary */
-    transform: translateY(-2px);
-  }
-
-  .view-btn {
-    background: var(--primary);
-    color: #fff;
-    text-decoration: none;
-    padding: 8px 12px;
-  }
-
-  .view-btn:hover {
-    background: #4a6be6; /* Darker shade of primary */
-    transform: translateY(-2px);
-  }
-
-  .btn-follow {
-    padding: 6px 12px;
-    color: #fff;
-    transition: var(--transition);
-  }
-
-  .btn-follow:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
-  }
-
-  .seller-avatar, .live-avatar {
-    position: relative;
-  }
-
-  .avatar-initial {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: 700;
-    font-size: 1.2rem;
-  }
-
-  .live-status {
-    font-size: 0.9rem;
-    margin-top: 4px;
-  }
-
-  .no-results {
+  
+  .seller-card-enhanced {
+    flex-direction: column;
     text-align: center;
-    color: var(--text-gray);
-    padding: 20px;
-    animation: fadeIn 0.5s ease-out;
   }
+}
 
-  /* Animations */
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+@media (max-width: 480px) {
+  .search-container {
+    margin-top: 70px;
+    padding: 0 12px;
   }
-
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+  
+  .search-title {
+    font-size: 2rem;
   }
-
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+  
+  .products-grid-modern {
+    grid-template-columns: 1fr;
   }
-
-  @keyframes cardPop {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+  
+  .category-btn {
+    flex: 1;
+    min-width: 120px;
   }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .search-form {
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .search-wrapper {
-      flex-direction: column;
-      width: 100%;
-    }
-
-    .search-input, .sort-select, .search-btn {
-      width: 100%;
-    }
-
-    .grid-container {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    }
-
-    .product-image img {
-      height: 120px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .container {
-      margin-top: 60px;
-    }
-
-    .section-title {
-      font-size: 1.2rem;
-    }
-
-    .product-actions {
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .fav-btn, .cart-btn {
-      width: 100%;
-    }
-  }
+}
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  // Favoris sur page de recherche
-  document.querySelectorAll('.fav-btn').forEach(btn => {
-    btn.addEventListener('click', function(e){
-      e.preventDefault();
-      const itemId = this.dataset.id;
-      fetch(`/client/favorite/toggle-all-sizes/${itemId}`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }})
-        .then(res => { if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
-        .then(data => {
-          if (!data.success) return;
-          const icon = this.querySelector('i');
-          icon.classList.toggle('fas');
-          icon.classList.toggle('far');
-          this.setAttribute('title', icon.classList.contains('fas') ? 'Retirer des favoris' : 'Ajouter aux favoris');
-        })
-        .catch(console.error);
+document.addEventListener('DOMContentLoaded', function() {
+  // Navigation par catégories
+  const categoryBtns = document.querySelectorAll('.category-btn');
+  const resultsSections = document.querySelectorAll('.results-section');
+  
+  categoryBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const target = this.dataset.target;
+      
+      // Mettre à jour les boutons actifs
+      categoryBtns.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Afficher/masquer les sections
+      resultsSections.forEach(section => {
+        section.classList.remove('active');
+        if (section.id === target) {
+          section.classList.add('active');
+        }
+      });
     });
   });
-
-  document.querySelectorAll('.btn-follow').forEach(btn => {
+  
+  // Effacer la recherche
+  const clearSearchBtn = document.querySelector('.clear-search-btn');
+  const searchInput = document.querySelector('.search-input-modern');
+  
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', function() {
+      searchInput.value = '';
+      searchInput.focus();
+    });
+  }
+  
+  // Favoris
+  document.querySelectorAll('.fav-btn-enhanced').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const itemId = this.dataset.id;
+      const icon = this.querySelector('i');
+      
+      // Simulation toggle favoris
+      this.classList.toggle('favorited');
+      icon.classList.toggle('far');
+      icon.classList.toggle('fas');
+      
+      // Votre logique AJAX existante
+      fetch(`/client/favorite/toggle-all-sizes/${itemId}`, { 
+        method: 'POST', 
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(res => { 
+        if(!res.ok) throw new Error('HTTP '+res.status); 
+        return res.json(); 
+      })
+      .then(data => {
+        if (!data.success) return;
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fas');
+        icon.classList.toggle('far');
+        this.setAttribute('title', icon.classList.contains('fas') ? 'Retirer des favoris' : 'Ajouter aux favoris');
+      })
+      .catch(console.error);
+    });
+  });
+  
+  // Follow vendeurs
+  document.querySelectorAll('.follow-btn-enhanced').forEach(btn => {
     btn.addEventListener('click', function(){
       const sellerId = this.dataset.sellerId;
-      fetch(`/client/follow/toggle/${sellerId}`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }})
-        .then(res => { if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
-        .then(data => {
-          if (!data.success) return;
-          if (data.action === 'followed') {
-            this.textContent = 'Following';
-            this.style.background = '#22c55e';
-          } else if (data.action === 'unfollowed') {
-            this.textContent = 'Follow';
-            this.style.background = '#ff2d55';
-          }
-        })
-        .catch(console.error);
+      
+      // Votre logique AJAX existante
+      fetch(`/client/follow/toggle/${sellerId}`, { 
+        method: 'POST', 
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(res => { 
+        if(!res.ok) throw new Error('HTTP '+res.status); 
+        return res.json(); 
+      })
+      .then(data => {
+        if (!data.success) return;
+        if (data.action === 'followed') {
+          this.textContent = 'Abonné';
+          this.classList.add('following');
+          this.querySelector('i').className = 'fas fa-user-check';
+        } else if (data.action === 'unfollowed') {
+          this.textContent = 'Suivre';
+          this.classList.remove('following');
+          this.querySelector('i').className = 'fas fa-user-plus';
+        }
+      })
+      .catch(console.error);
     });
   });
 });

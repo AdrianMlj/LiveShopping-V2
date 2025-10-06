@@ -48,17 +48,40 @@
                         <div class="item-info">
                             <h3 class="item-name">{{ item.name }}</h3>
                             <p class="item-price-unit">{{ item.price|number_format(2, '.', ' ') }} €/unité</p>
+                            <div class="selectors">
+                                <div class="selector-group">
+                                    <label>Taille</label>
+                                    <select class="size-select" data-item-id="{{ item.id }}">
+                                        <option value="">Sélectionner</option>
+                                        {% set sizes = sizesByItem[item.id]|default([]) %}
+                                        {% for s in sizes %}
+                                            <option value="{{ s.id }}" {{ item.itemSizeId is defined and item.itemSizeId == s.id ? 'selected' }}>{{ s.label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="selector-group">
+                                    <label>Couleur</label>
+                                    {% set currentSizeId = item.itemSizeId ?? (sizes|length ? sizes[0].id : null) %}
+                                    {% set colors = currentSizeId ? (colorsBySize[currentSizeId]|default([])) : [] %}
+                                    <select class="color-select" data-item-id="{{ item.id }}" {{ (colors|length == 0) ? 'disabled' : '' }}>
+                                        <option value="">{{ (colors|length == 0) ? 'Non disponible' : 'Sélectionner' }}</option>
+                                        {% for c in colors %}
+                                            <option value="{{ c.id }}" {{ item.colorId is defined and item.colorId == c.id ? 'selected' }}>{{ c.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="item-controls">
                             <div class="quantity-controls">
                                 <button class="qty-btn minus" data-id="{{ item.id }}" aria-label="Réduire la quantité">
-                                    <span class="fa-solid fa-minus">-</span>
+                                    <span class="fa-solid fa-minus"></span>
                                 </button>
                                 <input type="number" value="{{ item.quantity }}" min="1" class="qty-input" 
                                        data-id="{{ item.id }}" aria-label="Quantité">
                                 <button class="qty-btn plus" data-id="{{ item.id }}" aria-label="Augmenter la quantité">
-                                    <span class="fa-solid fa-plus">+</span>
+                                    <span class="fa-solid fa-plus"></span>
                                 </button>
                             </div>
                             
@@ -141,22 +164,32 @@
                                     </div>
                                 </label>
                             </div>
+                            <div class="payment-method">
+                                <input type="radio" id="cod" name="payment" value="cod">
+                                <label for="cod" class="method-card">
+                                    <div class="method-icon" style="background:#374151"><i class="fa-solid fa-truck"></i></div>
+                                    <div class="method-info">
+                                        <span class="method-name">Paiement à la livraison</span>
+                                        <span class="method-desc">Payez au livreur</span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-section">
+                    <div class="form-section" id="phone-section">
                         <label for="phone" class="section-label">Numéro de téléphone</label>
                         <div class="input-group">
                             <span class="input-prefix">+261</span>
                             <input type="tel" id="phone" class="form-input" 
-                                   placeholder="34 12 345 67" pattern="[0-9]{9}" required>
+                                   placeholder="34 12 345 67" pattern="[0-9]{9}">
                         </div>
                     </div>
 
-                    <div class="form-section">
+                    <div class="form-section" id="code-section">
                         <label for="code" class="section-label">Code de confirmation</label>
                         <input type="text" id="code" class="form-input" 
-                               placeholder="Entrez le code reçu par SMS" required>
+                               placeholder="Entrez le code reçu par SMS">
                         <small class="input-hint">
                             <i class="fa-solid fa-info-circle"></i>
                             Un code de confirmation sera envoyé à votre numéro
@@ -229,6 +262,7 @@
     background: var(--light);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
+    animation: fadeIn 0.5s ease-out;
 }
 
 .empty-icon {
@@ -240,6 +274,11 @@
     align-items: center;
     justify-content: center;
     margin: 0 auto 2rem;
+    transition: transform 0.3s ease;
+}
+
+.cart-empty:hover .empty-icon {
+    transform: scale(1.1);
 }
 
 .empty-icon i {
@@ -273,6 +312,7 @@
     transition: var(--transition);
     border: none;
     cursor: pointer;
+    box-shadow: var(--shadow);
 }
 
 .btn-primary:hover {
@@ -287,6 +327,7 @@
     grid-template-columns: 1fr 400px;
     gap: 30px;
     align-items: start;
+    animation: fadeInUp 0.6s ease-out;
 }
 
 /* ===== COLONNE GAUCHE ===== */
@@ -295,6 +336,7 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     overflow: hidden;
+    animation: slideInLeft 0.5s ease-out;
 }
 
 .cart-header {
@@ -352,10 +394,13 @@
     border-bottom: 1px solid var(--gray-light);
     transition: var(--transition);
     position: relative;
+    animation: fadeIn 0.4s ease-out;
 }
 
 .cart-item:hover {
     background: #fafafa;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
 }
 
 .cart-item:last-child {
@@ -371,13 +416,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.cart-item:hover .item-image {
+    transform: scale(1.05);
 }
 
 .product-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: var(--transition);
+    transition: transform 0.3s ease;
 }
 
 .cart-item:hover .product-image {
@@ -400,6 +450,11 @@
     font-weight: 600;
     color: var(--dark);
     margin: 0 0 4px 0;
+    transition: color 0.3s ease;
+}
+
+.cart-item:hover .item-info h3 {
+    color: var(--primary);
 }
 
 .item-price-unit {
@@ -433,12 +488,14 @@
     cursor: pointer;
     transition: var(--transition);
     color: var(--dark);
+    box-shadow: var(--shadow-sm);
 }
 
 .qty-btn:hover {
     background: var(--primary);
     color: white;
     border-color: var(--primary);
+    transform: scale(1.1);
 }
 
 .qty-btn:disabled {
@@ -450,6 +507,7 @@
     background: white;
     color: var(--dark);
     border-color: var(--border);
+    transform: none;
 }
 
 .qty-input {
@@ -460,6 +518,7 @@
     border-radius: 6px;
     font-weight: 600;
     font-size: 1rem;
+    transition: border-color 0.3s ease;
 }
 
 .qty-input:focus {
@@ -483,6 +542,11 @@
     font-size: 1.3rem;
     color: var(--dark);
     font-weight: 700;
+    transition: color 0.3s ease;
+}
+
+.cart-item:hover .total-price {
+    color: var(--primary-dark);
 }
 
 .remove-form {
@@ -500,11 +564,13 @@
     justify-content: center;
     cursor: pointer;
     transition: var(--transition);
+    background: var(--danger);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-remove:hover {
-    background: rgba(216, 1, 1, 1);
-    transform: scale(1.1);
+    background: var(--danger-dark);
+    transform: scale(1.1) rotate(10deg);
 }
 
 /* ===== RÉSUMÉ DU PANIER ===== */
@@ -512,6 +578,7 @@
     padding: 2rem;
     background: var(--light);
     border-top: 1px solid var(--gray-light);
+    animation: fadeIn 0.5s ease-out;
 }
 
 .summary-item {
@@ -520,6 +587,11 @@
     align-items: center;
     margin-bottom: 1rem;
     color: var(--dark);
+    transition: transform 0.3s ease;
+}
+
+.summary-item:hover {
+    transform: translateX(5px);
 }
 
 .free-shipping {
@@ -540,6 +612,12 @@
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--primary);
+    animation: pulse 1.2s infinite alternate;
+}
+
+@keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.03); }
 }
 
 /* ===== SIDEBAR PAIEMENT ===== */
@@ -565,6 +643,7 @@
     position: sticky;
     top: 100px;
     z-index: 10;
+    animation: bounceIn 0.6s ease-out;
 }
 
 .toggle-sidebar:hover {
@@ -589,12 +668,14 @@
     width: 350px;
     height: calc(100vh - 180px);
     overflow-y: auto;
-    transition: right 0.3s ease;
+    transition: right 0.5s cubic-bezier(0.25, 1, 0.5, 1);
     z-index: 1000;
+    animation: slideInRight 0.5s ease-out backwards;
 }
 
 .payment-sidebar.active {
     right: 20px;
+    animation: slideInRight 0.5s ease-out forwards;
 }
 
 .payment-header {
@@ -604,6 +685,7 @@
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--gray-light);
     margin-bottom: 1.5rem;
+    animation: fadeInDown 0.5s ease-out;
 }
 
 .payment-header h3 {
@@ -624,6 +706,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    animation: bounceIn 0.6s ease-out;
 }
 
 .payment-form {
@@ -634,6 +717,7 @@
 
 .form-section {
     margin-bottom: 0;
+    animation: fadeInUp 0.5s ease-out;
 }
 
 .section-label {
@@ -664,11 +748,13 @@
     cursor: pointer;
     transition: var(--transition);
     background: var(--dark-light);
+    animation: fadeIn 0.4s ease-out;
 }
 
 .payment-method input[type="radio"]:checked + .method-card {
     border-color: var(--secondary);
     background: rgba(245, 158, 11, 0.1);
+    transform: scale(1.02);
 }
 
 .method-icon {
@@ -680,6 +766,11 @@
     justify-content: center;
     font-size: 1.2rem;
     color: white;
+    transition: transform 0.3s ease;
+}
+
+.method-card:hover .method-icon {
+    transform: rotate(10deg);
 }
 
 .method-icon.mvola { background: #8b5cf6; }
@@ -702,6 +793,7 @@
 
 .input-group {
     display: flex;
+    animation: fadeIn 0.5s ease-out;
 }
 
 .input-prefix {
@@ -747,6 +839,7 @@
 /* ===== BOUTONS DE PAIEMENT ===== */
 .payment-actions {
     margin-top: 2rem;
+    animation: fadeInUp 0.5s ease-out;
 }
 
 .btn-payment {
@@ -764,12 +857,13 @@
     justify-content: center;
     gap: 8px;
     transition: var(--transition);
-    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
 }
 
 .btn-payment:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, #059669 0%, var(--success) 100%);
 }
 
 .payment-security {
@@ -789,26 +883,39 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
+    animation: fadeIn 0.5s ease-out;
 }
 
 /* ===== ANIMATIONS ===== */
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-.cart-item {
-    animation: slideIn 0.3s ease-out;
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.cart-item.removing {
-    animation: slideOut 0.3s ease-in forwards;
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes slideOut {
@@ -820,6 +927,10 @@
         margin: 0;
         border: none;
     }
+}
+
+.cart-item.removing {
+    animation: slideOut 0.3s ease-in forwards;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -1000,39 +1111,78 @@ document.addEventListener('DOMContentLoaded', function() {
             processPayment();
         });
     }
+    // Toggle phone/code sections when payment method changes
+    document.querySelectorAll('input[name="payment"]').forEach(r => {
+        r.addEventListener('change', () => {
+            const method = document.querySelector('input[name="payment"]:checked').value;
+            const phoneSection = document.getElementById('phone-section');
+            const codeSection = document.getElementById('code-section');
+            const showPhone = (method !== 'cod');
+            phoneSection.style.display = showPhone ? 'block' : 'none';
+            codeSection.style.display = showPhone ? 'block' : 'none';
+        });
+    });
     
     async function processPayment() {
         const formData = new FormData(paymentForm);
         const paymentMethod = formData.get('payment');
-        const phone = document.getElementById('phone').value;
-        const code = document.getElementById('code').value;
-        
-        if (!phone || !code) {
-            showNotification('Veuillez remplir tous les champs', 'warning');
-            return;
+        const phone = document.getElementById('phone').value.trim();
+        const code = document.getElementById('code').value.trim();
+
+        const phoneSection = document.getElementById('phone-section');
+        const codeSection = document.getElementById('code-section');
+        const showPhone = (paymentMethod !== 'cod');
+        phoneSection.style.display = showPhone ? 'block' : 'none';
+        codeSection.style.display = showPhone ? 'block' : 'none';
+
+        if (paymentMethod !== 'cod') {
+            if (!phone || !code) { showNotification('Téléphone et code requis', 'warning'); return; }
         }
-        
+
         try {
-            // Simulation de paiement
-            showNotification('Traitement du paiement...', 'info');
-            
-            // await fetch('/payment/process', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ paymentMethod, phone, code })
-            // });
-            
-            setTimeout(() => {
-                showNotification('Paiement effectué avec succès!', 'success');
-                // Redirection vers la page de confirmation
-                // window.location.href = '/order/confirmation';
-            }, 2000);
-            
+            showNotification('Validation de votre commande...', 'info');
+            const resp = await fetch('/client/checkout/submit', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams({ paymentMethod })
+            });
+            const data = await resp.json();
+            if (data && data.success) {
+                showNotification('Commande confirmée', 'success');
+                if (data.redirect) window.location.href = data.redirect;
+            } else {
+                showNotification(data.message || 'Erreur lors de la commande', 'error');
+            }
         } catch (error) {
             console.error('Erreur paiement:', error);
-            showNotification('Erreur lors du paiement', 'error');
+            showNotification('Erreur lors de la commande', 'error');
         }
     }
+
+    // Size and color change events
+    document.querySelectorAll('.size-select').forEach(sel => {
+        sel.addEventListener('change', async (e) => {
+            const itemId = e.target.getAttribute('data-item-id');
+            const itemSizeId = e.target.value;
+            if (!itemSizeId) return;
+            const fd = new FormData();
+            fd.append('itemId', itemId);
+            fd.append('itemSizeId', itemSizeId);
+            await fetch('/client/cart/update-size', { method: 'POST', body: fd });
+            location.reload();
+        });
+    });
+    document.querySelectorAll('.color-select').forEach(sel => {
+        sel.addEventListener('change', async (e) => {
+            const itemId = e.target.getAttribute('data-item-id');
+            const colorId = e.target.value;
+            if (!colorId) return;
+            const fd = new FormData();
+            fd.append('itemId', itemId);
+            fd.append('colorId', colorId);
+            await fetch('/client/cart/update-color', { method: 'POST', body: fd });
+        });
+    });
     
     function showNotification(message, type = 'info') {
         // Créer une notification toast

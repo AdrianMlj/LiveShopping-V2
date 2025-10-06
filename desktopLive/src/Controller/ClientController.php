@@ -116,19 +116,23 @@ class ClientController extends AbstractController
             }
         }
         if (!$found) {
+            $selectedSizeId = $request->request->get('itemSizeId');
+            $selectedColorId = $request->request->get('colorId');
             $cart[] = [
                 'id' => $id,
                 'name' => $name,
                 'price' => $price,
                 'images' => $images,
-                'quantity' => $quantity
+                'quantity' => $quantity,
+                'itemSizeId' => $selectedSizeId ? (int)$selectedSizeId : null,
+                'colorId' => $selectedColorId ? (int)$selectedColorId : null,
             ];
         }
         $session->set('cart', $cart);
         return $this->redirectToRoute('app_home');
     }
     #[Route('/client/panier', name: 'app_client_panier')]
-    public function panier(Request $request): Response
+    public function panier(Request $request, \App\Repository\ItemRepository $itemRepo, \App\Repository\ItemSizeRepository $itemSizeRepo): Response
     {
         // Exemple : récupération du panier depuis la session
         $session = $request->getSession();
@@ -142,10 +146,192 @@ class ClientController extends AbstractController
         foreach ($cart as $item) {
             $cartTotal += ((float)($item['price'] ?? 0)) * ((int)($item['quantity'] ?? 1));
         }
+
+        // Build sizes and colors map per item for selectors
+        $sizesByItem = [];
+        $colorsBySize = [];
+        $itemsCache = [];
+        foreach ($cart as $ci) {
+            $itemId = (int)($ci['id'] ?? 0);
+            if ($itemId <= 0) { continue; }
+            if (!isset($sizesByItem[$itemId])) {
+                $sizes = $itemSizeRepo->findBy(['item' => $itemId]);
+                $sizesByItem[$itemId] = array_map(function($sz){
+                    return [
+                        'id' => $sz->getId(),
+                        'label' => trim(($sz->getValueSize() ?? '') . ($sz->getSize() ? (' (' . $sz->getSize()->getNameSize() . ')') : '')),
+                    ];
+                }, $sizes);
+                // Colors per size (if any)
+                foreach ($sizes as $sz) {
+                    $sid = $sz->getId();
+                    $colorsBySize[$sid] = [];
+                    foreach ($sz->getItemSizeColors() as $isc) {
+                        if ($isc->getColor()) {
+                            $colorsBySize[$sid][] = [
+                                'id' => $isc->getColor()->getId(),
+                                'name' => $isc->getColor()->getNameColor() ?? ('#'.$isc->getColor()->getId()),
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
         return $this->render('client/panier.html.twig', [
             'cart' => $cart,
-            'cartTotal' => $cartTotal
+            'cartTotal' => $cartTotal,
+            'sizesByItem' => $sizesByItem,
+            'colorsBySize' => $colorsBySize,
         ]);
+    }
+
+    #[Route('/client/cart/update-size', name: 'app_client_update_size', methods: ['POST'])]
+    public function updateCartSize(Request $request): JsonResponse
+    {
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
+        $itemId = (int)$request->request->get('itemId');
+        $sizeId = (int)$request->request->get('itemSizeId');
+        if (!$itemId || !$sizeId) {
+            return $this->json(['success' => false, 'message' => 'Paramètres invalides'], 400);
+        }
+        foreach ($cart as &$ci) {
+            if ((int)$ci['id'] === $itemId) {
+                $ci['itemSizeId'] = $sizeId;
+                // Reset color when size changes
+                $ci['colorId'] = null;
+                break;
+            }
+        }
+        $session->set('cart', $cart);
+        return $this->json(['success' => true]);
+    }
+
+    #[Route('/client/cart/update-color', name: 'app_client_update_color', methods: ['POST'])]
+    public function updateCartColor(Request $request): JsonResponse
+    {
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
+        $itemId = (int)$request->request->get('itemId');
+        $colorId = (int)$request->request->get('colorId');
+        if (!$itemId || !$colorId) {
+            return $this->json(['success' => false, 'message' => 'Paramètres invalides'], 400);
+        }
+        foreach ($cart as &$ci) {
+            if ((int)$ci['id'] === $itemId) {
+                $ci['colorId'] = $colorId;
+                break;
+            }
+        }
+        $session->set('cart', $cart);
+        return $this->json(['success' => true]);
+    }
+
+    #[Route('/client/checkout/submit', name: 'app_client_checkout_submit', methods: ['POST'])]
+    public function submitCheckout(
+        Request $request,
+        \Doctrine\ORM\EntityManagerInterface $em,
+        \App\Repository\UsersRepository $usersRepo,
+        \App\Repository\ItemRepository $itemRepo,
+        \App\Repository\ItemSizeRepository $itemSizeRepo,
+        \App\Repository\StateCommandeRepository $stateRepo
+    ): JsonResponse {
+        $session = $request->getSession();
+        $userSession = $session->get('user');
+        if (!$userSession) {
+            return $this->json(['success' => false, 'message' => 'Non connecté'], 401);
+        }
+        $client = $usersRepo->find($userSession->getId());
+        if (!$client) {
+            return $this->json(['success' => false, 'message' => 'Utilisateur introuvable'], 404);
+        }
+
+        $paymentMethod = (string)$request->request->get('paymentMethod', 'cod');
+        $isPaid = in_array($paymentMethod, ['mvola', 'orange', 'card'], true);
+
+        $cart = $session->get('cart', []);
+        if (!$cart || count($cart) === 0) {
+            return $this->json(['success' => false, 'message' => 'Panier vide'], 400);
+        }
+
+        // Group items by seller
+        $groups = [];
+        foreach ($cart as $ci) {
+            $item = $itemRepo->find((int)$ci['id']);
+            if (!$item) { continue; }
+            $sellerId = $item->getSeller() ? $item->getSeller()->getId() : 0;
+            if (!isset($groups[$sellerId])) { $groups[$sellerId] = []; }
+            $groups[$sellerId][] = [$ci, $item];
+        }
+
+        // Resolve a default state for new orders (create one if missing)
+        $pendingState = $stateRepo->findOneBy(['nameState' => 'En attente']);
+        if (!$pendingState) {
+            $pendingState = $stateRepo->findOneBy([]);
+        }
+        if (!$pendingState) {
+            $pendingState = new \App\Entity\StateCommande();
+            $pendingState->setNameState('En attente');
+            $em->persist($pendingState);
+            $em->flush();
+        }
+
+        try {
+            foreach ($groups as $sellerId => $items) {
+                // Resolve seller entity
+                $seller = null;
+                if ($sellerId) { $seller = $usersRepo->find($sellerId); }
+
+                $commande = new \App\Entity\Commande();
+                $commande->setState($pendingState);
+                $commande->setClient($client);
+                if ($seller) { 
+                    $commande->setSeller($seller); 
+                } else {
+                    throw new \InvalidArgumentException('Vendeur introuvable pour un article du panier');
+                }
+                $commande->setCreatedAt(new \DateTime());
+
+                // Details
+                foreach ($items as [$ci, $item]) {
+                    $detail = new \App\Entity\CommandeDetails();
+                    // Choose size: selected or fallback first available
+                    $itemSize = null;
+                    $selectedSizeId = isset($ci['itemSizeId']) && $ci['itemSizeId'] ? (int)$ci['itemSizeId'] : null;
+                    if ($selectedSizeId) {
+                        $itemSize = $itemSizeRepo->find($selectedSizeId);
+                    } else {
+                        $sizes = $itemSizeRepo->findBy(['item' => $item->getId()]);
+                        if ($sizes) { $itemSize = $sizes[0]; }
+                    }
+                    if (!$itemSize) {
+                        throw new \InvalidArgumentException('Veuillez choisir une taille pour l\'article "'.$item->getNameItem().'"');
+                    }
+                    $detail->setItemSize($itemSize);
+                    $detail->setQuantity((int)($ci['quantity'] ?? 1));
+                    $detail->setPrice((string)number_format((float)($ci['price'] ?? 0), 2, '.', ''));
+                    $commande->addDetail($detail);
+                }
+
+                $em->persist($commande);
+
+                $sale = new \App\Entity\Sale();
+                $sale->setCommande($commande);
+                $sale->setSaleDate(new \DateTime());
+                $sale->setIsPaid($isPaid);
+                $em->persist($sale);
+            }
+
+            $em->flush();
+
+            // Clear cart after success
+            $session->set('cart', []);
+            return $this->json(['success' => true, 'redirect' => $this->generateUrl('app_client_history')]);
+        } catch (\Throwable $e) {
+            $status = ($e instanceof \InvalidArgumentException) ? 400 : 500;
+            return $this->json(['success' => false, 'message' => $e->getMessage()], $status);
+        }
     }
 
     #[Route('/search', name: 'app_search', methods: ['GET'])]
