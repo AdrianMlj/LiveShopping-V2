@@ -154,7 +154,7 @@
               <span>{{ sale.commande.seller ? sale.commande.seller.getUsername() : 'Vendeur' }}</span>
             </div>
             <div class="order-amount-status">
-              <span class="amount">{{ total|number_format(2, ',', ' ') }} €</span>
+              <span class="amount">{{ total|number_format(2, ',', ' ') }} $</span>
               <span class="payment-status {{ sale.isPaid ? 'paid' : 'pending' }}" title="{{ sale.isPaid ? 'Payé' : 'En attente' }}">
                 <i class="fas {{ sale.isPaid ? 'fa-check-circle' : 'fa-clock' }}"></i>
                 {{ sale.isPaid ? 'Payé' : 'En attente' }}
@@ -203,7 +203,7 @@
           Facture PDF
         </button>
         <button class="btn-close" onclick="closeModal()">
-          <i class="fas fa-times"></i>
+          <span class="fas fa-times">❌</span>
         </button>
       </div>
     </div>
@@ -881,7 +881,7 @@ body {
   width: 40px;
   height: 40px;
   border: none;
-  background: #bdababfc;
+  background: #fcefeffc;
   border-radius: 50%;
   display: flex;
   align-items: center;

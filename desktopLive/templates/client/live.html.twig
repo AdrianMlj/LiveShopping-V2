@@ -375,7 +375,9 @@
 
             <div class="description">
                 <div class="desc-title">Description</div>
-                <p style="white-space: pre-line;">Live de {{ live.seller ? live.seller.username : '' }}</p>
+                <p style="white-space: pre-line; line-height: 1.6;">
+                    {{ live.description ?: 'Live de ' ~ (live.seller ? live.seller.username : 'notre streamer') }}
+                </p>
             </div>
         </div>
 
