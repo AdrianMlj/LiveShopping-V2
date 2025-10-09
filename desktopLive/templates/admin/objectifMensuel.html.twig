@@ -9,6 +9,12 @@
 
 {% block content %}
 <div class="modern-dashboard">
+    <div class="promotion-header">
+        <h2>
+            <i class="fas fa-bullseye"></i>
+            <span data-i18n="monthly_goals_title">Objectifs mensuels</span>
+        </h2>
+    </div>
     <!-- FILTRE DE PÉRIODE -->
     <div class="filter-card">
         <form class="filter-form" action="{{ path('app_objectif_mensuel') }}" method="post">
