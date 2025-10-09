@@ -712,12 +712,12 @@
                             if (data.success) {
                                 row.remove(); // ✅ suppression en front
                             } else {
-                                alert("Erreur : " + data.message);
+                                alert(window.t('error', 'Error') + ": " + data.message);
                             }
                         })
                         .catch(err => {
                             console.error(err);
-                            alert("Erreur lors de la suppression");
+                            alert(window.t('delete_error', 'Error during deletion'));
                         });
                     }
                 });

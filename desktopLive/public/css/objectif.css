@@ -77,9 +77,15 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+}
+
+.promotion-subtitle {
+    font-size: 14px;
+    color: var(--gray-600);
+    margin: 0;
+    line-height: 1.5;
+    text-align: right;
+    max-width: 500px;
 }
 
 /* Dark theme */
@@ -93,6 +99,10 @@ body.dark-theme .promotion-header h2 {
     background: none;
     -webkit-text-fill-color: var(--gray-100);
     color: var(--gray-100);
+}
+
+body.dark-theme .promotion-subtitle {
+    color: var(--gray-400);
 }
 
 /* Header */

@@ -10,7 +10,8 @@
 {% block content %}
     <div class="promotion-container">
         <div class="promotion-header">
-            <h2 data-i18n="article_management">Gestion des articles</h2>
+            <h2 data-i18n="article_management">Article Management</h2>
+            <p class="promotion-subtitle" data-i18n="article_management_subtitle">Manage your products, promotions, variants and stock</p>
             <form method="get" class="promotion-filters">
                 <label for="categoryFilter"><span data-i18n="category">Catégorie</span>
                     <button type="button" class="add-category-inline" title="Ajouter une nouvelle catégorie" aria-label="Ajouter une nouvelle catégorie" data-i18n-title="add_new_category">+</button>
@@ -863,12 +864,12 @@
                             promotionModal.style.display = 'flex';
                             document.body.style.overflow = 'hidden';
                         } else {
-                            alert('Erreur lors du chargement de la promotion');
+                            alert(window.t('error_loading_promotion', 'Error loading the promotion'));
                         }
                     })
                     .catch(error => {
                         console.error('Erreur:', error);
-                        alert('Erreur de connexion lors du chargement de la promotion');
+                        alert(window.t('connection_error_promotion', 'Connection error while loading the promotion'));
                     });
             }
 

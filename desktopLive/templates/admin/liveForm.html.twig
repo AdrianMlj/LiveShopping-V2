@@ -10,10 +10,8 @@
 {% block content %}
     <main class="live-creator-container">
         <div class="promotion-header">
-            <h2>
-                <i class="fas fa-broadcast-tower"></i>
-                <span data-i18n="create_live">Créer un Live Shopping</span>
-            </h2>
+            <h2 data-i18n="create_live">Create Live Shopping</h2>
+            <p class="promotion-subtitle" data-i18n="live_creation_description">Create and schedule your next live shopping in a few clicks</p>
         </div>
 
         <form action="{{ path('admin_live_confirm') }}" method="post" class="live-form">
@@ -239,7 +237,7 @@
 
                 if (selectedProducts === 0) {
                     e.preventDefault();
-                    alert('Veuillez sélectionner au moins un produit pour votre live.');
+                    alert(window.t('select_product_alert', 'Please select at least one product for your live.'));
                     return;
                 }
 

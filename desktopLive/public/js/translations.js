@@ -27,6 +27,8 @@ const translations = {
         Category: 'Catégorie',
 
         // Dashboard
+        dashboard_title: 'Tableau de bord',
+        dashboard_description: 'Visualisez vos performances, statistiques de ventes, chiffre d\'affaires et tendances par période',
         period: 'Période',
         category: 'Catégorie',
         apply: 'Appliquer',
@@ -40,6 +42,26 @@ const translations = {
         total_sales: 'Ventes totales',
         average_bag: 'Panier moyen',
         best_category: 'Meilleure catégorie',
+
+        // Live Form
+        create_live: 'Créer un Live Shopping',
+        live_creation_description: 'Créez et planifiez votre prochain live shopping en quelques clics',
+
+        // Ranking/Classement
+        ranking_title: 'Classement et performances',
+        ranking_subtitle: 'Analyse des ventes, des clients et des articles les plus performants',
+
+        // Monthly Goals
+        monthly_goals_title: 'Objectifs mensuels',
+        monthly_goals_subtitle: 'Suivez vos objectifs, vos réalisations et vos projections mois par mois',
+
+        // History
+        history_title: 'Historique des ventes',
+        history_subtitle: 'Consultez l\'historique complet des ventes avec filtres par date, état et paiement',
+
+        // Articles/Promotion
+        article_management: 'Gestion des articles',
+        article_management_subtitle: 'Gérez vos produits, promotions, variantes et stocks',
 
         // Actions du menu
         actions: 'Actions',
@@ -82,6 +104,8 @@ const translations = {
         Category: 'Category',
 
         // Dashboard
+        dashboard_title: 'Dashboard',
+        dashboard_description: 'View your performance, sales statistics, revenue and trends by period',
         period: 'Period',
         category: 'Category',
         apply: 'Apply',
@@ -95,6 +119,26 @@ const translations = {
         total_sales: 'Total sales',
         average_bag: 'Average bag',
         best_category: 'Best category',
+
+        // Live Form
+        create_live: 'Create Live Shopping',
+        live_creation_description: 'Create and schedule your next live shopping in a few clicks',
+
+        // Ranking/Classement
+        ranking_title: 'Ranking and Performance',
+        ranking_subtitle: 'Analysis of sales, clients and top performing items',
+
+        // Monthly Goals
+        monthly_goals_title: 'Monthly Goals',
+        monthly_goals_subtitle: 'Track your goals, achievements and projections month by month',
+
+        // History
+        history_title: 'Sales History',
+        history_subtitle: 'View complete sales history with filters by date, status and payment',
+
+        // Articles/Promotion
+        article_management: 'Article Management',
+        article_management_subtitle: 'Manage your products, promotions, variants and stock',
 
         // Actions du menu
         actions: 'Actions',

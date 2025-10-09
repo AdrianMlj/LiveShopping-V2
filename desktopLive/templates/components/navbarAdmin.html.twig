@@ -7,7 +7,7 @@
     <div class="dropdown-menu" id="dropdownMenu">
         <ul class="actions-list">
             <li>
-                <a href="{{ path('app_dashboard') }}" data-i18n="action_1">
+                <a href="{{ path('app_dashboard') }}">
                     <span class="action-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M3 12L12 3L21 12V21H3V12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -15,14 +15,14 @@
                         </svg>
                     </span>
                     <div class="action-content">
-                        <span class="action-text">Home</span>
-                        <span class="action-subtitle">Global performance summary</span>
+                        <span class="action-text" data-i18n="menu_home">Home</span>
+                        <span class="action-subtitle" data-i18n="menu_home_subtitle">Global performance summary</span>
                     </div>
                     <span class="action-arrow">→</span>
                 </a>
             </li>
             <li>
-                <a href="{{ path('app_classement') }}" data-i18n="action_1">
+                <a href="{{ path('app_classement') }}">
                     <span class="action-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M5 16L3 5L8.5 7L12 4L15.5 7L21 5L19 16H5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -30,42 +30,42 @@
                         </svg>
                     </span>
                     <div class="action-content">
-                        <span class="action-text">Ranking</span>
-                        <span class="action-subtitle">Loyal clients and best-selling products</span>
+                        <span class="action-text" data-i18n="menu_ranking">Ranking</span>
+                        <span class="action-subtitle" data-i18n="menu_ranking_subtitle">Loyal clients and best-selling products</span>
                     </div>
                     <span class="action-arrow">→</span>
                 </a>
             </li>
             <li>
-                <a href="{{ path('app_objectif_mensuel') }}" data-i18n="action_1">
+                <a href="{{ path('app_objectif_mensuel') }}">
                     <span class="action-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 20V10M18 20V4M6 20V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </span>
                     <div class="action-content">
-                        <span class="action-text">Objective tracking</span>
-                        <span class="action-subtitle">Gap detection, projection and Forecasting</span>
+                        <span class="action-text" data-i18n="menu_objectives">Objective tracking</span>
+                        <span class="action-subtitle" data-i18n="menu_objectives_subtitle">Gap detection, projection and Forecasting</span>
                     </div>
                     <span class="action-arrow">→</span>
                 </a>
             </li>
             <li>
-                <a href="{{ path('app_stock') }}" data-i18n="action_1">
+                <a href="{{ path('app_stock') }}">
                     <span class="action-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M3 3H21V5H3V3ZM4 7H20V19H4V7ZM8 11V17H16V11H8Z" fill="currentColor"/>
                         </svg>
                     </span>
                     <div class="action-content">
-                        <span class="action-text">Stock</span>
-                        <span class="action-subtitle">Stock management</span>
+                        <span class="action-text" data-i18n="menu_stock">Stock</span>
+                        <span class="action-subtitle" data-i18n="menu_stock_subtitle">Stock management</span>
                     </div>
                     <span class="action-arrow">→</span>
                 </a>
             </li>
             <li>
-                <a href="{{ path('app_history') }}" data-i18n="action_1">
+                <a href="{{ path('app_history') }}">
                     <span class="action-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" fill="currentColor"/>
@@ -73,14 +73,14 @@
                         </svg>
                     </span>
                     <div class="action-content">
-                        <span class="action-text">History</span>
-                        <span class="action-subtitle">Sales history</span>
+                        <span class="action-text" data-i18n="menu_history">History</span>
+                        <span class="action-subtitle" data-i18n="menu_history_subtitle">Sales history</span>
                     </div>
                     <span class="action-arrow">→</span>
                 </a>
             </li>
             <li>
-                <a href="{{ path('app_promotion') }}" data-i18n="action_1">
+                <a href="{{ path('app_promotion') }}">
                     <span class="action-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M9 3H5C3.895 3 3 3.895 3 5V9C3 10.105 3.895 11 5 11H9C10.105 11 11 10.105 11 9V5C11 3.895 10.105 3 9 3Z" fill="currentColor"/>
@@ -90,8 +90,8 @@
                         </svg>
                     </span>
                     <div class="action-content">
-                        <span class="action-text">Product Management</span>
-                        <span class="action-subtitle">Manage items, categories and promotions</span>
+                        <span class="action-text" data-i18n="menu_products">Product Management</span>
+                        <span class="action-subtitle" data-i18n="menu_products_subtitle">Manage items, categories and promotions</span>
                     </div>
                     <span class="action-arrow">→</span>
                 </a>
@@ -741,6 +741,8 @@
                 save: 'Enregistrer',
                 profil_picture: 'Photo de profil',
                 // Dashboard translations
+                dashboard_title: 'Tableau de bord',
+                dashboard_description: 'Visualisez vos performances, statistiques de ventes, chiffre d\'affaires et tendances par période',
                 period: 'Période',
                 category: 'Catégorie',
                 apply: 'Appliquer',
@@ -754,7 +756,12 @@
                 total_sales: 'Ventes totales',
                 average_bag: 'Panier moyen',
                 best_category: 'Meilleure catégorie',
+                // Live Form
+                create_live: 'Créer un Live Shopping',
+                live_creation_description: 'Créez et planifiez votre prochain live shopping en quelques clics',
                 // Classement page translations
+                ranking_title: 'Classement et performances',
+                ranking_subtitle: 'Analyse des ventes, des clients et des articles les plus performants',
                 performance_overview: 'Aperçu des performances',
                 active_products: 'produits actifs',
                 clients: 'clients',
@@ -773,6 +780,8 @@
                 no_sales_data: 'Aucune donnée de vente disponible',
                 no_clients_found: 'Aucun client trouvé',
                 // Historique page translations
+                history_title: 'Historique des ventes',
+                history_subtitle: 'Consultez l\'historique complet des ventes avec filtres par date, état et paiement',
                 start_date: 'Date début',
                 end_date: 'Date fin',
                 order_state: 'État commande',
@@ -818,6 +827,8 @@
                 form_warning: '⚠️ Tous les champs sont obligatoires. Le live sera visible immédiatement après validation.',
                 launch_live_shopping: 'Lancer le Live Shopping',
                 // ObjectifMensuel page translations
+                monthly_goals_title: 'Objectifs mensuels',
+                monthly_goals_subtitle: 'Suivez vos objectifs, vos réalisations et vos projections mois par mois',
                 average_target: 'Objectif moyen:',
                 average_achievement: 'Réalisation moyenne:',
                 revenue_evolution: 'Évolution du chiffre d\'affaires',
@@ -838,7 +849,33 @@
                 no_goals_found: 'Aucun objectif trouvé pour cette période.',
                 // Promotion page translations
                 article_management: 'Gestion des articles',
+                article_management_subtitle: 'Gérez vos produits, promotions, variantes et stocks',
                 add_new_category: 'Ajouter une nouvelle catégorie',
+                // Menu dropdown items
+                menu_home: 'Accueil',
+                menu_home_subtitle: 'Résumé des performances globales',
+                menu_ranking: 'Classement',
+                menu_ranking_subtitle: 'Clients fidèles et produits les plus vendus',
+                menu_objectives: 'Suivi des objectifs',
+                menu_objectives_subtitle: 'Détection d\'écarts, projection et prévisions',
+                menu_stock: 'Stock',
+                menu_stock_subtitle: 'Gestion du stock',
+                menu_history: 'Historique',
+                menu_history_subtitle: 'Historique des ventes',
+                menu_products: 'Gestion des produits',
+                menu_products_subtitle: 'Gérer les articles, catégories et promotions',
+                // Alert messages
+                select_product_alert: 'Veuillez sélectionner au moins un produit pour votre live.',
+                error_loading_details: 'Une erreur est survenue lors du chargement des détails.',
+                pdf_library_not_loaded: 'La bibliothèque PDF n\'est pas chargée. Veuillez rafraîchir la page.',
+                select_sale_first: 'Veuillez d\'abord sélectionner une vente en cliquant sur une ligne du tableau.',
+                no_content_to_export: 'Aucun contenu à exporter.',
+                pdf_generation_error: 'Erreur lors de la génération du PDF',
+                error_loading_promotion: 'Erreur lors du chargement de la promotion',
+                connection_error_promotion: 'Erreur de connexion lors du chargement de la promotion',
+                error: 'Erreur',
+                delete_error: 'Erreur lors de la suppression',
+                camera_access_error: 'Erreur: Impossible d\'accéder à la caméra/microphone. Veuillez vérifier vos permissions.',
                 promo: 'Promo',
                 until: 'Jusqu\'au',
                 units: 'unités',
@@ -906,6 +943,8 @@
                 save: 'Save',
                 profil_picture: 'Profile picture',
                 // Dashboard translations
+                dashboard_title: 'Dashboard',
+                dashboard_description: 'View your performance, sales statistics, revenue and trends by period',
                 period: 'Period',
                 category: 'Category',
                 apply: 'Apply',
@@ -919,7 +958,12 @@
                 total_sales: 'Total sales',
                 average_bag: 'Average bag',
                 best_category: 'Best category',
+                // Live Form
+                create_live: 'Create Live Shopping',
+                live_creation_description: 'Create and schedule your next live shopping in a few clicks',
                 // Classement page translations
+                ranking_title: 'Ranking and Performance',
+                ranking_subtitle: 'Analysis of sales, clients and top performing items',
                 performance_overview: 'Overview of Performance',
                 active_products: 'active products',
                 clients: 'clients',
@@ -938,6 +982,8 @@
                 no_sales_data: 'No sales data available',
                 no_clients_found: 'No clients found',
                 // Historique page translations
+                history_title: 'Sales History',
+                history_subtitle: 'View complete sales history with filters by date, status and payment',
                 start_date: 'Start date',
                 end_date: 'End date',
                 order_state: 'Order state',
@@ -983,6 +1029,8 @@
                 form_warning: '⚠️ All fields are required. The live will be visible immediately after validation.',
                 launch_live_shopping: 'Launch Live Shopping',
                 // ObjectifMensuel page translations
+                monthly_goals_title: 'Monthly Goals',
+                monthly_goals_subtitle: 'Track your goals, achievements and projections month by month',
                 average_target: 'Average target:',
                 average_achievement: 'Average achievement:',
                 revenue_evolution: 'Revenue evolution',
@@ -1003,7 +1051,33 @@
                 no_goals_found: 'No goals found for this period.',
                 // Promotion page translations
                 article_management: 'Article Management',
+                article_management_subtitle: 'Manage your products, promotions, variants and stock',
                 add_new_category: 'Add new category',
+                // Menu dropdown items
+                menu_home: 'Home',
+                menu_home_subtitle: 'Global performance summary',
+                menu_ranking: 'Ranking',
+                menu_ranking_subtitle: 'Loyal clients and best-selling products',
+                menu_objectives: 'Objective tracking',
+                menu_objectives_subtitle: 'Gap detection, projection and Forecasting',
+                menu_stock: 'Stock',
+                menu_stock_subtitle: 'Stock management',
+                menu_history: 'History',
+                menu_history_subtitle: 'Sales history',
+                menu_products: 'Product Management',
+                menu_products_subtitle: 'Manage items, categories and promotions',
+                // Alert messages
+                select_product_alert: 'Please select at least one product for your live.',
+                error_loading_details: 'An error occurred while loading the details.',
+                pdf_library_not_loaded: 'PDF library is not loaded. Please refresh the page.',
+                select_sale_first: 'Please first select a sale by clicking on a table row.',
+                no_content_to_export: 'No content to export.',
+                pdf_generation_error: 'Error during PDF generation',
+                error_loading_promotion: 'Error loading the promotion',
+                connection_error_promotion: 'Connection error while loading the promotion',
+                error: 'Error',
+                delete_error: 'Error during deletion',
+                camera_access_error: 'Error: Cannot access camera/microphone. Please check your permissions.',
                 promo: 'Promo',
                 until: 'Until',
                 units: 'units',
@@ -1066,6 +1140,12 @@
                 if (dict[key]) el.setAttribute('placeholder', dict[key]);
             });
         }
+
+        // Global translation function for alerts and popups
+        window.t = function(key, fallback = '') {
+            const lang = localStorage.getItem('site_language') || 'en';
+            return translations[lang]?.[key] || fallback || key;
+        };
 
         // Set language from localStorage or default to English
         const savedLang = localStorage.getItem('site_language') || 'en';
