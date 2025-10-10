@@ -31,17 +31,93 @@
         .desc-list li { display:flex; align-items:flex-start; gap:8px; margin:6px 0; }
         .desc-list li .dot { width:8px; height:8px; background:#567AF4; border-radius:50%; margin-top:6px; }
         .products { display:flex; flex-direction:column; gap:16px; }
-        .product { display:flex; gap:12px; background:#fff; border-radius:16px; padding:12px; box-shadow: 0 12px 24px rgba(0,0,0,0.12); align-items:center; }
-        .product img { width:92px; height:64px; object-fit:cover; border-radius:12px; }
-        .product .name { font-weight:800; }
-        .product .price { color:#333; margin-top:4px; }
-        .product .cta { margin-left:auto; }
-        .btn-bag { background:#567AF4; color:#fff; border:none; padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; }
-        @media (max-width: 992px) { .page { grid-template-columns: 1fr; } .right-actions{ margin-top:10px; } }
+        
+        /* Styles pour les produits - MODIFIÉ selon l'image */
+        .product { 
+            display: flex; 
+            gap: 12px; 
+            background: #fff; 
+            border-radius: 16px; 
+            padding: 12px; 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12); 
+            align-items: center;
+            position: relative;
+        }
+        .product img { 
+            width: 92px; 
+            height: 64px; 
+            object-fit: cover; 
+            border-radius: 12px; 
+        }
+        .product-info {
+            flex-grow: 1;
+        }
+        .product .name { 
+            font-weight: 800; 
+            margin-bottom: 4px;
+        }
+        .product .price { 
+            color: #333; 
+            margin-top: 4px; 
+            font-weight: 600;
+        }
+        .product-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .btn-bag { 
+            background: #567AF4; 
+            color: #fff; 
+            border: none; 
+            padding: 8px 12px; 
+            border-radius: 999px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            white-space: nowrap;
+            margin-top: 50px;
+        }
+        .btn-favorite {
+            position: absolute;
+            top: 16px;
+            right: 25px;
+            width: 20px;
+            height: 28px;
+            border-radius: 2px;
+            background-color: #ccc;
+            border: none;
+            cursor: pointer;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+            transition: background-color 0.3s, transform 0.2s;
+            z-index: 1;
+        }
+        .btn-favorite:hover {
+            transform: scale(1.1);
+        }
+        .btn-favorite.active {
+            background-color: #e3f635ff;
+            transform: scale(1.2);
+        }
+        
+        @media (max-width: 992px) { 
+            .page { grid-template-columns: 1fr; } 
+            .right-actions{ margin-top:10px; } 
+        }
+        
         /* Dark theme */
         body.dark-theme { background: #121212; }
-        body.dark-theme .player-card, body.dark-theme .description, body.dark-theme .product { background:#1f1f1f; box-shadow: 0 12px 24px rgba(0,0,0,0.5); }
-        body.dark-theme .desc-title, body.dark-theme .product .name, body.dark-theme .product .price { color:#fff; }
+        body.dark-theme .player-card, 
+        body.dark-theme .description, 
+        body.dark-theme .product { 
+            background:#1f1f1f; 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.5); 
+        }
+        body.dark-theme .desc-title, 
+        body.dark-theme .product .name, 
+        body.dark-theme .product .price { 
+            color:#fff; 
+        }
         /* Lisibilité du contenu de la description en dark */
         body.dark-theme .description { color: #e6e6e6; }
         body.dark-theme .description p { color: #e0e0e0; line-height: 1.55; }
@@ -50,11 +126,64 @@
     </style>
     {% include 'components/navbarClient.html.twig' %}
     <script>
-      // Petits handlers mock
       function likeLive(){
         const el = document.getElementById('likeCount');
         el.textContent = parseInt(el.textContent, 10) + 1;
+
+        // 🔥 Envoi du like au serveur WebSocket
+        if (window.signaling && window.signaling.readyState === WebSocket.OPEN) {
+          const adminId = {{ live.seller ? live.seller.id : 0 }};
+          window.signaling.send(JSON.stringify({
+            type: "like",
+            adminId: adminId
+          }));
+        }
       }
+
+    function toggleFavorite(button, itemSizeId) {
+      if (button.classList.contains('active') && button.dataset.favoriteId && button.dataset.favoriteId !== 'null') {
+        // Retirer des favoris par favoriteId
+        fetch(`/client/remove-favorite-by-id/${button.dataset.favoriteId}`, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Erreur serveur: ' + res.status);
+          return res.json ? res.json() : null;
+        })
+        .then(data => {
+          button.classList.remove('active');
+        })
+        .catch(err => console.error('Fetch error:', err));
+      } else {
+        // Ajouter aux favoris par itemSizeId
+        fetch(`/client/favorite/toggle/${button.dataset.itemSizeId}`, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Erreur serveur: ' + res.status);
+          return res.json();
+        })
+        .then(data => {
+          if (data.success && data.action === 'added') {
+            button.classList.add('active');
+          } else if (data.action === 'exists') {
+            button.classList.add('active');
+          }
+        })
+        .catch(err => console.error('Fetch error:', err));
+      }
+    }
+
 
       // WebRTC Viewer pour recevoir le flux du streamer via un serveur de signalisation WebSocket (localhost:8080)
       document.addEventListener('DOMContentLoaded', function(){
@@ -104,6 +233,26 @@
         tryNext();
         if (!signaling) return;
 
+        // Suivre/Ne plus suivre le vendeur du live
+        const followBtn = document.getElementById('followBtn');
+        if (followBtn) {
+          const sellerId = {{ live.seller ? live.seller.id : 0 }};
+          const textEl = followBtn.querySelector('.follow-text');
+          followBtn.addEventListener('click', function(){
+            fetch(`/client/follow/toggle/${sellerId}`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+              .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+              .then(data => {
+                if (!data.success) return;
+                if (data.action === 'followed') {
+                  textEl.textContent = 'Following';
+                } else if (data.action === 'unfollowed') {
+                  textEl.textContent = 'Follow';
+                }
+              })
+              .catch(err => console.error('Follow error:', err));
+          });
+        }
+
         function createPeerConnection(){
           pc = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -131,6 +280,7 @@
           const adminId = {{ live.seller ? live.seller.id : 0 }};
           console.log('[CLIENT-LIVE] WS open. viewerId=', viewerId, 'adminId=', adminId);
           signaling.send(JSON.stringify({ type: 'viewer', viewerId, adminId }));
+          window.signaling = signaling; // rendre accessible globalement
         };
 
         signaling.onmessage = async (event) => {
@@ -157,6 +307,15 @@
                 videoEl.srcObject = null;
               }
             }
+            else if (data.type === 'likeUpdate') {
+              const likeEl = document.getElementById('likeCount');
+              if (likeEl) likeEl.textContent = data.count;
+
+              const pillEl = document.querySelector('.viewer-pill');
+              if (pillEl) pillEl.textContent = data.count;
+            }
+
+
           } catch (err) {
             console.error('[CLIENT-LIVE] Erreur WebRTC:', err);
           }
@@ -195,10 +354,9 @@
                             <div class="username-chip">{{ live.seller ? live.seller.username : 'Username' }}</div>
                         </div>
                         <div class="follow-wrap">
-                            <button class="btn btn-follow">
-                                <!-- play icon -->
+                            <button class="btn btn-follow" id="followBtn">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                                Follow
+                                <span class="follow-text">{{ isFollowing ? 'Following' : 'Follow' }}</span>
                             </button>
                         </div>
                     </div>
@@ -217,17 +375,93 @@
 
             <div class="description">
                 <div class="desc-title">Description</div>
-                <p style="white-space: pre-line;">Live de {{ live.seller ? live.seller.username : '' }}</p>
+                <p style="white-space: pre-line; line-height: 1.6;">
+                    {{ live.description ?: 'Live de ' ~ (live.seller ? live.seller.username : 'notre streamer') }}
+                </p>
             </div>
         </div>
 
         <aside>
             <div class="products">
-                {# Placeholder: produits liés au live si disponibles plus tard #}
+                {% if items is defined and items|length > 0 %}
+                    {% for product in items %}
+                        <div class="product">
+                <button class="btn-favorite {% if product.getItem.getId in favorisIds %}active{% endif %}"
+                    aria-label="Basculer favori"
+                    data-item-id="{{ product.getItem.getId }}"
+                    onclick="toggleFavoriteProduct(this)"></button>
+                <img src="{{ product.getItem.getImages ? '/uploads/' ~ product.getItem.getImages : '/uploads/default-product.jpg' }}" alt="{{ product.getItem.getNameItem }}">
+                <div class="product-info">
+                  <div class="name">{{ product.getItem.getNameItem }}</div>
+                  <div class="sizes mt-2">
+                    <strong>Tailles :</strong>
+                    {% if product.getItem.getItemSizes|length > 0 %}
+                      {% for size in product.getItem.getItemSizes %}
+                        <span class="badge bg-secondary me-1">{{ size.getValueSize }}{% if size.getSize %} ({{ size.getSize.getNameSize }}){% endif %}</span>
+                      {% endfor %}
+                    {% else %}
+                      <span class="text-muted">Aucune taille</span>
+                    {% endif %}
+                  </div>
+                </div>
+          <div class="product-actions">
+            {% set lastPrice = product.getItem.getPriceItems|length > 0
+              ? product.getItem.getPriceItems|last.getPrice
+              : 0 %}
+            <button class="btn-bag" onclick="addToBag(this, {{ product.getItem.getId }}, '{{ product.getItem.getNameItem|e('js') }}', '{{ lastPrice }}', '{{ product.getItem.getImages|e('js') }}')">Add to bag</button>
+          </div>
+  <script>
+  function addToBag(btn, id, name, price, images) {
+    btn.disabled = true;
+    btn.textContent = 'Ajout...';
+    fetch(`/client/add-cart/${id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: `name=${encodeURIComponent(name)}&price=${encodeURIComponent(price)}&images=${encodeURIComponent(images)}&quantity=1`
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Erreur serveur');
+      btn.textContent = 'Ajouté !';
+      btn.classList.add('added');
+      btn.style.background = '#28a745';
+    })
+    .catch(() => {
+      btn.textContent = 'Erreur';
+      btn.style.background = '#dc3545';
+    });
+  }
+  </script>
+  <script>
+  function toggleFavoriteProduct(button){
+    const itemId = button.dataset.itemId;
+    const isActive = button.classList.contains('active');
+    const url = isActive ? `/client/favorite/remove-all-sizes/${itemId}` : `/client/favorite/toggle-all-sizes/${itemId}`;
+    fetch(url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => {
+      if(!res.ok) throw new Error('Erreur serveur: ' + res.status);
+      return res.json();
+    })
+    .then(data => {
+      if (!data.success) return;
+      button.classList.toggle('active');
+    })
+    .catch(err => console.error('Favori erreur:', err));
+  }
+  </script>
+                        </div>
+                    {% endfor %}
+
+                {% else %}
+                    <p>Aucun produit associé à ce live.</p>
+                {% endif %}
             </div>
         </aside>
     </div>
   </body>
 </html>
-
-

@@ -39,7 +39,7 @@
                             <h2>{{ live.titre }}</h2>
                             <div class="stream-meta">
                                 <span class="live-badge">
-                                    <i class="fas fa-circle"></i> EN DIRECT
+                                    <i class="fas fa-circle"></i> <span data-i18n="live">EN DIRECT</span>
                                 </span>
                                 <span class="stream-date">
                                     <i class="far fa-calendar-alt"></i> {{ live.startLive|date('d/m/Y H:i') }}
@@ -48,7 +48,7 @@
                         </div>
 
                         <div class="stream-description">
-                            <h3><i class="fas fa-info-circle"></i> Description</h3>
+                            <h3><i class="fas fa-info-circle"></i> <span data-i18n="description">Description</span></h3>
                             <p>{{ live.description }}</p>
                         </div>
 
@@ -56,7 +56,7 @@
                             <div class="stats-grid">
                                 <div class="stat-card">
                                     <div class="stat-value">--:--</div>
-                                    <div class="stat-label">Durée</div>
+                                    <div class="stat-label" data-i18n="duration">Durée</div>
                                 </div>
                             </div>
                         </div>
@@ -64,12 +64,12 @@
 
                     <div class="stream-actions">
                         <a href="{{ path('admin_live_stop', {'id': live.id}) }}" class="stop-stream-btn">
-                            <i class="fas fa-stop"></i> Terminer le stream
+                            <i class="fas fa-stop"></i> <span data-i18n="end_stream">Terminer le stream</span>
                         </a>
                     </div>
 
                     <div class="debug-console">
-                        <h3><i class="fas fa-terminal"></i> Console technique</h3>
+                        <h3><i class="fas fa-terminal"></i> <span data-i18n="technical_console">Console technique</span></h3>
                         <div class="debug-logs" id="debugLogs"></div>
                     </div>
                 </div>
@@ -80,10 +80,10 @@
                     <div class="no-live-icon">
                         <i class="fas fa-video-slash"></i>
                     </div>
-                    <h2>Aucun live en cours</h2>
-                    <p>Commencez un nouveau stream pour interagir avec votre audience</p>
+                    <h2 data-i18n="no_live_active">Aucun live en cours</h2>
+                    <p data-i18n="start_new_stream">Commencez un nouveau stream pour interagir avec votre audience</p>
                     <a href="{{ path('admin_live_start') }}" class="start-stream-btn">
-                        <i class="fas fa-play"></i> Démarrer un live
+                        <i class="fas fa-play"></i> <span data-i18n="start_live">Démarrer un live</span>
                     </a>
                 </div>
             </div>
@@ -123,225 +123,386 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            debugLog('Initialisation du streamer...', 'info');
+        debugLog('Initialisation du streamer...', 'info');
 
-            const signalingServer = new WebSocket('ws://localhost:9090');
-            const peerConnections = new Map();
-            let localStream;
+        const signalingServer = new WebSocket('ws://localhost:9090');
+        const peerConnections = new Map();
+        let localStream;
+        let totalLikes = 0; // Variable pour stocker le nombre de likes
 
-            // Configuration des événements WebSocket
-            signalingServer.onopen = () => {
-                debugLog('Connexion WebSocket établie avec le serveur de signalisation', 'success');
-                const message = {
-                    type: 'streamer',
-                    adminId: '{{ seller.id }}'
-                };
-                debugLog(`Envoi identification streamer: ${JSON.stringify(message)}`, 'info');
-                signalingServer.send(JSON.stringify(message));
+        // Configuration des événements WebSocket
+        signalingServer.onopen = () => {
+            debugLog('Connexion WebSocket établie avec le serveur de signalisation', 'success');
+            const message = {
+                type: 'streamer',
+                adminId: '{{ seller.id }}'
             };
+            debugLog(`Envoi identification streamer: ${JSON.stringify(message)}`, 'info');
+            signalingServer.send(JSON.stringify(message));
+        };
 
-            signalingServer.onerror = (error) => {
-                debugLog(`Erreur WebSocket: ${error}`, 'error');
-                debugLog(`Vérifiez que le serveur Node.js est en cours d'exécution sur le port 9090`, 'warning');
-                console.error('WebSocket Error:', error);
-            };
+        signalingServer.onerror = (error) => {
+            debugLog(`Erreur WebSocket: ${error}`, 'error');
+            debugLog(`Vérifiez que le serveur Node.js est en cours d'exécution sur le port 9090`, 'warning');
+            console.error('WebSocket Error:', error);
+        };
 
-            signalingServer.onclose = (event) => {
-                debugLog(`Connexion WebSocket fermée: ${event.code} - ${event.reason}`, 'warning');
-            };
+        signalingServer.onclose = (event) => {
+            debugLog(`Connexion WebSocket fermée: ${event.code} - ${event.reason}`, 'warning');
+        };
 
-            // Gestion des messages WebSocket
-            signalingServer.onmessage = async (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    debugLog(`Message reçu: ${JSON.stringify(data)}`, 'info');
+        // Gestion des messages WebSocket
+        signalingServer.onmessage = async (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                debugLog(`Message reçu: ${JSON.stringify(data)}`, 'info');
 
-                    if (data.type === 'newViewer') {
-                        const viewerId = data.viewerId;
-                        debugLog(`Nouveau viewer connecté: ${viewerId}`, 'success');
+                if (data.type === 'newViewer') {
+                    const viewerId = data.viewerId;
+                    debugLog(`Nouveau viewer connecté: ${viewerId}`, 'success');
 
-                        if (!localStream) {
-                            debugLog('Aucun stream local disponible pour le viewer', 'warning');
-                            return;
-                        }
+                    if (!localStream) {
+                        debugLog('Aucun stream local disponible pour le viewer', 'warning');
+                        return;
+                    }
 
-                        const pc = new RTCPeerConnection({
-                            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                        });
+                    const pc = new RTCPeerConnection({
+                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    });
 
-                        // Ajouter les tracks
-                        localStream.getTracks().forEach(track => {
-                            pc.addTrack(track, localStream);
-                            debugLog(`Track ${track.kind} ajouté pour viewer ${viewerId}`, 'info');
-                        });
+                    localStream.getTracks().forEach(track => {
+                        pc.addTrack(track, localStream);
+                        debugLog(`Track ${track.kind} ajouté pour viewer ${viewerId}`, 'info');
+                    });
 
-                        pc.onicecandidate = e => {
-                            if (e.candidate) {
-                                debugLog(`Envoi ICE candidate pour viewer ${viewerId}: ${e.candidate.type}`, 'info');
-                                signalingServer.send(JSON.stringify({
-                                    type: 'candidate',
-                                    candidate: e.candidate,
-                                    target: 'viewer',
-                                    viewerId: viewerId
-                                }));
-                            }
-                        };
-
-                        pc.onconnectionstatechange = () => {
-                            debugLog(`État de connexion pour ${viewerId}: ${pc.connectionState}`, 'info');
-                            if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-                                peerConnections.delete(viewerId);
-                            }
-                        };
-
-                        try {
-                            debugLog(`Création de l'offre SDP pour viewer ${viewerId}...`, 'info');
-                            const offer = await pc.createOffer();
-                            await pc.setLocalDescription(offer);
-                            debugLog(`Offre créée pour viewer ${viewerId}`, 'success');
-
+                    pc.onicecandidate = e => {
+                        if (e.candidate) {
+                            debugLog(`Envoi ICE candidate pour viewer ${viewerId}: ${e.candidate.type}`, 'info');
                             signalingServer.send(JSON.stringify({
-                                type: 'offer',
-                                offer: offer,
+                                type: 'candidate',
+                                candidate: e.candidate,
+                                target: 'viewer',
                                 viewerId: viewerId
                             }));
+                        }
+                    };
 
-                            peerConnections.set(viewerId, pc);
-                            debugLog(`PeerConnection stockée pour viewer ${viewerId}`, 'info');
+                    pc.onconnectionstatechange = () => {
+                        debugLog(`État de connexion pour ${viewerId}: ${pc.connectionState}`, 'info');
+                        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                            peerConnections.delete(viewerId);
+                        }
+                    };
 
+                    try {
+                        debugLog(`Création de l'offre SDP pour viewer ${viewerId}...`, 'info');
+                        const offer = await pc.createOffer();
+                        await pc.setLocalDescription(offer);
+                        debugLog(`Offre créée pour viewer ${viewerId}`, 'success');
+
+                        signalingServer.send(JSON.stringify({
+                            type: 'offer',
+                            offer: offer,
+                            viewerId: viewerId
+                        }));
+
+                        peerConnections.set(viewerId, pc);
+                        debugLog(`PeerConnection stockée pour viewer ${viewerId}`, 'info');
+
+                    } catch (error) {
+                        debugLog(`Erreur lors de la création de l'offre pour ${viewerId}: ${error.message}`, 'error');
+                    }
+                }
+                else if (data.type === 'answer') {
+                    const viewerId = data.viewerId;
+                    debugLog(`Réponse SDP reçue du viewer ${viewerId}`, 'info');
+
+                    const pc = peerConnections.get(viewerId);
+                    if (pc) {
+                        try {
+                            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                            debugLog(`Réponse SDP acceptée pour viewer ${viewerId}`, 'success');
                         } catch (error) {
-                            debugLog(`Erreur lors de la création de l'offre pour ${viewerId}: ${error.message}`, 'error');
-                        }
-                    }
-                    else if (data.type === 'answer') {
-                        const viewerId = data.viewerId;
-                        debugLog(`Réponse SDP reçue du viewer ${viewerId}`, 'info');
-
-                        const pc = peerConnections.get(viewerId);
-                        if (pc) {
-                            try {
-                                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-                                debugLog(`Réponse SDP acceptée pour viewer ${viewerId}`, 'success');
-                            } catch (error) {
-                                debugLog(`Erreur lors du traitement de la réponse pour ${viewerId}: ${error.message}`, 'error');
-                            }
-                        } else {
-                            debugLog(`Aucune PeerConnection trouvée pour viewer ${viewerId}`, 'warning');
-                        }
-                    }
-                    else if (data.type === 'candidate') {
-                        const viewerId = data.viewerId;
-                        debugLog(`ICE candidate reçu du viewer ${viewerId}`, 'info');
-
-                        const pc = peerConnections.get(viewerId);
-                        if (pc) {
-                            try {
-                                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-                                debugLog(`ICE candidate ajouté pour viewer ${viewerId}`, 'success');
-                            } catch (error) {
-                                debugLog(`Erreur lors de l'ajout du ICE candidate pour ${viewerId}: ${error.message}`, 'error');
-                            }
-                        } else {
-                            debugLog(`Aucune PeerConnection trouvée pour ICE candidate de ${viewerId}`, 'warning');
+                            debugLog(`Erreur lors du traitement de la réponse pour ${viewerId}: ${error.message}`, 'error');
                         }
                     } else {
-                        debugLog(`Type de message non géré: ${data.type}`, 'warning');
+                        debugLog(`Aucune PeerConnection trouvée pour viewer ${viewerId}`, 'warning');
                     }
-                } catch (error) {
-                    debugLog(`Erreur lors du traitement du message: ${error.message}`, 'error');
+                }
+                else if (data.type === 'candidate') {
+                    const viewerId = data.viewerId;
+                    debugLog(`ICE candidate reçu du viewer ${viewerId}`, 'info');
+
+                    const pc = peerConnections.get(viewerId);
+                    if (pc) {
+                        try {
+                            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                            debugLog(`ICE candidate ajouté pour viewer ${viewerId}`, 'success');
+                        } catch (error) {
+                            debugLog(`Erreur lors de l'ajout du ICE candidate pour ${viewerId}: ${error.message}`, 'error');
+                        }
+                    } else {
+                        debugLog(`Aucune PeerConnection trouvée pour ICE candidate de ${viewerId}`, 'warning');
+                    }
+                }
+                else if (data.type === 'likeUpdate') {
+                    totalLikes = data.count;
+                    debugLog(`Likes mis à jour: ${totalLikes}`, 'success');
+                }
+                else if (data.type === 'likesCount') {
+                    totalLikes = data.count;
+                    debugLog(`Total de likes reçu: ${totalLikes}`, 'info');
+                    showLikesPopup(totalLikes);
+                }
+                else {
+                    debugLog(`Type de message non géré: ${data.type}`, 'warning');
+                }
+            } catch (error) {
+                debugLog(`Erreur lors du traitement du message: ${error.message}`, 'error');
+            }
+        };
+
+        // Fonction pour afficher le popup de likes
+        let likesPopupShown = false; // Pour éviter d'afficher le popup deux fois
+        function showLikesPopup(likesCount) {
+            if (likesPopupShown) return; // Éviter les doublons
+            likesPopupShown = true;
+
+            const lang = localStorage.getItem('site_language') || 'en';
+            const texts = {
+                en: {
+                    title: 'Thank you for your support!',
+                    received: 'You received',
+                    loves: 'Love ❤️',
+                    close: 'Close'
+                },
+                fr: {
+                    title: 'Merci pour votre soutien !',
+                    received: 'Vous avez reçu',
+                    loves: 'J\'adore ❤️',
+                    close: 'Fermer'
                 }
             };
+            const t = texts[lang];
 
-            // Obtenir le stream local
-            debugLog('Demande d\'accès à la caméra et au microphone...', 'info');
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                    frameRate: { ideal: 30 }
-                },
-                audio: true
-            })
-            .then(stream => {
-                localStream = stream;
-                const webcam = document.getElementById("webcamPreview");
-                webcam.srcObject = stream;
-                debugLog(`Stream local obtenu avec ${stream.getTracks().length} pistes`, 'success');
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 40px 60px;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                z-index: 10000;
+                text-align: center;
+                animation: popupEntry 0.5s ease-out;
+            `;
 
-                stream.getTracks().forEach(track => {
-                    debugLog(`Piste disponible: ${track.kind} - ${track.label}`, 'info');
-                    track.onended = () => {
-                        debugLog(`Piste ${track.kind} terminée`, 'warning');
-                    };
-                });
-
-                debugLog('Streamer prêt à diffuser', 'success');
-            })
-            .catch(err => {
-                debugLog(`Erreur d'accès aux médias: ${err.message}`, 'error');
-                alert("Erreur: Impossible d'accéder à la caméra/microphone. Veuillez vérifier vos permissions.");
-            });
-
-            // Gestion des boutons de contrôle
-            document.getElementById('toggleMic').addEventListener('click', function() {
-                if (localStream) {
-                    const audioTrack = localStream.getAudioTracks()[0];
-                    if (audioTrack) {
-                        audioTrack.enabled = !audioTrack.enabled;
-                        this.classList.toggle('muted', !audioTrack.enabled);
-                        debugLog(`Microphone ${audioTrack.enabled ? 'activé' : 'désactivé'}`, 'info');
+            popup.innerHTML = `
+                <style>
+                    @keyframes popupEntry {
+                        from {
+                            opacity: 0;
+                            transform: translate(-50%, -50%) scale(0.5);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translate(-50%, -50%) scale(1);
+                        }
                     }
-                }
-            });
-
-            document.getElementById('toggleCam').addEventListener('click', function() {
-                if (localStream) {
-                    const videoTrack = localStream.getVideoTracks()[0];
-                    if (videoTrack) {
-                        videoTrack.enabled = !videoTrack.enabled;
-                        this.classList.toggle('muted', !videoTrack.enabled);
-                        debugLog(`Caméra ${videoTrack.enabled ? 'activée' : 'désactivée'}`, 'info');
+                    @keyframes heartBeat {
+                        0%, 100% { transform: scale(1); }
+                        25% { transform: scale(1.2); }
+                        50% { transform: scale(1); }
                     }
+                </style>
+                <div style="font-size: 80px; margin-bottom: 20px; animation: heartBeat 1s infinite;">
+                    ❤️
+                </div>
+                <h2 style="margin: 0 0 10px 0; font-size: 32px; font-weight: bold;">
+                    ${t.title}
+                </h2>
+                <p style="margin: 0 0 20px 0; font-size: 18px; opacity: 0.9;">
+                    ${t.received}
+                </p>
+                <div style="font-size: 64px; font-weight: bold; margin: 20px 0;">
+                    ${likesCount}
+                </div>
+                <p style="margin: 0; font-size: 24px; font-weight: 600;">
+                    ${t.loves}
+                </p>
+                <button id="closePopup" style="
+                    margin-top: 30px;
+                    padding: 12px 30px;
+                    background: white;
+                    color: #667eea;
+                    border: none;
+                    border-radius: 10px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    ${t.close}
+                </button>
+            `;
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 9999;
+                backdrop-filter: blur(5px);
+            `;
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(popup);
+
+            const closeBtn = document.getElementById('closePopup');
+            closeBtn.addEventListener('click', () => {
+                popup.remove();
+                overlay.remove();
+                // Si on a une URL de redirection en attente, rediriger immédiatement
+                if (window.pendingRedirectUrl) {
+                    window.location.href = window.pendingRedirectUrl;
                 }
             });
 
-            // Variables pour le timer
-            let startTime;
-            let durationInterval;
-            const durationElement = document.querySelector('.stream-stats .stat-value');
-
-            // Fonction pour démarrer le timer
-            function startDurationTimer() {
-                startTime = new Date();
-                durationInterval = setInterval(updateDuration, 1000);
-            }
-
-            // Fonction pour mettre à jour l'affichage de la durée
-            function updateDuration() {
-                const now = new Date();
-                const elapsed = Math.floor((now - startTime) / 1000); // en secondes
-
-                const hours = Math.floor(elapsed / 3600);
-                const minutes = Math.floor((elapsed % 3600) / 60);
-                const seconds = elapsed % 60;
-
-                // Format HH:MM:SS ou MM:SS selon la durée
-                const formattedTime = hours > 0
-                    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-                    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                durationElement.textContent = formattedTime;
-            }
-
-            // Démarrer le timer quand le stream commence
-            startDurationTimer();
-
-            window.addEventListener('beforeunload', function() {
-                if (durationInterval) {
-                    clearInterval(durationInterval);
+            overlay.addEventListener('click', () => {
+                popup.remove();
+                overlay.remove();
+                // Si on a une URL de redirection en attente, rediriger immédiatement
+                if (window.pendingRedirectUrl) {
+                    window.location.href = window.pendingRedirectUrl;
                 }
             });
+        }
+
+        // Obtenir le stream local
+        debugLog('Demande d\'accès à la caméra et au microphone...', 'info');
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
+            },
+            audio: true
+        })
+        .then(stream => {
+            localStream = stream;
+            const webcam = document.getElementById("webcamPreview");
+            webcam.srcObject = stream;
+            debugLog(`Stream local obtenu avec ${stream.getTracks().length} pistes`, 'success');
+
+            stream.getTracks().forEach(track => {
+                debugLog(`Piste disponible: ${track.kind} - ${track.label}`, 'info');
+                track.onended = () => {
+                    debugLog(`Piste ${track.kind} terminée`, 'warning');
+                };
+            });
+
+            debugLog('Streamer prêt à diffuser', 'success');
+        })
+        .catch(err => {
+            debugLog(`Erreur d'accès aux médias: ${err.message}`, 'error');
+            alert('Erreur : Impossible d\'accéder à la caméra/microphone. Vérifiez vos autorisations.');
         });
+
+        // Gestion des boutons de contrôle
+        document.getElementById('toggleMic').addEventListener('click', function() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    this.classList.toggle('muted', !audioTrack.enabled);
+                    debugLog(`Microphone ${audioTrack.enabled ? 'activé' : 'désactivé'}`, 'info');
+                }
+            }
+        });
+
+        document.getElementById('toggleCam').addEventListener('click', function() {
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    this.classList.toggle('muted', !videoTrack.enabled);
+                    debugLog(`Caméra ${videoTrack.enabled ? 'activée' : 'désactivée'}`, 'info');
+                }
+            }
+        });
+
+        // Timer de durée
+        let startTime;
+        let durationInterval;
+        const durationElement = document.querySelector('.stream-stats .stat-value');
+
+        function startDurationTimer() {
+            startTime = new Date();
+            durationInterval = setInterval(updateDuration, 1000);
+        }
+
+        function updateDuration() {
+            const now = new Date();
+            const elapsed = Math.floor((now - startTime) / 1000);
+
+            const hours = Math.floor(elapsed / 3600);
+            const minutes = Math.floor((elapsed % 3600) / 60);
+            const seconds = elapsed % 60;
+
+            const formattedTime = hours > 0
+                ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+                : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            durationElement.textContent = formattedTime;
+        }
+
+        startDurationTimer();
+
+        window.addEventListener('beforeunload', function() {
+            if (durationInterval) {
+                clearInterval(durationInterval);
+            }
+        });
+
+        // Modifier le bouton "Terminer le stream" pour récupérer les likes
+        document.querySelector('.stop-stream-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            const redirectUrl = this.href;
+            window.pendingRedirectUrl = redirectUrl; // Stocker l'URL pour redirection
+
+            debugLog('Demande du nombre total de likes...', 'info');
+
+            // Envoyer la demande de likes
+            if (signalingServer && signalingServer.readyState === WebSocket.OPEN) {
+                signalingServer.send(JSON.stringify({
+                    type: 'getLikes',
+                    adminId: '{{ seller.id }}'
+                }));
+            }
+
+            // Attendre 1 seconde pour recevoir la réponse et afficher le popup
+            setTimeout(() => {
+                // Si le popup n'a pas été affiché, l'afficher avec les likes actuels
+                if (!likesPopupShown) {
+                    showLikesPopup(totalLikes);
+                }
+
+                // Attendre encore 5 secondes avant de rediriger automatiquement
+                setTimeout(() => {
+                    if (window.pendingRedirectUrl) {
+                        window.location.href = window.pendingRedirectUrl;
+                    }
+                }, 5000);
+            }, 1000);
+        });
+    });
         </script>
     {% endif %}
 {% endblock %}

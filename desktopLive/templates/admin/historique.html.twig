@@ -9,13 +9,17 @@
 
 {% block content %}
     <div class="historique-container">
+        <div class="promotion-header">
+            <h2 data-i18n="history_title">Sales History</h2>
+            <p class="promotion-subtitle" data-i18n="history_subtitle">View complete sales history with filters by date, status and payment</p>
+        </div>
         {# === Filtres === #}
         <div class="historique-filter-card">
             <form method="get" class="historique-filter-grid">
                 <div class="historique-filter-group">
                     <label for="date_start" class="historique-filter-label">
                         <i class="fas fa-calendar-alt"></i>
-                        Date début
+                        <span data-i18n="start_date">Date début</span>
                     </label>
                     <input type="date" name="date_start" id="date_start" class="historique-input"
                         value="{{ app.request.query.get('date_start') }}">
@@ -24,7 +28,7 @@
                 <div class="historique-filter-group">
                     <label for="date_end" class="historique-filter-label">
                         <i class="fas fa-calendar-alt"></i>
-                        Date fin
+                        <span data-i18n="end_date">Date fin</span>
                     </label>
                     <input type="date" name="date_end" id="date_end" class="historique-input"
                         value="{{ app.request.query.get('date_end') }}">
@@ -33,10 +37,10 @@
                 <div class="historique-filter-group">
                     <label for="state" class="historique-filter-label">
                         <i class="fas fa-tag"></i>
-                        État commande
+                        <span data-i18n="order_state">État commande</span>
                     </label>
                     <select name="state" id="state" class="historique-input">
-                        <option value="">-- Tous --</option>
+                        <option value=""><span data-i18n="all">-- Tous --</span></option>
                         {% for state in states %}
                             <option value="{{ state.id }}"
                                 {{ app.request.query.get('state') == state.id ? 'selected' }}>
@@ -49,19 +53,19 @@
                 <div class="historique-filter-group">
                     <label for="is_paid" class="historique-filter-label">
                         <i class="fas fa-credit-card"></i>
-                        Paiement
+                        <span data-i18n="payment">Paiement</span>
                     </label>
                     <select name="is_paid" id="is_paid" class="historique-input">
-                        <option value="">-- Tous --</option>
-                        <option value="1" {{ app.request.query.get('is_paid') == '1' ? 'selected' }}>Payé</option>
-                        <option value="0" {{ app.request.query.get('is_paid') == '0' ? 'selected' }}>Non payé</option>
+                        <option value=""><span data-i18n="all">-- Tous --</span></option>
+                        <option value="1" {{ app.request.query.get('is_paid') == '1' ? 'selected' }}><span data-i18n="paid">Payé</span></option>
+                        <option value="0" {{ app.request.query.get('is_paid') == '0' ? 'selected' }}><span data-i18n="unpaid">Non payé</span></option>
                     </select>
                 </div>
 
                 <div class="historique-filter-actions">
                     <button type="submit" class="historique-button">
                         <i class="fas fa-search"></i>
-                        Filtrer
+                        <span data-i18n="filter">Filtrer</span>
                     </button>
                 </div>
             </form>
@@ -72,7 +76,7 @@
             <div class="historique-table-header">
                 <h3 class="historique-table-title">
                     <i class="fas fa-history"></i>
-                    Historique des ventes
+                    <span data-i18n="sales_history">Historique des ventes</span>
                 </h3>
             </div>
 
@@ -80,12 +84,12 @@
                 <table class="historique-table">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Client</th>
-                            <th>Vendeur</th>
-                            <th>État commande</th>
-                            <th>Montant total</th>
-                            <th>Paiement</th>
+                            <th data-i18n="date">Date</th>
+                            <th data-i18n="client">Client</th>
+                            <th data-i18n="seller">Vendeur</th>
+                            <th data-i18n="order_state">État commande</th>
+                            <th data-i18n="total_amount">Montant total</th>
+                            <th data-i18n="payment">Paiement</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -103,15 +107,15 @@
                                 <td class="historique-amount">{{ total|number_format(2, ',', ' ') }} €</td>
                                 <td>
                                     {% if sale.isPaid %}
-                                        <span class="historique-badge historique-badge-success">Payé</span>
+                                        <span class="historique-badge historique-badge-success" data-i18n="paid">Payé</span>
                                     {% else %}
-                                        <span class="historique-badge historique-badge-danger">Non payé</span>
+                                        <span class="historique-badge historique-badge-danger" data-i18n="unpaid">Non payé</span>
                                     {% endif %}
                                 </td>
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="7" class="historique-empty">Aucune vente trouvée.</td>
+                                <td colspan="7" class="historique-empty" data-i18n="no_sales_found">Aucune vente trouvée.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -124,8 +128,8 @@
         <div class="modal-overlay">
             <div class="modal-container">
                 <div class="modal-header">
-                    <h5>Détails de la vente</h5>
-                    <button type="button" id="exportPDF" class="export-btn">Download the invoice</button>
+                    <h5 data-i18n="sale_details">Détails de la vente</h5>
+                    <button type="button" id="exportPDF" class="export-btn" data-i18n="download_invoice">Download the invoice</button>
                     <button type="button" class="close-btn" id="closeModal">&times;</button>
                 </div>
                 <div class="modal-body" id="saleDetailsContent">
@@ -194,7 +198,7 @@
                         })
                         .catch(err => {
                             console.error('Erreur:', err);
-                            alert('Une erreur est survenue lors du chargement des détails.');
+                            alert(window.t('error_loading_details', 'An error occurred while loading the details.'));
                         });
                 });
             });
@@ -204,7 +208,7 @@
                 try {
                     // VÉRIFICATION CRITIQUE : s'assurer que jsPDF est disponible
                     if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
-                        alert('La bibliothèque PDF n\'est pas chargée. Veuillez rafraîchir la page.');
+                        alert(window.t('pdf_library_not_loaded', 'PDF library is not loaded. Please refresh the page.'));
                         return;
                     }
 
@@ -213,7 +217,7 @@
 
                     // Vérifications de base
                     if (!modalContent.innerHTML || modalContent.innerHTML.trim() === '' || !currentSaleId) {
-                        alert('Veuillez d\'abord sélectionner une vente en cliquant sur une ligne du tableau.');
+                        alert(window.t('select_sale_first', 'Please first select a sale by clicking on a table row.'));
                         return;
                     }
 
@@ -223,7 +227,7 @@
                     // Récupérer les données structurées du modal
                     const modalHTML = modalContent.innerHTML;
                     if (!modalHTML || modalHTML.trim() === '') {
-                        alert('Aucun contenu à exporter.');
+                        alert(window.t('no_content_to_export', 'No content to export.'));
                         return;
                     }
 
@@ -423,7 +427,7 @@
 
                 } catch (error) {
                     console.error('Erreur détaillée:', error);
-                    alert('Erreur lors de la génération du PDF: ' + error.message);
+                    alert(window.t('pdf_generation_error', 'Error during PDF generation') + ': ' + error.message);
                 }
             });
         });

@@ -1,0 +1,747 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% include 'components/navbarClient.html.twig' %}
+
+{% block body %}
+<div class="favorites-container">
+    <!-- Hero Section -->
+    <div class="favorites-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <i class="fas fa-heart hero-icon"></i>
+                Mes Favoris
+            </h1>
+            <p class="hero-subtitle">Retrouvez tous vos produits préférés en un seul endroit</p>
+            <div class="favorites-stats">
+                <span class="stats-badge">{{ favoris|length }} produit{{ favoris|length > 1 ? 's' : '' }} favoris</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Favorites Content -->
+    <div class="favorites-content">
+        {% if favoris is empty %}
+            <div class="empty-favorites">
+                <div class="empty-icon">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <h3>Votre liste de favoris est vide</h3>
+                <p>Commencez à ajouter des produits à vos favoris pour les retrouver facilement</p>
+                <a href="{{ path('app_home') }}" class="btn btn-primary">
+                    <i class="fas fa-shopping-bag"></i>
+                    Découvrir nos produits
+                </a>
+            </div>
+        {% else %}
+            <div class="favorites-grid">
+                {% for fav in favoris %}
+                <div class="favorite-card" id="fav-item-{{ fav.item.id }}">
+                    <!-- Favorite Button -->
+                    <form method="post"
+                          action="{{ path('remove_favorite_all_sizes', { itemId: fav.item.id }) }}"
+                          class="remove-fav-form"
+                          data-id="{{ fav.item.id }}">
+                        <button type="submit" class="favorite-btn active" aria-label="Retirer des favoris">
+                            <i class="fas fa-bookmark"></i>
+                        </button>
+                    </form>
+
+                    <!-- Product Image -->
+                    <div class="product-image">
+                        <img src="{{ fav.item.images ? '/uploads/' ~ fav.item.images : '/uploads/default-product.jpg' }}" 
+                             alt="{{ fav.item.nameitem }}" loading="lazy">
+                        <div class="image-overlay">
+                            {# <button class="quick-view-btn">
+                                <i class="fas fa-eye"></i>
+                                Voir
+                            </button> #}
+                        </div>
+                    </div>
+
+                    <!-- Product Details -->
+                    <div class="product-details">
+                        <h3 class="product-name">{{ fav.item.nameitem }}</h3>
+                        <p class="product-description">{{ fav.item.description|raw|striptags|slice(0, 80) }}...</p>
+                        
+                        <div class="product-meta">
+                            <div class="price-section">
+                                <span class="product-price">${{ fav.price }}</span>
+                            </div>
+                            
+                            <div class="size-section">
+                                <label class="size-label">Taille :</label>
+                                {% set selectedIds = [] %}
+                                {% for s in fav.sizes %}
+                                    {% set selectedIds = selectedIds|merge([s.sizeId]) %}
+                                {% endfor %}
+                                <select class="size-select">
+                                    {% for size in fav.item.itemSizes %}
+                                        <option value="{{ size.id }}" {% if size.id in selectedIds %}selected{% endif %}>
+                                            {{ size.valueSize }}{% if size.size %} ({{ size.size.nameSize }}){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="product-actions">
+                            <form method="post" action="{{ path('app_client_add_cart', { id: fav.item.id }) }}" class="add-to-cart-form">
+                                <input type="hidden" name="name" value="{{ fav.item.nameitem }}">
+                                <input type="hidden" name="price" value="{{ fav.price }}">
+                                <input type="hidden" name="images" value="{{ fav.item.images }}">
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="add-to-cart-btn">
+                                    <i class="fas fa-shopping-basket"></i>
+                                    Ajouter au panier
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Debug Info (Optional - can be removed) -->
+                        <div class="debug-info">
+                            <small>Article ID: {{ fav.item.id }}, Tailles: {{ selectedIds|join(', ') }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Remove favorite functionality
+    document.querySelectorAll('.remove-fav-form').forEach(form => {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const favId = this.dataset.id;
+
+            fetch(this.action, {
+                method: 'POST',
+                body: new FormData(this)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Animation de disparition
+                    const card = document.getElementById('fav-item-' + favId);
+                    card.style.transform = 'scale(0.8)';
+                    card.style.opacity = '0';
+                    card.style.transition = 'all 0.4s ease';
+                    
+                    setTimeout(() => {
+                        card.remove();
+                        
+                        // Mettre à jour le compteur
+                        const remainingCards = document.querySelectorAll('.favorite-card').length;
+                        const statsBadge = document.querySelector('.stats-badge');
+                        if (statsBadge) {
+                            statsBadge.textContent = remainingCards + ' produit' + (remainingCards > 1 ? 's' : '') + ' favoris';
+                        }
+                        
+                        // Afficher l'état vide si nécessaire
+                        if (remainingCards === 0) {
+                            showEmptyState();
+                        }
+                    }, 400);
+                } else {
+                    showNotification(data.message || 'Erreur lors de la suppression', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Erreur de connexion', 'error');
+            });
+        });
+    });
+
+    // Quick view functionality
+    document.querySelectorAll('.quick-view-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const card = this.closest('.favorite-card');
+            const productName = card.querySelector('.product-name').textContent;
+            showNotification('Fonctionnalité "Voir" pour ' + productName, 'info');
+        });
+    });
+
+    // Size selection
+    document.querySelectorAll('.size-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const card = this.closest('.favorite-card');
+            const productName = card.querySelector('.product-name').textContent;
+            showNotification('Taille modifiée pour ' + productName, 'info');
+        });
+    });
+
+    function showEmptyState() {
+        const favoritesContent = document.querySelector('.favorites-content');
+        favoritesContent.innerHTML = `
+            <div class="empty-favorites">
+                <div class="empty-icon">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <h3>Plus aucun favori</h3>
+                <p>Tous vos produits favoris ont été supprimés</p>
+                <a href="{{ path('app_home') }}" class="btn btn-primary">
+                    <i class="fas fa-shopping-bag"></i>
+                    Parcourir les produits
+                </a>
+            </div>
+        `;
+    }
+
+    function showNotification(message, type = 'info') {
+        // Créer une notification toast
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animation d'entrée
+        setTimeout(() => notification.classList.add('show'), 100);
+        
+        // Supprimer après 3 secondes
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+});
+</script>
+
+<style>
+:root {
+    --primary: #7c3aed;
+    --primary-dark: #6d28d9;
+    --primary-light: #ede9fe;
+    --secondary: #f59e0b;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --dark: #1f2937;
+    --darker: #111827;
+    --light: #f8fafc;
+    --gray: #6b7280;
+    --gray-light: #e5e7eb;
+    --border: #d1d5db;
+    --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+    --shadow-xl: 0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04);
+    --radius: 16px;
+    --radius-sm: 12px;
+    --radius-lg: 20px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--light);
+    color: var(--dark);
+}
+
+.favorites-container {
+    max-width: 1400px;
+    margin: 80px auto 0;
+    padding: 0 20px;
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Hero Section */
+.favorites-hero {
+    background: var(--gradient-hero);
+    border-radius: var(--radius);
+    margin-bottom: 40px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-xl);
+}
+
+.favorites-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,50 1000,100 0,100"/></svg>');
+    background-size: cover;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 50px 40px;
+    color: white;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.hero-icon {
+    font-size: 2.5rem;
+    opacity: 0.9;
+    animation: bounce 2s infinite;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 20px;
+    font-weight: 400;
+}
+
+.favorites-stats {
+    margin-top: 20px;
+}
+
+.stats-badge {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Favorites Grid */
+.favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.favorite-card {
+    background: white;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
+    position: relative;
+    animation: slideInUp 0.5s ease-out;
+}
+
+.favorite-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-xl);
+}
+
+/* Favorite Button */
+.remove-fav-form {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+}
+
+.favorite-btn {
+    width: 44px;
+    height: 44px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow-md);
+    color: var(--danger);
+}
+
+.favorite-btn:hover {
+    background: var(--danger);
+    color: white;
+    transform: scale(1.1) rotate(8deg);
+}
+
+.favorite-btn i {
+    font-size: 1.3rem;
+    transition: var(--transition);
+}
+
+/* Product Image */
+.product-image {
+    position: relative;
+    height: 220px;
+    overflow: hidden;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: var(--transition);
+}
+
+.favorite-card:hover .product-image img {
+    transform: scale(1.05);
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.favorite-card:hover .image-overlay {
+    opacity: 1;
+}
+
+.quick-view-btn {
+    background: white;
+    color: var(--dark);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition);
+}
+
+.quick-view-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Product Details */
+.product-details {
+    padding: 24px;
+}
+
+.product-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--dark);
+    line-height: 1.3;
+}
+
+.product-description {
+    color: var(--gray);
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    line-height: 1.4;
+}
+
+.product-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.price-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.product-price {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.size-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.size-label {
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 0.9rem;
+}
+
+.size-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: white;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.size-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* Product Actions */
+.product-actions {
+    margin-top: 20px;
+}
+
+.add-to-cart-form {
+    width: 100%;
+}
+
+.add-to-cart-btn {
+    width: 100%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: var(--transition);
+    box-shadow: var(--shadow-md);
+}
+
+.add-to-cart-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Debug Info */
+.debug-info {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--gray-light);
+}
+
+.debug-info small {
+    color: var(--gray);
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
+/* Empty State */
+.empty-favorites {
+    text-align: center;
+    padding: 80px 40px;
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    animation: fadeIn 0.6s ease-out;
+}
+
+.empty-icon {
+    width: 100px;
+    height: 100px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 30px;
+    transition: var(--transition);
+}
+
+.empty-favorites:hover .empty-icon {
+    transform: scale(1.1);
+}
+
+.empty-icon i {
+    font-size: 3rem;
+    color: var(--primary);
+}
+
+.empty-favorites h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--dark);
+}
+
+.empty-favorites p {
+    color: var(--gray);
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: var(--radius);
+    color: white;
+    font-weight: 500;
+    z-index: 1001;
+    transform: translateX(400px);
+    transition: var(--transition);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.info {
+    background: var(--primary);
+    border-left: 4px solid var(--primary-dark);
+}
+
+.notification.success {
+    background: var(--success);
+    border-left: 4px solid #059669;
+}
+
+.notification.error {
+    background: var(--danger);
+    border-left: 4px solid #dc2626;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .favorites-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .favorites-container {
+        margin-top: 60px;
+        padding: 0 15px;
+    }
+    
+    .hero-content {
+        padding: 40px 20px;
+    }
+    
+    .hero-title {
+        font-size: 2.2rem;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .favorites-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .product-meta {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .size-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    
+    .size-select {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    
+    .empty-favorites {
+        padding: 60px 20px;
+    }
+    
+    .empty-icon {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .empty-icon i {
+        font-size: 2.5rem;
+    }
+    
+    .product-image {
+        height: 180px;
+    }
+}
+</style>
+{% endblock %}

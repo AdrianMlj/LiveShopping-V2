@@ -1,0 +1,271 @@
+<div class="invoice-container">
+  <div class="invoice-header">
+    <div class="invoice-party invoice-client">
+      <h4 class="invoice-title">Facturé à</h4>
+      <p class="invoice-details">
+        <strong>{{ sale.commande.client.username }}</strong><br>
+        {{ sale.commande.client.email }}<br>
+        {{ sale.commande.client.contact }}<br>
+        {{ sale.commande.client.address }}, {{ sale.commande.client.country }}
+      </p>
+    </div>
+    <div class="invoice-party invoice-seller">
+      <h4 class="invoice-title">Vendu par</h4>
+      <p class="invoice-details">
+        <strong>{{ sale.commande.seller.username }}</strong><br>
+        {{ sale.commande.seller.email }}<br>
+        {{ sale.commande.seller.contact }}<br>
+        Vendeur certifié
+      </p>
+    </div>
+  </div>
+
+  <div class="invoice-status-section">
+    <span class="status-badge status-{{ sale.commande.state.nameState|lower|replace({' ': '-'}) }}">{{ sale.commande.state.nameState }}</span>
+    {% if sale.isPaid %}
+      <span class="status-badge paid">Payé</span>
+    {% else %}
+      <span class="status-badge pending">En attente de paiement</span>
+    {% endif %}
+  </div>
+
+  <div class="invoice-table-wrapper">
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Produit</th>
+          <th>Taille</th>
+          <th>Quantité</th>
+          <th>Prix unitaire</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set total = 0 %}
+        {% for detail in sale.commande.details %}
+          {% set lineTotal = detail.quantity * detail.price %}
+          {% set total = total + lineTotal %}
+          <tr>
+            <td>{{ detail.itemSize.item.nameItem }}</td>
+            <td>{{ detail.itemSize.valueSize }}</td>
+            <td>{{ detail.quantity }}</td>
+            <td>{{ detail.price|number_format(2, ',', ' ') }} $</td>
+            <td>{{ lineTotal|number_format(2, ',', ' ') }} $</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="invoice-footer">
+    <div class="total-amount">
+      <h4>Total TTC : {{ (total * 1.2)|number_format(2, ',', ' ') }} $</h4>
+    </div>
+  </div>
+</div>
+
+<style>
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #a5b4fc;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --dark: #1f2937;
+  --darker: #111827;
+  --light: #f8fafc;
+  --gray: #6b7280;
+  --gray-light: #9ca3af;
+  --border: #e5e7eb;
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --gradient-dark: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.invoice-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  font-family: 'Inter', sans-serif;
+  color: var(--dark);
+  transition: var(--transition);
+}
+
+.invoice-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.invoice-party {
+  padding: 1.5rem;
+  background: white;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.invoice-party:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.invoice-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+.invoice-details {
+  line-height: 1.6;
+  color: var(--gray);
+}
+
+.invoice-details strong {
+  color: var(--dark);
+}
+
+.invoice-status-section {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  transition: var(--transition);
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+}
+
+.status-badge.info {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.status-badge.paid {
+  background: #d1fae5;
+  color: var(--success);
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: var(--warning);
+}
+
+.invoice-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.invoice-table th {
+  background: var(--light);
+  color: var(--dark);
+  font-weight: 600;
+  text-align: left;
+  padding: 1rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.invoice-table td {
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--gray);
+  font-size: 0.95rem;
+}
+
+.invoice-table tr:last-child td {
+  border-bottom: none;
+}
+
+.invoice-table th:first-child, .invoice-table td:first-child {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.invoice-table th:last-child, .invoice-table td:last-child {
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.invoice-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  background: white;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-top: 1rem;
+}
+
+.total-amount h4 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--success);
+}
+
+@media (max-width: 768px) {
+  .invoice-header {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .invoice-status-section {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .invoice-table th, .invoice-table td {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media print {
+  .invoice-container {
+    box-shadow: none;
+    border: none;
+  }
+
+  .invoice-party {
+    box-shadow: none;
+  }
+
+  .invoice-table-wrapper {
+    box-shadow: none;
+  }
+
+  .invoice-footer {
+    box-shadow: none;
+  }
+}
+</style>

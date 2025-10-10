@@ -8,11 +8,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Knp\Component\Pager\PaginatorInterface;
 use App\Repository\ItemRepository;
 use App\Repository\CategoryRepository;
+use App\Repository\UsersRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Category;
 use App\Entity\PriceItems;
 use App\Entity\Item;
+use App\Entity\Users;
 
 class PromotionController extends AbstractController
 {
@@ -20,6 +22,7 @@ class PromotionController extends AbstractController
         private PaginatorInterface $paginator,
         private ItemRepository $itemRepository,
         private CategoryRepository $categoryRepository,
+        private UsersRepository $usersRepository,
         private EntityManagerInterface $entityManager
     ) {}
 
@@ -134,5 +137,88 @@ class PromotionController extends AbstractController
             'success' => true,
             'message' => 'Article mis à jour avec succès.',
         ]);
+    }
+
+    #[Route('/promotion/item/create', name: 'app_promotion_item_create', methods: ['POST'])]
+    public function createItem(Request $request): JsonResponse
+    {
+        $session = $request->getSession();
+        $sessionUser = $session->get('user');
+
+        if (!$sessionUser) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Utilisateur non connecté.'
+            ], 401);
+        }
+
+        // Récupérer l'utilisateur depuis la base de données
+        $user = $this->usersRepository->find($sessionUser->getId());
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Utilisateur introuvable.'
+            ], 401);
+        }
+
+        try {
+            $data = json_decode($request->getContent(), true);
+
+            $name = trim($data['name'] ?? '');
+            $categoryId = (int)($data['category_id'] ?? 0);
+            $price = $data['price'] ?? null;
+            $description = isset($data['description']) ? trim($data['description']) : null;
+
+            if ($name === '' || $categoryId <= 0 || $price === null || !is_numeric($price)) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Paramètres invalides.'
+                ], 400);
+            }
+
+            $category = $this->categoryRepository->find($categoryId);
+            if (!$category) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Catégorie introuvable.'
+                ], 404);
+            }
+
+            $item = new Item();
+            $item->setNameItem($name);
+            $item->setSeller($user);
+            $item->setCategory($category);
+            $item->setDescription($description);
+
+            $this->entityManager->persist($item);
+            $this->entityManager->flush();
+
+            // Créer le prix initial
+            $priceEntity = new PriceItems();
+            $priceEntity->setItem($item);
+            $priceEntity->setPrice((string)$price);
+            $priceEntity->setDatePrice(new \DateTime());
+
+            $this->entityManager->persist($priceEntity);
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Article créé avec succès.',
+                'item' => [
+                    'id' => $item->getId(),
+                    'name' => $item->getNameItem(),
+                    'category' => $category->getNameCategory(),
+                    'price' => $price,
+                    'description' => $item->getDescription()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur serveur: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

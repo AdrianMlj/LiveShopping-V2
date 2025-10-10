@@ -9,11 +9,15 @@
 
 {% block content %}
 <div class="modern-dashboard">
+    <div class="promotion-header">
+        <h2 data-i18n="monthly_goals_title">Monthly Goals</h2>
+        <p class="promotion-subtitle" data-i18n="monthly_goals_subtitle">Track your goals, achievements and projections month by month</p>
+    </div>
     <!-- FILTRE DE PÉRIODE -->
     <div class="filter-card">
         <form class="filter-form" action="{{ path('app_objectif_mensuel') }}" method="post">
             <div class="filter-group">
-                <label class="filter-label" for="dateD">Période</label>
+                <label class="filter-label" for="dateD" data-i18n="period">Période</label>
                 <div class="date-range">
                     <input type="date" name="dateD" id="dateD" required class="modern-input">
                     <span class="date-separator">—</span>
@@ -21,7 +25,7 @@
                 </div>
             </div>
             <button type="submit" class="modern-button">
-                <i class="fas fa-search"></i> Appliquer
+                <i class="fas fa-search"></i> <span data-i18n="apply">Appliquer</span>
             </button>
         </form>
     </div>
@@ -32,18 +36,18 @@
     <div class="summary-cards">
         <div class="summary-card ca-card">
             <div class="card-header">
-                <h3 class="card-title">Chiffre d'affaires</h3>
+                <h3 class="card-title" data-i18n="revenue">Chiffre d'affaires</h3>
                 <div class="card-icon">
                     <i class="fas fa-euro-sign"></i>
                 </div>
             </div>
             <div class="summary-content">
                 <div class="summary-item">
-                    <span class="summary-label">Objectif moyen:</span>
+                    <span class="summary-label" data-i18n="average_target">Objectif moyen:</span>
                     <span class="summary-value">{{ (monthlyGoals|map(g => g.target_ca)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} €</span>
                 </div>
                 <div class="summary-item">
-                    <span class="summary-label">Réalisation moyenne:</span>
+                    <span class="summary-label" data-i18n="average_achievement">Réalisation moyenne:</span>
                     <span class="summary-value">{{ (monthlyGoals|map(g => g.ca_realise)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} €</span>
                 </div>
             </div>
@@ -51,18 +55,18 @@
 
         <div class="summary-card ventes-card">
             <div class="card-header">
-                <h3 class="card-title">Ventes</h3>
+                <h3 class="card-title" data-i18n="sales">Ventes</h3>
                 <div class="card-icon">
                     <i class="fas fa-shopping-cart"></i>
                 </div>
             </div>
             <div class="summary-content">
                 <div class="summary-item">
-                    <span class="summary-label">Objectif moyen:</span>
+                    <span class="summary-label" data-i18n="average_target">Objectif moyen:</span>
                     <span class="summary-value">{{ (monthlyGoals|map(g => g.target_ventes)|reduce((sum, v) => sum + v) / monthlyGoals|length)|number_format(0, ',', ' ') }}</span>
                 </div>
                 <div class="summary-item">
-                    <span class="summary-label">Réalisation moyenne:</span>
+                    <span class="summary-label" data-i18n="average_achievement">Réalisation moyenne:</span>
                     <span class="summary-value">{{ (monthlyGoals|map(g => g.ventes_realisees)|reduce((sum, v) => sum + v) / monthlyGoals|length)|number_format(0, ',', ' ') }}</span>
                 </div>
             </div>
@@ -73,7 +77,7 @@
     <div class="charts-section">
         <div class="chart-card">
             <div class="chart-header">
-                <h5 class="chart-title">Évolution du chiffre d'affaires</h5>
+                <h5 class="chart-title" data-i18n="revenue_evolution">Évolution du chiffre d'affaires</h5>
             </div>
             <div class="chart-body">
                 <canvas id="caChart" height="250"></canvas>
@@ -81,7 +85,7 @@
         </div>
         <div class="chart-card">
             <div class="chart-header">
-                <h5 class="chart-title">Évolution des ventes</h5>
+                <h5 class="chart-title" data-i18n="sales_evolution">Évolution des ventes</h5>
             </div>
             <div class="chart-body">
                 <canvas id="ventesChart" height="250"></canvas>
@@ -92,18 +96,18 @@
     <!-- TABLEAU CHIFFRE D'AFFAIRES -->
     <div class="table-section">
         <div class="table-header">
-            <h3 class="table-title"><i class="fas fa-euro-sign"></i> Détail mensuel - Chiffre d'Affaires</h3>
+            <h3 class="table-title"><i class="fas fa-euro-sign"></i> <span data-i18n="monthly_detail_revenue">Détail mensuel - Chiffre d'Affaires</span></h3>
         </div>
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Mois/Année</th>
-                        <th>Objectif CA (€)</th>
-                        <th>CA Réalisé (€)</th>
-                        <th>Projection CA (€)</th>
-                        <th>Écart CA (€)</th>
-                        <th>Réalisation CA</th>
+                        <th data-i18n="month_year">Mois/Année</th>
+                        <th data-i18n="target_revenue">Objectif CA (€)</th>
+                        <th data-i18n="achieved_revenue">CA Réalisé (€)</th>
+                        <th data-i18n="projected_revenue">Projection CA (€)</th>
+                        <th data-i18n="revenue_gap">Écart CA (€)</th>
+                        <th data-i18n="revenue_achievement">Réalisation CA</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -135,18 +139,18 @@
     <!-- TABLEAU VENTES -->
     <div class="table-section">
         <div class="table-header">
-            <h3 class="table-title"><i class="fas fa-shopping-cart"></i> Détail mensuel - Ventes</h3>
+            <h3 class="table-title"><i class="fas fa-shopping-cart"></i> <span data-i18n="monthly_detail_sales">Détail mensuel - Ventes</span></h3>
         </div>
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Mois/Année</th>
-                        <th>Objectif Ventes</th>
-                        <th>Ventes Réalisées</th>
-                        <th>Projection Ventes</th>
-                        <th>Écart Ventes</th>
-                        <th>Réalisation Ventes</th>
+                        <th data-i18n="month_year">Mois/Année</th>
+                        <th data-i18n="target_sales">Objectif Ventes</th>
+                        <th data-i18n="achieved_sales">Ventes Réalisées</th>
+                        <th data-i18n="projected_sales">Projection Ventes</th>
+                        <th data-i18n="sales_gap">Écart Ventes</th>
+                        <th data-i18n="sales_achievement">Réalisation Ventes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -177,7 +181,7 @@
 
     {% else %}
     <div class="alert">
-        <i class="fas fa-info-circle"></i> Aucun objectif trouvé pour cette période.
+        <i class="fas fa-info-circle"></i> <span data-i18n="no_goals_found">Aucun objectif trouvé pour cette période.</span>
     </div>
     {% endif %}
 

@@ -19,7 +19,7 @@ console.log(`🚀 WebSocket server starting on ws://${HOST}:${PORT}`);
 
 wss.on('connection', (ws, req) => {
     console.log(`🔌 New connection from ${req.socket.remoteAddress}`);
-    
+
     let connectionType = null;
     let connectionId = null;
 
@@ -35,7 +35,7 @@ wss.on('connection', (ws, req) => {
                     connectionId = data.adminId;
                     streamers.set(connectionId, ws);
                     console.log(`🎥 Streamer connected: ${connectionId}`);
-                    
+
                     ws.send(JSON.stringify({
                         type: 'streamerConnected',
                         adminId: connectionId
@@ -48,7 +48,7 @@ wss.on('connection', (ws, req) => {
                     connectionId = data.viewerId;
                     viewers.set(connectionId, ws);
                     console.log(`👁️ Viewer connected: ${connectionId} looking for streamer: ${data.adminId}`);
-                    
+
                     // Check if requested streamer is available
                     const targetStreamer = streamers.get(data.adminId);
                     if (targetStreamer && targetStreamer.readyState === WebSocket.OPEN) {
@@ -123,7 +123,7 @@ wss.on('connection', (ws, req) => {
 
     ws.on('close', () => {
         console.log(`🔌 Connection closed: ${connectionType} ${connectionId}`);
-        
+
         if (connectionType === 'streamer' && connectionId) {
             streamers.delete(connectionId);
             // Notify all viewers that streamer is offline
@@ -159,4 +159,4 @@ process.on('SIGINT', () => {
             process.exit(0);
         });
     });
-}); 
+});

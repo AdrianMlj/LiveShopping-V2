@@ -14,16 +14,16 @@
         <div class="dashboard-sidebar">
             <div class="button-group">
                 <button id="showMovements" class="toggle-btn active">
-                    <i class="fas fa-exchange-alt"></i> Mouvements de stock
+                    <i class="fas fa-exchange-alt"></i> <span data-i18n="stock_movements">Mouvements de stock</span>
                 </button>
                 <button id="showCurrent" class="toggle-btn inactive">
-                    <i class="fas fa-boxes"></i> Stock actuel
+                    <i class="fas fa-boxes"></i> <span data-i18n="current_stock">Stock actuel</span>
                 </button>
                 <button id="showImport" class="toggle-btn inactive">
-                    <i class="fas fa-download"></i> Importer de nouveaux stock
+                    <i class="fas fa-download"></i> <span data-i18n="import_new_stock">Importer de nouveaux stock</span>
                 </button>
                 <button id="showExport" class="toggle-btn inactive">
-                    <i class="fas fa-upload"></i> Exporter de nouveaux stock
+                    <i class="fas fa-upload"></i> <span data-i18n="export_new_stock">Exporter de nouveaux stock</span>
                 </button>
             </div>
         </div>
@@ -33,7 +33,7 @@
             <div id="filterSection" class="filter-card">
                 <form method="post" class="filter-form">
                     <div class="filter-group">
-                        <label for="dateD">Période</label>
+                        <label for="dateD" data-i18n="period">Période</label>
                         <div class="date-range">
                             <input type="date" name="dateD" id="dateD" required class="modern-input" value="{{ dateD }}">
                             <span class="date-separator">—</span>
@@ -46,7 +46,7 @@
                             <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
-                        Appliquer
+                        <span data-i18n="apply">Appliquer</span>
                     </button>
                 </form>
             </div>
@@ -55,11 +55,11 @@
             <div id="movementsSection" class="stock-section">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="fas fa-exchange-alt"></i> Mouvements entre {{ startDate|date('d/m/Y') }} et {{ endDate|date('d/m/Y') }}
+                        <i class="fas fa-exchange-alt"></i> <span data-i18n="movements_between">Mouvements entre</span> {{ startDate|date('d/m/Y') }} <span data-i18n="and">et</span> {{ endDate|date('d/m/Y') }}
                     </h3>
                     <div class="section-actions">
                         <span class="pagination-info">
-                            {{ stockMovements|length }} sur {{ stockMovements.getTotalItemCount() }} mouvements
+                            {{ stockMovements|length }} <span data-i18n="of">sur</span> {{ stockMovements.getTotalItemCount() }} <span data-i18n="movements">mouvements</span>
                         </span>
                     </div>
                 </div>
@@ -68,12 +68,12 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Article</th>
-                                    <th>Taille</th>
-                                    <th>Couleur</th>
-                                    <th>Entrées</th>
-                                    <th>Sorties</th>
-                                    <th>Date</th>
+                                    <th data-i18n="article">Article</th>
+                                    <th data-i18n="size">Taille</th>
+                                    <th data-i18n="color">Couleur</th>
+                                    <th data-i18n="entries">Entrées</th>
+                                    <th data-i18n="exits">Sorties</th>
+                                    <th data-i18n="date">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -116,7 +116,7 @@
                                     </tr>
                                 {% else %}
                                     <tr>
-                                        <td colspan="5" class="text-center">Aucun mouvement enregistré</td>
+                                        <td colspan="5" class="text-center" data-i18n="no_movements_recorded">Aucun mouvement enregistré</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -126,8 +126,8 @@
                     <!-- Pagination mouvements -->
                     <div id="movements-pagination" class="pagination-container">
                         <div class="pagination-info">
-                            Page {{ stockMovements.getCurrentPageNumber() }} sur {{ stockMovements.getPageCount() }}
-                            • {{ stockMovements.getTotalItemCount() }} mouvements
+                            <span data-i18n="page">Page</span> {{ stockMovements.getCurrentPageNumber() }} <span data-i18n="of">sur</span> {{ stockMovements.getPageCount() }}
+                            • {{ stockMovements.getTotalItemCount() }} <span data-i18n="movements">mouvements</span>
                         </div>
                         <div class="pagination">
                             {{ knp_pagination_render(stockMovements, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
@@ -144,11 +144,11 @@
             <div id="currentSection" class="stock-section hidden-section">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="fas fa-boxes"></i> Stock actuel
+                        <i class="fas fa-boxes"></i> <span data-i18n="current_stock">Stock actuel</span>
                     </h3>
                     <div class="section-actions">
                         <span class="pagination-info">
-                            {{ currentStock|length }} sur {{ currentStock.getTotalItemCount() }} articles
+                            {{ currentStock|length }} <span data-i18n="of">sur</span> {{ currentStock.getTotalItemCount() }} <span data-i18n="articles">articles</span>
                         </span>
                     </div>
                 </div>
@@ -157,11 +157,11 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Sélection</th>
-                                    <th>Article</th>
-                                    <th>Taille</th>
-                                    <th>Couleur</th>
-                                    <th>Stock disponible</th>
+                                    <th data-i18n="selection">Sélection</th>
+                                    <th data-i18n="article">Article</th>
+                                    <th data-i18n="size">Taille</th>
+                                    <th data-i18n="color">Couleur</th>
+                                    <th data-i18n="available_stock">Stock disponible</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -206,7 +206,7 @@
                                     </tr>
                                 {% else %}
                                     <tr>
-                                        <td colspan="4" class="text-center">Aucun stock disponible</td>
+                                        <td colspan="4" class="text-center" data-i18n="no_stock_available">Aucun stock disponible</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -216,8 +216,8 @@
                     <!-- Pagination stock actuel -->
                     <div id="current-pagination" class="pagination-container">
                         <div class="pagination-info">
-                            Page {{ currentStock.getCurrentPageNumber() }} sur {{ currentStock.getPageCount() }}
-                            • {{ currentStock.getTotalItemCount() }} articles
+                            <span data-i18n="page">Page</span> {{ currentStock.getCurrentPageNumber() }} <span data-i18n="of">sur</span> {{ currentStock.getPageCount() }}
+                            • {{ currentStock.getTotalItemCount() }} <span data-i18n="articles">articles</span>
                         </div>
                         <div class="pagination">
                             {{ knp_pagination_render(currentStock, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
@@ -232,7 +232,7 @@
                     <form id="exportForm" action="{{ path('app_export_csv') }}" method="POST">
                         <input type="hidden" name="demandes" id="exportDemandes" />
                         <button type="submit" id="btn-demande" class="modern-button">
-                            <i class="fas fa-file-export"></i> Supply
+                            <i class="fas fa-file-export"></i> <span data-i18n="supply">Supply</span>
                         </button>
                     </form>
                 </div>
@@ -242,29 +242,29 @@
             <div id="importSection" class="stock-section hidden-section">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="fas fa-download"></i> Importer des stocks en masse
+                        <i class="fas fa-download"></i> <span data-i18n="import_stock_bulk">Importer des stocks en masse</span>
                     </h3>
                 </div>
                 <div class="section-body">
                     <form id="importForm" enctype="multipart/form-data" class="import-form">
                         <div class="form-group">
-                            <label for="file1">Fichier des Catgorie</label>
+                            <label for="file1" data-i18n="categories_file">Fichier des Catégorie</label>
                             <input type="file" id="file1" name="file1" class="modern-input" required>
                         </div>
                         <div class="form-group">
-                            <label for="file2">Fichier des Articles</label>
+                            <label for="file2" data-i18n="articles_file">Fichier des Articles</label>
                             <input type="file" id="file2" name="file2" class="modern-input" required>
                         </div>
                         <div class="form-group">
-                            <label for="file3">Fichier des Tailles</label>
+                            <label for="file3" data-i18n="sizes_file">Fichier des Tailles</label>
                             <input type="file" id="file3" name="file3" class="modern-input" required>
                         </div>
                         <div class="form-group">
-                            <label for="file4">Fichier des Couleurs et Stock</label>
+                            <label for="file4" data-i18n="colors_stock_file">Fichier des Couleurs et Stock</label>
                             <input type="file" id="file4" name="file4" class="modern-input" required>
                         </div>
                         <button type="submit" class="modern-button">
-                            <i class="fas fa-upload"></i> Importer
+                            <i class="fas fa-upload"></i> <span data-i18n="import">Importer</span>
                         </button>
                     </form>
                 </div>
@@ -274,11 +274,11 @@
             <div id="exportSection" class="stock-section hidden-section">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="fas fa-upload"></i> Export des stocks
+                        <i class="fas fa-upload"></i> <span data-i18n="export_stocks">Export des stocks</span>
                     </h3>
                     <div class="section-actions">
                         <span class="pagination-info">
-                            {{ exportData|length }} sur {{ exportData.getTotalItemCount() }} articles
+                            {{ exportData|length }} <span data-i18n="of">sur</span> {{ exportData.getTotalItemCount() }} <span data-i18n="articles">articles</span>
                         </span>
                     </div>
                 </div>
@@ -287,12 +287,12 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Article</th>
-                                    <th>Catégorie</th>
-                                    <th>Taille</th>
-                                    <th>Couleur</th>
-                                    <th>Quantité</th>
-                                    <th>Action</th>
+                                    <th data-i18n="article">Article</th>
+                                    <th data-i18n="category">Catégorie</th>
+                                    <th data-i18n="size">Taille</th>
+                                    <th data-i18n="color">Couleur</th>
+                                    <th data-i18n="quantity">Quantité</th>
+                                    <th data-i18n="action">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -712,12 +712,12 @@
                             if (data.success) {
                                 row.remove(); // ✅ suppression en front
                             } else {
-                                alert("Erreur : " + data.message);
+                                alert(window.t('error', 'Error') + ": " + data.message);
                             }
                         })
                         .catch(err => {
                             console.error(err);
-                            alert("Erreur lors de la suppression");
+                            alert(window.t('delete_error', 'Error during deletion'));
                         });
                     }
                 });

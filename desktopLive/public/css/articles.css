@@ -112,10 +112,23 @@ body.dark-theme .promotion-header {
     margin: 0;
 }
 
+.promotion-subtitle {
+    font-size: 14px;
+    color: var(--gray-600);
+    margin: 0;
+    line-height: 1.5;
+    text-align: right;
+    max-width: 500px;
+}
+
 body.dark-theme .promotion-header h2 {
     color: var(--gray-100);
     background: none;
     -webkit-text-fill-color: var(--gray-100);
+}
+
+body.dark-theme .promotion-subtitle {
+    color: var(--gray-400);
 }
 
 /* Grille des produits */

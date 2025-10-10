@@ -1,0 +1,1108 @@
+{% include 'components/navbarClient.html.twig' %}
+
+{% block content %}
+<div class="purchase-history">
+  <!-- Header avec métriques -->
+  <div class="history-hero">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 class="hero-title">
+          <span class="title-gradient">Mes Achats</span>
+          <i class="fas fa-receipt hero-icon"></i>
+        </h1>
+        <p class="hero-subtitle">Suivez l'ensemble de vos commandes et transactions</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-shopping-bag"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ sales|length }}</span>
+            <span class="stat-label">Commandes totales</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ sales|filter(s => s.isPaid)|length }}</span>
+            <span class="stat-label">Commandes payées</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ sales|filter(s => not s.isPaid)|length }}</span>
+            <span class="stat-label">En attente</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Graphique et Filtres -->
+  <div class="dashboard-section">
+    <div class="chart-wrapper">
+      <div class="chart-header">
+        <h3>Activité des commandes</h3>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-color completed"></span>
+            <span>Terminées</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color pending"></span>
+            <span>En cours</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="purchaseChart"></canvas>
+      </div>
+    </div>
+
+    <div class="filters-sidebar">
+      <div class="filter-section">
+        <h4>Filtres avancés</h4>
+        <form method="get" class="filter-form" id="filterForm">
+          <div class="filter-group">
+            <label class="filter-label">
+              <i class="fas fa-calendar"></i>
+              Période
+            </label>
+            <select name="period" class="filter-select">
+              <option value="day">Aujourd'hui</option>
+              <option value="week">Cette semaine</option>
+              <option value="month" selected>Ce mois</option>
+              <option value="year">Cette année</option>
+              <option value="all">Tout le temps</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">
+              <i class="fas fa-tag"></i>
+              Statut
+            </label>
+            <select name="state" class="filter-select">
+              <option value="">Tous les statuts</option>
+              {% for state in states %}
+                <option value="{{ state.id }}">{{ state.nameState }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">
+              <i class="fas fa-credit-card"></i>
+              Paiement
+            </label>
+            <select name="is_paid" class="filter-select">
+              <option value="">Tous les paiements</option>
+              <option value="1">Payé</option>
+              <option value="0">Non payé</option>
+            </select>
+          </div>
+
+          <div class="filter-actions">
+            <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+              <i class="fas fa-undo"></i>
+              Réinitialiser
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-filter"></i>
+              Appliquer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des commandes -->
+  <div class="orders-section">
+    <div class="section-header">
+      <h2>Historique des commandes</h2>
+      <div class="sort-options">
+        <select class="sort-select">
+          <option value="newest">Plus récentes</option>
+          <option value="oldest">Plus anciennes</option>
+          <option value="amount">Montant croissant</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="orders-list">
+      {% for sale in sales %}
+        {% set total = 0 %}
+        {% for detail in sale.commande.details %}
+          {% set total = total + (detail.quantity * detail.price) %}
+        {% endfor %}
+        
+        <div class="order-item clickable-row" data-sale-id="{{ sale.id }}">
+          <div class="order-summary">
+            <div class="order-date-info">
+              <span class="order-date">{{ sale.saleDate|date('d M Y') }}</span>
+              <span class="order-time">{{ sale.saleDate|date('H:i') }}</span>
+            </div>
+            <div class="order-vendor">
+              <i class="fas fa-store" title="Vendeur"></i>
+              <span>{{ sale.commande.seller ? sale.commande.seller.getUsername() : 'Vendeur' }}</span>
+            </div>
+            <div class="order-amount-status">
+              <span class="amount">{{ total|number_format(2, ',', ' ') }} $</span>
+              <span class="payment-status {{ sale.isPaid ? 'paid' : 'pending' }}" title="{{ sale.isPaid ? 'Payé' : 'En attente' }}">
+                <i class="fas {{ sale.isPaid ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                {{ sale.isPaid ? 'Payé' : 'En attente' }}
+              </span>
+            </div>
+            <div class="order-status-badge">
+              <span class="status-badge status-{{ sale.commande.state.nameState|lower|replace({' ': '-'}) }}">
+                {{ sale.commande.state.nameState }}
+              </span>
+            </div>
+          </div>
+          <div class="order-actions">
+            <button class="btn-icon" onclick="viewOrderDetails({{ sale.id }})" title="Voir les détails">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn-icon" onclick="downloadInvoice({{ sale.id }})" title="Télécharger facture">
+              <i class="fas fa-download"></i>
+            </button>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-shopping-bag"></i>
+          </div>
+          <h3>Aucune commande trouvée</h3>
+          <p>Aucune commande ne correspond à vos critères de recherche.</p>
+          <button class="btn btn-primary" onclick="resetFilters()">
+            Voir toutes les commandes
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal des détails -->
+<div id="orderModal" class="modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Détails de la commande</h3>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="downloadInvoice(currentOrderId)">
+          <i class="fas fa-download"></i>
+          Facture PDF
+        </button>
+        <button class="btn-close" onclick="closeModal()">
+          <span class="fas fa-times">❌</span>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body" id="orderDetailsContent">
+      <!-- Contenu chargé dynamiquement -->
+    </div>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div id="notification" class="notification"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let currentOrderId = null;
+let purchaseChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+  initializeChart();
+  initializeEventListeners();
+});
+
+function initializeChart() {
+  const ctx = document.getElementById('purchaseChart').getContext('2d');
+  
+  // Données simulées pour le graphique
+  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
+  const completedData = [3, 5, 2, 8, 4, 6];
+  const pendingData = [1, 2, 3, 1, 2, 1];
+  
+  purchaseChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Commandes terminées',
+          data: completedData,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Commandes en cours',
+          data: pendingData,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: { color: '#6b7280' }
+        },
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: { color: '#6b7280' }
+        }
+      }
+    }
+  });
+}
+
+function initializeEventListeners() {
+  // Filtres
+  const filterForm = document.getElementById('filterForm');
+  filterForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    applyFilters();
+  });
+
+  // Tri
+  const sortSelect = document.querySelector('.sort-select');
+  sortSelect.addEventListener('change', function() {
+    sortOrders(this.value);
+  });
+
+  // Rows clickable
+  document.querySelectorAll('.clickable-row').forEach(row => {
+    row.addEventListener('click', function(e) {
+      // Avoid triggering if clicking on buttons
+      if (e.target.closest('.btn-icon')) return;
+      viewOrderDetails(row.dataset.saleId);
+    });
+  });
+}
+
+function viewOrderDetails(saleId) {
+  currentOrderId = saleId;
+  const orderItem = document.querySelector(`[data-sale-id="${saleId}"]`);
+  
+  orderItem.classList.add('loading');
+  
+  fetch(`/client/history/details?sale_id=${saleId}`)
+    .then(response => response.json())
+    .then(data => {
+      orderItem.classList.remove('loading');
+      if (data.html) {
+        document.getElementById('orderDetailsContent').innerHTML = data.html;
+        openModal();
+      } else {
+        showNotification(data.error || 'Erreur lors du chargement', 'error');
+      }
+    })
+    .catch(error => {
+      orderItem.classList.remove('loading');
+      showNotification('Erreur de connexion', 'error');
+    });
+}
+
+function downloadInvoice(saleId) {
+  showNotification('Préparation du téléchargement...', 'info');
+  
+  // Simulation du téléchargement
+  setTimeout(() => {
+    showNotification('Facture téléchargée avec succès', 'success');
+  }, 1500);
+}
+
+function openModal() {
+  document.getElementById('orderModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('orderModal').classList.remove('active');
+  document.body.style.overflow = 'auto';
+}
+
+function resetFilters() {
+  document.getElementById('filterForm').reset();
+  document.getElementById('filterForm').submit();
+}
+
+function applyFilters() {
+  showNotification('Application des filtres...', 'info');
+  document.getElementById('filterForm').submit();
+}
+
+function sortOrders(criteria) {
+  const ordersList = document.querySelector('.orders-list');
+  const orders = Array.from(ordersList.querySelectorAll('.order-item'));
+  
+  orders.sort((a, b) => {
+    switch(criteria) {
+      case 'newest':
+        return new Date(b.dataset.date) - new Date(a.dataset.date);
+      case 'oldest':
+        return new Date(a.dataset.date) - new Date(b.dataset.date);
+      case 'amount':
+        return parseFloat(b.dataset.amount) - parseFloat(a.dataset.amount);
+      default:
+        return 0;
+    }
+  });
+  
+  orders.forEach(order => ordersList.appendChild(order));
+  
+  showNotification('Tri appliqué', 'success');
+}
+
+function showNotification(message, type = 'info') {
+  const notification = document.getElementById('notification');
+  notification.textContent = message;
+  notification.className = `notification ${type} show`;
+  
+  setTimeout(() => {
+    notification.classList.remove('show');
+  }, 3000);
+}
+
+// Fermer la modal avec ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+
+<style>
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #a5b4fc;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --dark: #1f2937;
+  --darker: #111827;
+  --light: #f8fafc;
+  --gray: #6b7280;
+  --gray-light: #9ca3af;
+  --border: #e5e7eb;
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --gradient-dark: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: var(--dark);
+  min-height: 100vh;
+}
+
+.purchase-history {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Hero Section */
+.history-hero {
+  background: var(--gradient-primary);
+  border-radius: var(--radius);
+  margin-bottom: 30px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-xl);
+}
+
+.history-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,50 1000,100 0,100"/></svg>');
+  background-size: cover;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 40px;
+  color: white;
+}
+
+.hero-text {
+  margin-bottom: 30px;
+}
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.title-gradient {
+  background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius);
+  padding: 25px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: var(--transition);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.stat-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* Dashboard Section */
+.dashboard-section {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.chart-wrapper {
+  background: white;
+  border-radius: var(--radius);
+  padding: 25px;
+  box-shadow: var(--shadow-lg);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.chart-header h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--gray);
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-color.completed {
+  background: var(--success);
+}
+
+.legend-color.pending {
+  background: var(--warning);
+}
+
+.chart-container {
+  height: 250px;
+  position: relative;
+}
+
+/* Filters Sidebar */
+.filters-sidebar {
+  background: white;
+  border-radius: var(--radius);
+  padding: 25px;
+  box-shadow: var(--shadow-lg);
+  height: fit-content;
+}
+
+.filter-section h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--dark);
+}
+
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--dark);
+}
+
+.filter-select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+/* Orders Section */
+.orders-section {
+  background: white;
+  border-radius: var(--radius);
+  padding: 30px;
+  box-shadow: var(--shadow-lg);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.sort-select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+/* Orders List */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.order-item {
+  background: var(--light);
+  border-radius: var(--radius);
+  padding: 20px;
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.order-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary);
+  transition: var(--transition);
+}
+
+.order-item:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.order-item:hover::before {
+  width: 6px;
+  background: var(--primary-dark);
+}
+
+.order-item.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.order-summary {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex: 1;
+}
+
+.order-date-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+}
+
+.order-date {
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.order-time {
+  font-size: 0.85rem;
+  color: var(--gray);
+}
+
+.order-vendor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gray);
+  min-width: 150px;
+}
+
+.order-amount-status {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 150px;
+}
+
+.amount {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.payment-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.payment-status.paid {
+  color: var(--success);
+}
+
+.payment-status.pending {
+  color: var(--warning);
+}
+
+.order-status-badge {
+  min-width: 120px;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-en-attente {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.status-en-cours {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-termine {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: var(--gray-light);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: var(--gray);
+  transform: translateY(-2px);
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--gray);
+}
+
+.btn-icon:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+.btn-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #fcefeffc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--gray);
+}
+
+.btn-close:hover {
+  background: var(--danger);
+  color: white;
+  transform: rotate(90deg);
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: none;
+}
+
+.modal.active {
+  display: block;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+}
+
+.modal-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px;
+  border-bottom: 1px solid var(--border);
+  background: var(--light);
+}
+
+.modal-header h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-body {
+  padding: 25px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Empty State */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--gray);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: var(--dark);
+}
+
+.empty-state p {
+  margin-bottom: 20px;
+}
+
+/* Notification */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 20px;
+  border-radius: var(--radius);
+  color: white;
+  font-weight: 500;
+  z-index: 1001;
+  transform: translateX(400px);
+  transition: var(--transition);
+}
+
+.notification.show {
+  transform: translateX(0);
+}
+
+.notification.info {
+  background: var(--primary);
+}
+
+.notification.success {
+  background: var(--success);
+}
+
+.notification.error {
+  background: var(--danger);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .dashboard-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .hero-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .purchase-history {
+    padding: 15px;
+  }
+  
+  .hero-content {
+    padding: 30px 20px;
+  }
+  
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .orders-list {
+    gap: 15px;
+  }
+  
+  .order-summary {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .order-amount-status {
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .filter-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-container {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .modal-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .modal-actions {
+    justify-content: space-between;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.order-item {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.order-item:nth-child(odd) {
+  animation-delay: 0.1s;
+}
+
+.order-item:nth-child(even) {
+  animation-delay: 0.2s;
+}
+</style>
+{% endblock %}

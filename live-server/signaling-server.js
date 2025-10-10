@@ -27,8 +27,9 @@ console.log('🌐 Mode HTTP (WS) activé');
 
 const wss = new WebSocket.Server({ server });
 
-const viewers = new Map(); // viewerId => { socket, adminId }
+const viewers = new Map();   // viewerId => { socket, adminId }
 const streamers = new Map(); // adminId => socket
+const likeCounters = {};     // adminId => nombre de likes
 
 console.log('🚀 Serveur WebSocket prêt');
 
@@ -68,7 +69,18 @@ wss.on('connection', (ws, req) => {
                 ws.isStreamer = true;
                 ws.adminId = adminIdStr;
                 ws.clientIP = clientIP;
-                console.log(`🎥 Streamer connecté [adminId=${adminIdStr}] depuis ${clientIP}`);
+                
+                // Réinitialiser le compteur de likes pour ce nouveau live
+                likeCounters[adminIdStr] = 0;
+                console.log(`🎥 Streamer connecté [adminId=${adminIdStr}] depuis ${clientIP} - Likes réinitialisés à 0`);
+                
+                // Envoyer immédiatement le compteur initial au streamer
+                ws.send(JSON.stringify({
+                    type: 'likeUpdate',
+                    adminId: adminIdStr,
+                    count: 0
+                }));
+                
                 broadcastActiveStreamers();
             }
 
@@ -169,6 +181,46 @@ wss.on('connection', (ws, req) => {
                     streamers: activeAdmins
                 }));
             }
+            // Gestion des likes
+            else if (data.type === 'like' && data.adminId) {
+                const adminIdStr = data.adminId.toString();
+                if (!likeCounters[adminIdStr]) likeCounters[adminIdStr] = 0;
+                likeCounters[adminIdStr]++;
+
+                console.log(`👍 Nouveau like pour streamer ${adminIdStr} (total=${likeCounters[adminIdStr]})`);
+
+                // Diffuser à tous les viewers + streamer du même live
+                const update = JSON.stringify({
+                    type: 'likeUpdate',
+                    adminId: adminIdStr,
+                    count: likeCounters[adminIdStr]
+                });
+
+                // Envoyer aux viewers
+                viewers.forEach((viewerData) => {
+                    if (viewerData.adminId === adminIdStr && viewerData.socket.readyState === WebSocket.OPEN) {
+                        viewerData.socket.send(update);
+                    }
+                });
+
+                // Envoyer au streamer
+                const streamerWs = streamers.get(adminIdStr);
+                if (streamerWs && streamerWs.readyState === WebSocket.OPEN) {
+                    streamerWs.send(update);
+                }
+            }
+            else if (data.type === 'getLikes' && data.adminId) {
+                const adminIdStr = data.adminId.toString();
+                const count = likeCounters[adminIdStr] || 0;
+                
+                ws.send(JSON.stringify({
+                    type: 'likesCount',
+                    adminId: adminIdStr,
+                    count: count
+                }));
+                
+                console.log(`📊 Envoi du nombre de likes pour ${adminIdStr}: ${count}`);
+            }
 
         } catch (error) {
             console.error(`❌ Erreur parsing JSON depuis ${clientIP}:`, error);
@@ -185,7 +237,14 @@ wss.on('connection', (ws, req) => {
 
         if (ws.isStreamer && ws.adminId) {
             streamers.delete(ws.adminId);
-            console.log(`🎥 Streamer ${ws.adminId} déconnecté`);
+            
+            // Sauvegarder et afficher les likes finaux avant nettoyage
+            const finalLikes = likeCounters[ws.adminId] || 0;
+            console.log(`🎥 Streamer ${ws.adminId} déconnecté - Likes finaux: ${finalLikes}`);
+            
+            // Nettoyer complètement le compteur de likes pour ce streamer
+            delete likeCounters[ws.adminId];
+            console.log(`🧹 Compteur de likes supprimé pour ${ws.adminId}`);
             
             // Notifier les viewers que le streamer est déconnecté
             viewers.forEach((viewerData, viewerId) => {

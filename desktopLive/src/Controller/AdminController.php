@@ -9,9 +9,13 @@ use App\Repository\SaleRepository;
 use App\Repository\UsersRepository;
 use App\Entity\LiveDetails;
 use App\Entity\Live;
+use App\Entity\Item;
+use App\Entity\Category;
+use App\Entity\PriceItems;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 class AdminController extends AbstractController
 {
     public function __construct(
@@ -210,5 +214,142 @@ class AdminController extends AbstractController
             'titre' => $activeLive?->getTitre(),
             'description' => $activeLive?->getDescription(),
         ]);
+    }
+
+    #[Route('/api/categories', name: 'api_categories', methods: ['GET'])]
+    public function getCategories(CategoryRepository $categoryRepository): JsonResponse
+    {
+        $categories = $categoryRepository->findAll();
+        $data = array_map(function ($category) {
+            return [
+                'id' => $category->getId(),
+                'name' => $category->getNameCategory(),
+                'description' => $category->getDescription()
+            ];
+        }, $categories);
+
+        return $this->json([
+            'success' => true,
+            'categories' => $data
+        ]);
+    }
+
+    #[Route('/api/items/create', name: 'api_item_create', methods: ['POST'])]
+    public function createItem(
+        Request $request,
+        EntityManagerInterface $em,
+        CategoryRepository $categoryRepository,
+        UsersRepository $usersRepository
+    ): JsonResponse {
+        $session = $request->getSession();
+        $user = $session->get('user');
+
+        if (!$user || !$user instanceof \App\Entity\Users) {
+            return $this->json(['success' => false, 'message' => 'Utilisateur non connecté'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!$data) {
+            return $this->json(['success' => false, 'message' => 'Données JSON invalides'], 400);
+        }
+
+        // Validation des champs requis
+        $required = ['name', 'category_id', 'price'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                return $this->json(['success' => false, 'message' => "Champ manquant : $field"], 400);
+            }
+        }
+
+        try {
+            // Récupérer la catégorie
+            $category = $categoryRepository->find($data['category_id']);
+            if (!$category) {
+                return $this->json(['success' => false, 'message' => 'Catégorie introuvable'], 404);
+            }
+
+            // Créer le nouvel item
+            $item = new Item();
+            $item->setNameItem($data['name']);
+            $item->setSeller($user);
+            $item->setCategory($category);
+            $item->setDescription($data['description'] ?? null);
+            $item->setImages($data['images'] ?? null);
+
+            $em->persist($item);
+            $em->flush();
+
+            // Créer le prix initial
+            $priceItem = new PriceItems();
+            $priceItem->setItem($item);
+            $priceItem->setPrice((float)$data['price']);
+            $priceItem->setDatePrice(new \DateTime());
+
+            $em->persist($priceItem);
+            $em->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Item créé avec succès',
+                'item' => [
+                    'id' => $item->getId(),
+                    'name' => $item->getNameItem(),
+                    'category' => $category->getNameCategory(),
+                    'price' => $priceItem->getPrice(),
+                    'description' => $item->getDescription(),
+                    'images' => $item->getImages()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de la création : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/api/items/upload-image', name: 'api_item_upload_image', methods: ['POST'])]
+    public function uploadItemImage(Request $request): JsonResponse
+    {
+        $uploadedFile = $request->files->get('image');
+
+        if (!$uploadedFile instanceof UploadedFile) {
+            return $this->json(['success' => false, 'message' => 'Aucun fichier image fourni'], 400);
+        }
+
+        // Validation du type de fichier
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($uploadedFile->getMimeType(), $allowedTypes)) {
+            return $this->json(['success' => false, 'message' => 'Type de fichier non autorisé'], 400);
+        }
+
+        // Validation de la taille (max 5MB)
+        if ($uploadedFile->getSize() > 5 * 1024 * 1024) {
+            return $this->json(['success' => false, 'message' => 'Fichier trop volumineux (max 5MB)'], 400);
+        }
+
+        try {
+            // Générer un nom de fichier unique
+            $originalName = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = $uploadedFile->guessExtension();
+            $fileName = $originalName . '_' . uniqid() . '.' . $extension;
+
+            // Déplacer le fichier vers le dossier uploads
+            $uploadedFile->move($this->getParameter('kernel.project_dir') . '/public/uploads', $fileName);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Image uploadée avec succès',
+                'filename' => $fileName
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'upload : ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

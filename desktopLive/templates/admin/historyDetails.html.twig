@@ -2,7 +2,7 @@
     <!-- Infos client & vendeur -->
     <div class="invoice-infos">
         <div class="client">
-            <h4>Facturé à</h4>
+            <h4 data-i18n="billed_to">Facturé à</h4>
             <p>
                 <strong>{{ sale.commande.client.username }}</strong><br>
                 {{ sale.commande.client.email }}<br>
@@ -11,12 +11,12 @@
             </p>
         </div>
         <div class="seller">
-            <h4>Vendu par</h4>
+            <h4 data-i18n="sold_by">Vendu par</h4>
             <p>
                 <strong>{{ sale.commande.seller.username }}</strong><br>
                 {{ sale.commande.seller.email }}<br>
                 {{ sale.commande.seller.contact }}<br>
-                Vendeur certifié
+                <span data-i18n="certified_seller">Vendeur certifié</span>
             </p>
         </div>
     </div>
@@ -25,9 +25,9 @@
     <div class="invoice-status">
         <span class="badge info">{{ sale.commande.state.nameState }}</span>
         {% if sale.isPaid %}
-            <span class="badge success">Payé</span>
+            <span class="badge success" data-i18n="paid">Payé</span>
         {% else %}
-            <span class="badge warning">En attente de paiement</span>
+            <span class="badge warning" data-i18n="pending_payment">En attente de paiement</span>
         {% endif %}
     </div>
 
@@ -36,11 +36,11 @@
         <table class="invoice-table">
             <thead>
                 <tr>
-                    <th>Produit</th>
-                    <th>Taille</th>
-                    <th>Quantité</th>
-                    <th>Prix unitaire</th>
-                    <th>Total</th>
+                    <th data-i18n="product">Produit</th>
+                    <th data-i18n="size">Taille</th>
+                    <th data-i18n="quantity">Quantité</th>
+                    <th data-i18n="unit_price">Prix unitaire</th>
+                    <th data-i18n="total">Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -66,8 +66,8 @@
     {% set totalHT = totalTTC / (1 + tvaRate) %}
     {% set tva = totalTTC - totalHT %}
     <div class="invoice-totals">
-        <p style="margin: 0; color: #6b7280; font-size: 0.9rem;">Total HT : {{ totalHT|number_format(2, ',', ' ') }} €</p>
-        <p style="margin: 4px 0 0; color: #6b7280; font-size: 0.9rem;">TVA ({{ (tvaRate * 100)|number_format(0, ',', ' ') }}%) : {{ tva|number_format(2, ',', ' ') }} €</p>
-        <h4 style="margin-top: 8px;">Total TTC : {{ totalTTC|number_format(2, ',', ' ') }} €</h4>
+        <p style="margin: 0; color: #6b7280; font-size: 0.9rem;"><span data-i18n="total_ht">Total HT</span> : {{ totalHT|number_format(2, ',', ' ') }} €</p>
+        <p style="margin: 4px 0 0; color: #6b7280; font-size: 0.9rem;"><span data-i18n="vat">TVA</span> ({{ (tvaRate * 100)|number_format(0, ',', ' ') }}%) : {{ tva|number_format(2, ',', ' ') }} €</p>
+        <h4 style="margin-top: 8px;"><span data-i18n="total_ttc">Total TTC</span> : {{ totalTTC|number_format(2, ',', ' ') }} €</h4>
     </div>
 </div>

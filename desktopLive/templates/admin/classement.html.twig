@@ -9,21 +9,25 @@
 
 {% block content %}
 <div class="modern-dashboard">
+    <div class="promotion-header">
+        <h2 data-i18n="ranking_title">Ranking and Performance</h2>
+        <p class="promotion-subtitle" data-i18n="ranking_subtitle">Analysis of sales, clients and top performing items</p>
+    </div>
     <!-- Bannière de performances avec données globales calculées -->
     <div class="performance-banner">
         <div class="performance-text">
-            <h2>Overview of Performance</h2>
+            <h2 data-i18n="performance_overview">Overview of Performance</h2>
         </div>
         <div class="performance-stats">
             <div class="performance-stat">
                 <div class="performance-value">{{ globalStats.totalRevenue|number_format(0, ',', ' ') }} €</div>
-                <div class="performance-label">Total turnover</div>
-                <div class="performance-sublabel">{{ globalStats.totalArticlesCount }} active products</div>
+                <div class="performance-label" data-i18n="total_turnover">Total turnover</div>
+                <div class="performance-sublabel">{{ globalStats.totalArticlesCount }} <span data-i18n="active_products">active products</span></div>
             </div>
             <div class="performance-stat">
                 <div class="performance-value">{{ globalStats.totalSales|number_format(0, ',', ' ') }}</div>
-                <div class="performance-label">Total sales</div>
-                <div class="performance-sublabel">{{ globalStats.totalClientsCount }} clients</div>
+                <div class="performance-label" data-i18n="total_sales">Total sales</div>
+                <div class="performance-sublabel">{{ globalStats.totalClientsCount }} <span data-i18n="clients">clients</span></div>
             </div>
         </div>
     </div>
@@ -35,17 +39,17 @@
                 <div>
                     <h2 class="section-title">
                         <i class="fas fa-box"></i>
-                        Top Items
+                        <span data-i18n="top_items">Top Items</span>
                     </h2>
                     <p class="section-description">
-                        Revenu moyen : {{ globalStats.avgRevenuePerArticle|number_format(0, ',', ' ') }} €
+                        <span data-i18n="average_revenue">Revenu moyen</span> : {{ globalStats.avgRevenuePerArticle|number_format(0, ',', ' ') }} €
                     </p>
                 </div>
                 <div class="section-actions">
-                    <button class="filter-btn" title="Filtrer">
+                    <button class="filter-btn" title="Filtrer" data-i18n-title="filter">
                         <i class="fas fa-filter"></i>
                     </button>
-                    <button class="filter-btn" title="Plus d'options">
+                    <button class="filter-btn" title="Plus d'options" data-i18n-title="more_options">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                 </div>
@@ -72,8 +76,8 @@
                             <div class="item-stats">
                                 <div class="stat">
                                     <i class="fas fa-shopping-bag icon"></i>
-                                    <span class="stat-value">{{ article.sales|number_format(0, ',', ' ') }}</span> ventes
-                                    <span class="stat-percentage">({{ articleMarketShare }}% du total)</span>
+                                    <span class="stat-value">{{ article.sales|number_format(0, ',', ' ') }}</span> <span data-i18n="sales">ventes</span>
+                                    <span class="stat-percentage">({{ articleMarketShare }}% <span data-i18n="of_total">du total</span>)</span>
                                 </div>
                                 <div class="stat">
                                     <i class="fas fa-euro-sign icon"></i>
@@ -91,8 +95,8 @@
                 {# Pagination pour les articles #}
                 <div class="pagination-container">
                     <div class="pagination-info">
-                        Page {{ topArticles.getCurrentPageNumber() }} sur {{ topArticles.getPageCount() }}
-                        • {{ topArticles.getTotalItemCount() }} éléments
+                        <span data-i18n="page">Page</span> {{ topArticles.getCurrentPageNumber() }} <span data-i18n="of">sur</span> {{ topArticles.getPageCount() }}
+                        • {{ topArticles.getTotalItemCount() }} <span data-i18n="items">éléments</span>
                     </div>
                     <div class="pagination">
                         {{ knp_pagination_render(topArticles, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
@@ -110,7 +114,7 @@
             {% else %}
                 <div class="empty-state">
                     <i class="fas fa-chart-line"></i>
-                    <p>Aucune donnée de vente disponible</p>
+                    <p data-i18n="no_sales_data">Aucune donnée de vente disponible</p>
                 </div>
             {% endif %}
         </div>
@@ -121,17 +125,17 @@
                 <div>
                     <h2 class="section-title">
                         <i class="fas fa-users"></i>
-                        Top Clients
+                        <span data-i18n="top_clients">Top Clients</span>
                     </h2>
                     <p class="section-description">
-                        Dépense moyenne : {{ globalStats.avgSpendingPerClient|number_format(0, ',', ' ') }} €
+                        <span data-i18n="average_spending">Dépense moyenne</span> : {{ globalStats.avgSpendingPerClient|number_format(0, ',', ' ') }} €
                     </p>
                 </div>
                 <div class="section-actions">
-                    <button class="filter-btn" title="Filtrer">
+                    <button class="filter-btn" title="Filtrer" data-i18n-title="filter">
                         <i class="fas fa-filter"></i>
                     </button>
-                    <button class="filter-btn" title="Plus d'options">
+                    <button class="filter-btn" title="Plus d'options" data-i18n-title="more_options">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                 </div>
@@ -159,8 +163,8 @@
                             <div class="item-stats">
                                 <div class="stat">
                                     <i class="fas fa-shopping-cart icon"></i>
-                                    <span class="stat-value">{{ client.total_purchases|number_format(0, ',', ' ') }}</span> achats
-                                    <span class="stat-percentage">({{ clientMarketShare }}% du chiffre d'affaires)</span>
+                                    <span class="stat-value">{{ client.total_purchases|number_format(0, ',', ' ') }}</span> <span data-i18n="purchases">achats</span>
+                                    <span class="stat-percentage">({{ clientMarketShare }}% <span data-i18n="of_revenue">du chiffre d'affaires</span>)</span>
                                 </div>
                                 <div class="stat">
                                     <i class="fas fa-euro-sign icon"></i>
@@ -178,8 +182,8 @@
                 {# Pagination pour les clients #}
                 <div class="pagination-container">
                     <div class="pagination-info">
-                        Page {{ topClients.getCurrentPageNumber() }} sur {{ topClients.getPageCount() }}
-                        • {{ topClients.getTotalItemCount() }} éléments
+                        <span data-i18n="page">Page</span> {{ topClients.getCurrentPageNumber() }} <span data-i18n="of">sur</span> {{ topClients.getPageCount() }}
+                        • {{ topClients.getTotalItemCount() }} <span data-i18n="items">éléments</span>
                     </div>
                     <div class="pagination">
                         {{ knp_pagination_render(topClients, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
@@ -197,7 +201,7 @@
             {% else %}
                 <div class="empty-state">
                     <i class="fas fa-users"></i>
-                    <p>Aucun client trouvé</p>
+                    <p data-i18n="no_clients_found">Aucun client trouvé</p>
                 </div>
             {% endif %}
         </div>

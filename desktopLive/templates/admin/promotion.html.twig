@@ -10,13 +10,14 @@
 {% block content %}
     <div class="promotion-container">
         <div class="promotion-header">
-            <h2>Gestion des articles</h2>
+            <h2 data-i18n="article_management">Article Management</h2>
+            <p class="promotion-subtitle" data-i18n="article_management_subtitle">Manage your products, promotions, variants and stock</p>
             <form method="get" class="promotion-filters">
-                <label for="categoryFilter">Catégorie
-                    <button type="button" class="add-category-inline" title="Ajouter une nouvelle catégorie" aria-label="Ajouter une nouvelle catégorie">+</button>
+                <label for="categoryFilter"><span data-i18n="category">Catégorie</span>
+                    <button type="button" class="add-category-inline" title="Ajouter une nouvelle catégorie" aria-label="Ajouter une nouvelle catégorie" data-i18n-title="add_new_category">+</button>
                 </label>
                 <select id="categoryFilter" name="category_id" class="promotion-select">
-                    <option value="">Toutes</option>
+                    <option value=""><span data-i18n="all">Toutes</span></option>
                     {% for cat in categories %}
                         <option value="{{ cat.id }}" {{ category_id == cat.id ? 'selected' }}>{{ cat.nameCategory }}</option>
                     {% endfor %}
@@ -40,7 +41,7 @@
                         <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    Appliquer
+                    <span data-i18n="apply">Appliquer</span>
                 </button>
             </form>
         </div>
@@ -67,7 +68,7 @@
                             {% if item.promotion %}
                                 <span class="promotion-percentage">-{{ item.promotion.percentage }}%</span>
                             {% else %}
-                                <span class="promo-text">Promo</span>
+                                <span class="promo-text" data-i18n="promo">Promo</span>
                             {% endif %}
                         </div>
                         <button type="button" class="edit-item-btn" title="Edit item" data-item-id="{{ item.item_id }}" data-item-name="{{ item.item_name }}" data-item-price="{{ item.original_price|default(0) }}" data-item-description="{{ item.item_description|default('') }}" aria-label="Edit">
@@ -99,7 +100,7 @@
                                         <span class="promo-price">{{ item.promotion.promo_price|number_format(2, ',', ' ') }} €</span>
                                     </div>
                                     <div class="promo-end-date">
-                                        Jusqu'au {{ item.promotion.end_date|date('d/m/Y') }}
+                                        <span data-i18n="until">Jusqu'au</span> {{ item.promotion.end_date|date('d/m/Y') }}
                                     </div>
                                 {% else %}
                                     <div class="normal-price">{{ item.original_price|number_format(2, ',', ' ') }} €</div>
@@ -107,16 +108,16 @@
                             </div>
 
                             <div class="stock-info">
-                                <span class="stock-label">Stock:</span>
+                                <span class="stock-label" data-i18n="stock">Stock:</span>
                                 <span class="stock-value {{ totalQty > 10 ? 'in-stock' : (totalQty > 0 ? 'low-stock' : 'out-of-stock') }}">
-                                    {{ totalQty|number_format(0, ',', ' ') }} unités
+                                    {{ totalQty|number_format(0, ',', ' ') }} <span data-i18n="units">unités</span>
                                 </span>
                             </div>
                         </div>
 
                         <div class="product-variants">
                             <div class="sizes-section">
-                                <span class="section-label">Tailles:</span>
+                                <span class="section-label" data-i18n="sizes">Tailles:</span>
                                 <div class="sizes-list">
                                 {% for sz in item.sizes %}
                                         <span class="size-tag" title="Quantité: {{ sz.qty_available }}">
@@ -127,7 +128,7 @@
                             </div>
 
                              <div class="colors-section">
-                                 <span class="section-label">Couleurs:</span>
+                                 <span class="section-label" data-i18n="colors">Couleurs:</span>
                                  <div class="colors-list">
                                      {% for c in item.colors %}
                                          {% set img = c.color_image ? asset('uploads/' ~ c.color_image) : defaultImage %}
@@ -148,17 +149,17 @@
                     {% else %}
                 <div class="no-products">
                     <div class="no-products-icon">📦</div>
-                    <h3>Aucun article disponible</h3>
-                    <p>Aucun produit trouvé pour les critères sélectionnés.</p>
+                    <h3 data-i18n="no_articles_available">Aucun article disponible</h3>
+                    <p data-i18n="no_products_found">Aucun produit trouvé pour les critères sélectionnés.</p>
                 </div>
                     {% endfor %}
 
             {# Tuile d'ajout d'article #}
-            <div class="product-card add-item-card" title="Ajouter un article">
-                <button type="button" class="add-item-trigger" aria-label="Ajouter un article">
+            <div class="product-card add-item-card" title="Ajouter un article" data-i18n-title="add_article">
+                <button type="button" class="add-item-trigger" aria-label="Ajouter un article" data-i18n-aria-label="add_article">
                     <div class="add-item-content">
                         <div class="add-item-plus">+</div>
-                        <div class="add-item-text">Ajouter un article</div>
+                        <div class="add-item-text" data-i18n="add_article">Ajouter un article</div>
                     </div>
                 </button>
             </div>
@@ -178,7 +179,7 @@
     <div id="promotionModal" class="promotion-modal">
         <div class="promotion-modal-content">
             <div class="modal-header">
-                <h3 id="promotionModalTitle">Ajouter une promotion</h3>
+                <h3 id="promotionModalTitle" data-i18n="add_promotion">Ajouter une promotion</h3>
                 <span class="modal-close">&times;</span>
             </div>
 
@@ -187,12 +188,12 @@
                 <input type="hidden" id="promotionId" name="promotion_id" />
 
                 <div class="form-group">
-                    <label for="promotionName">Nom de la promotion</label>
-                    <input type="text" id="promotionName" name="name" placeholder="Ex: Soldes d'été" required />
+                    <label for="promotionName" data-i18n="promotion_name">Nom de la promotion</label>
+                    <input type="text" id="promotionName" name="name" placeholder="Ex: Soldes d'été" data-i18n-placeholder="promotion_name_example" required />
                 </div>
 
                 <div class="form-group">
-                    <label for="promotionPercentage">Pourcentage de réduction</label>
+                    <label for="promotionPercentage" data-i18n="discount_percentage">Pourcentage de réduction</label>
                     <div class="percentage-input">
                         <input type="number" id="promotionPercentage" name="percentage"
                                min="1" max="99" step="1" placeholder="10" required />
@@ -201,37 +202,37 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="promotionDescription">Description (optionnel)</label>
+                    <label for="promotionDescription" data-i18n="description_optional">Description (optionnel)</label>
                     <textarea id="promotionDescription" name="description"
-                              placeholder="Description de la promotion..." rows="3"></textarea>
+                              placeholder="Description de la promotion..." data-i18n-placeholder="promotion_description" rows="3"></textarea>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="promotionStartDate">Date de début</label>
+                        <label for="promotionStartDate" data-i18n="start_date">Date de début</label>
                         <input type="date" id="promotionStartDate" name="start_date" required />
                     </div>
 
                     <div class="form-group">
-                        <label for="promotionEndDate">Date de fin</label>
+                        <label for="promotionEndDate" data-i18n="end_date">Date de fin</label>
                         <input type="date" id="promotionEndDate" name="end_date" />
                     </div>
                 </div>
 
                 <div class="price-preview">
                     <div class="current-price">
-                        <span class="price-label">Prix actuel:</span>
+                        <span class="price-label" data-i18n="current_price">Prix actuel:</span>
                         <span id="currentPriceDisplay">0,00 €</span>
                     </div>
                     <div class="new-price">
-                        <span class="price-label">Nouveau prix:</span>
+                        <span class="price-label" data-i18n="new_price">Nouveau prix:</span>
                         <span id="newPriceDisplay">0,00 €</span>
                     </div>
                 </div>
 
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel">Annuler</button>
-                    <button type="submit" class="btn-save">Enregistrer</button>
+                    <button type="button" class="btn-cancel" data-i18n="cancel">Annuler</button>
+                    <button type="submit" class="btn-save" data-i18n="save">Enregistrer</button>
                 </div>
             </form>
         </div>
@@ -241,27 +242,27 @@
     <div id="editItemModal" class="promotion-modal" style="display:none;">
         <div class="promotion-modal-content">
             <div class="modal-header">
-                <h3 id="editItemModalTitle">Edit item</h3>
+                <h3 id="editItemModalTitle" data-i18n="edit_item">Edit item</h3>
                 <span class="modal-close" aria-label="Close">&times;</span>
             </div>
 
             <form id="editItemForm" class="promotion-form">
                 <input type="hidden" id="editItemId" name="item_id" />
                 <div class="form-group">
-                    <label for="editItemName">Name</label>
-                    <input type="text" id="editItemName" name="name" placeholder="Item name" required />
+                    <label for="editItemName" data-i18n="name">Name</label>
+                    <input type="text" id="editItemName" name="name" placeholder="Item name" data-i18n-placeholder="item_name" required />
                 </div>
                 <div class="form-group">
-                    <label for="editItemPrice">Price</label>
+                    <label for="editItemPrice" data-i18n="price">Price</label>
                     <input type="number" step="0.01" min="0" id="editItemPrice" name="price" placeholder="0.00" required />
                 </div>
                 <div class="form-group">
-                    <label for="editItemDescription">Description</label>
-                    <textarea id="editItemDescription" name="description" rows="3" placeholder="Item description (optional)"></textarea>
+                    <label for="editItemDescription" data-i18n="description">Description</label>
+                    <textarea id="editItemDescription" name="description" rows="3" placeholder="Item description (optional)" data-i18n-placeholder="item_description_optional"></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel">Cancel</button>
-                    <button type="submit" class="btn-save">Save</button>
+                    <button type="button" class="btn-cancel" data-i18n="cancel">Cancel</button>
+                    <button type="submit" class="btn-save" data-i18n="save">Save</button>
                 </div>
             </form>
         </div>
@@ -271,19 +272,61 @@
     <div id="categoryModal" class="promotion-modal" style="display:none;">
         <div class="promotion-modal-content">
             <div class="modal-header">
-                <h3>Ajouter une nouvelle catégorie</h3>
+                <h3 data-i18n="add_new_category">Ajouter une nouvelle catégorie</h3>
                 <span class="modal-close" aria-label="Fermer">&times;</span>
             </div>
 
             <form id="categoryForm" class="promotion-form">
                 <div class="form-group">
-                    <label for="categoryName">Nom de la catégorie</label>
-                    <input type="text" id="categoryName" name="name" placeholder="Ex: Vêtements, Chaussures, Accessoires" required />
+                    <label for="categoryName" data-i18n="category_name">Nom de la catégorie</label>
+                    <input type="text" id="categoryName" name="name" placeholder="Ex: Vêtements, Chaussures, Accessoires" data-i18n-placeholder="category_name_example" required />
                 </div>
 
                 <div class="form-group">
-                    <label for="categoryDescription">Description (optionnel)</label>
-                    <textarea id="categoryDescription" name="description" placeholder="Description de la catégorie..." rows="3"></textarea>
+                    <label for="categoryDescription" data-i18n="description_optional">Description (optionnel)</label>
+                    <textarea id="categoryDescription" name="description" placeholder="Description de la catégorie..." data-i18n-placeholder="category_description" rows="3"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" aria-label="Annuler" data-i18n="cancel" data-i18n-aria-label="cancel">Annuler</button>
+                    <button type="submit" class="btn-save" aria-label="Créer" data-i18n="create" data-i18n-aria-label="create">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal pour créer un nouvel article -->
+    <div id="itemModal" class="promotion-modal" style="display:none;">
+        <div class="promotion-modal-content">
+            <div class="modal-header">
+                <h3>Ajouter un nouvel article</h3>
+                <span class="modal-close" aria-label="Fermer">&times;</span>
+            </div>
+
+            <form id="itemForm" class="promotion-form">
+                <div class="form-group">
+                    <label for="itemName">Nom de l'article</label>
+                    <input type="text" id="itemName" name="name" placeholder="Ex: T-shirt en coton" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="itemCategory">Catégorie</label>
+                    <select id="itemCategory" name="category_id" required>
+                        <option value="">Sélectionnez une catégorie</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.nameCategory }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="itemPrice">Prix (€)</label>
+                    <input type="number" step="0.01" min="0" id="itemPrice" name="price" placeholder="0.00" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="itemDescription">Description (optionnel)</label>
+                    <textarea id="itemDescription" name="description" placeholder="Description de l'article..." rows="3"></textarea>
                 </div>
 
                 <div class="modal-actions">
@@ -393,8 +436,13 @@
                 });
             }
             document.addEventListener('keydown', function(e){
-                if (e.key === 'Escape' && categoryModal && categoryModal.style.display === 'flex') {
-                    closeCategoryModal();
+                if (e.key === 'Escape') {
+                    if (categoryModal && categoryModal.style.display === 'flex') {
+                        closeCategoryModal();
+                    }
+                    if (itemModal && itemModal.style.display === 'flex') {
+                        closeItemModal();
+                    }
                 }
             });
 
@@ -439,6 +487,96 @@
                     .catch(err => {
                         console.error(err);
                         showCategoryMessage('error', 'Erreur de connexion.');
+                    })
+                    .finally(()=>{
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    });
+                });
+            }
+
+            // ===== Modal Item =====
+            const itemModal = document.getElementById('itemModal');
+            const itemForm = document.getElementById('itemForm');
+            const addItemBtn = document.querySelector('.add-item-trigger');
+            const itemCloseBtn = itemModal ? itemModal.querySelector('.modal-close') : null;
+            const itemCancelBtn = itemModal ? itemModal.querySelector('.btn-cancel') : null;
+
+            function openItemModal() {
+                if (!itemModal) return;
+                itemForm.reset();
+                const existingMessage = itemModal.querySelector('.form-message');
+                if (existingMessage) existingMessage.remove();
+                itemModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeItemModal() {
+                if (!itemModal) return;
+                itemModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+
+            if (addItemBtn) {
+                addItemBtn.addEventListener('click', function(e){
+                    e.preventDefault();
+                    openItemModal();
+                });
+            }
+            if (itemCloseBtn) itemCloseBtn.addEventListener('click', closeItemModal);
+            if (itemCancelBtn) itemCancelBtn.addEventListener('click', closeItemModal);
+            if (itemModal) {
+                itemModal.addEventListener('click', function(e){
+                    if (e.target === itemModal) closeItemModal();
+                });
+            }
+
+            function showItemMessage(type, message) {
+                if (!itemModal) return;
+                const existing = itemModal.querySelector('.form-message');
+                if (existing) existing.remove();
+                const msg = document.createElement('div');
+                msg.className = `form-message ${type}`;
+                msg.textContent = message;
+                msg.style.display = 'block';
+                const actions = itemModal.querySelector('.modal-actions');
+                actions.parentNode.insertBefore(msg, actions);
+                setTimeout(()=>{ if (msg.parentNode) msg.remove(); }, 5000);
+            }
+
+            if (itemForm) {
+                itemForm.addEventListener('submit', function(e){
+                    e.preventDefault();
+                    const formData = new FormData(itemForm);
+                    const data = Object.fromEntries(formData.entries());
+
+                    const submitBtn = itemForm.querySelector('.btn-save');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Création...';
+
+                    fetch('/promotion/item/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        body: JSON.stringify({
+                            name: data.name,
+                            category_id: parseInt(data.category_id),
+                            price: parseFloat(data.price),
+                            description: data.description || null
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(result => {
+                        if (result.success) {
+                            showItemMessage('success', result.message);
+                            setTimeout(()=>{ window.location.reload(); }, 1200);
+                        } else {
+                            showItemMessage('error', result.message || 'Erreur lors de la création');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showItemMessage('error', 'Erreur de connexion.');
                     })
                     .finally(()=>{
                         submitBtn.disabled = false;
@@ -726,12 +864,12 @@
                             promotionModal.style.display = 'flex';
                             document.body.style.overflow = 'hidden';
                         } else {
-                            alert('Erreur lors du chargement de la promotion');
+                            alert(window.t('error_loading_promotion', 'Error loading the promotion'));
                         }
                     })
                     .catch(error => {
                         console.error('Erreur:', error);
-                        alert('Erreur de connexion lors du chargement de la promotion');
+                        alert(window.t('connection_error_promotion', 'Connection error while loading the promotion'));
                     });
             }
 
