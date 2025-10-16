@@ -19,6 +19,9 @@ use App\Entity\FavoriteDetails;
 use App\Entity\ItemSize;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Repository\RatingRepository;
+use App\Entity\Rating;
+use Doctrine\ORM\EntityManagerInterface;
 
 class ClientController extends AbstractController
 {
@@ -33,6 +36,94 @@ class ClientController extends AbstractController
             $session->set('ratings', $ratings);
         }
         return $this->redirectToRoute('app_home');
+    }
+    #[Route('/client/product/rate', name: 'app_client_product_rate', methods: ['POST'])]
+    public function rateProductAjax(Request $request, EntityManagerInterface $em, \App\Repository\ItemRepository $itemRepo, RatingRepository $ratingRepo): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true);
+            if (!is_array($data)) {
+                return $this->json(['success' => false, 'message' => 'Invalid JSON'], 400);
+            }
+
+            $productId = isset($data['productId']) ? (int)$data['productId'] : 0;
+            $ratingValue = isset($data['rating']) ? (int)$data['rating'] : 0;
+
+            if ($productId <= 0 || $ratingValue < 1 || $ratingValue > 5) {
+                return $this->json(['success' => false, 'message' => 'Paramètres invalides'], 400);
+            }
+
+            // find item
+            $item = $itemRepo->find($productId);
+            if (!$item) {
+                return $this->json(['success' => false, 'message' => 'Produit introuvable'], 404);
+            }
+
+            $session = $request->getSession();
+            $userSession = $session->get('user');
+
+            // Support anonymous ratings via session fallback like existing logic
+            $user = null;
+            if ($userSession && method_exists($userSession, 'getId')) {
+                $user = $em->getRepository(\App\Entity\Users::class)->find($userSession->getId());
+            }
+
+            // If user exists, create or update Rating entity; otherwise store in session (simple fallback)
+            if ($user) {
+                // find existing rating
+                $existing = $em->getRepository(Rating::class)->findOneBy(['user' => $user, 'item' => $item]);
+                if ($existing) {
+                    $existing->setValue($ratingValue);
+                    $existing->setUpdatedAt(new \DateTime());
+                    $em->persist($existing);
+                } else {
+                    $r = new Rating();
+                    $r->setUser($user);
+                    $r->setItem($item);
+                    $r->setValue($ratingValue);
+                    $em->persist($r);
+                }
+                $em->flush();
+
+                $agg = $ratingRepo->getAvgAndCountForItem($item);
+                return $this->json(['success' => true, 'newRating' => $agg['avg'], 'review_count' => $agg['count']]);
+            } else {
+                // anonymous: store in session ratings array keyed by product id
+                $ratings = $session->get('ratings', []);
+                $ratings[$productId] = $ratingValue;
+                $session->set('ratings', $ratings);
+
+                // compute average/count: combine DB values + session
+                $agg = $ratingRepo->getAvgAndCountForItem($item);
+                $dbAvg = $agg['avg'];
+                $dbCount = $agg['count'];
+
+                // naive merge: treat session-stored rating as one extra vote per unique session
+                $mergedCount = $dbCount + 1;
+                $mergedAvg = $dbAvg !== null ? (($dbAvg * $dbCount) + $ratingValue) / $mergedCount : $ratingValue;
+
+                return $this->json(['success' => true, 'newRating' => $mergedAvg, 'review_count' => $mergedCount]);
+            }
+        } catch (\Throwable $e) {
+            // Write details to a simple log file to help debugging when Symfony logs are not available
+            try {
+                $logDir = dirname(__DIR__, 2) . '/var/log';
+                if (!is_dir($logDir)) {
+                    @mkdir($logDir, 0777, true);
+                }
+                $logPath = $logDir . '/rating_errors.log';
+                $content = sprintf("[%s] Exception: %s\nRequestBody: %s\nTrace:\n%s\n\n", (new \DateTime())->format('Y-m-d H:i:s'), $e->getMessage(), $request->getContent(), $e->getTraceAsString());
+                @file_put_contents($logPath, $content, FILE_APPEND | LOCK_EX);
+            } catch (\Throwable $inner) {
+                // ignore logging failure
+            }
+
+            // Return error details for debugging (can be softened later)
+            return $this->json([
+                'success' => false,
+                'message' => 'Exception: ' . $e->getMessage(),
+            ], 500);
+        }
     }
     #[Route('/client/checkout', name: 'app_client_checkout')]
     public function checkout(Request $request): Response

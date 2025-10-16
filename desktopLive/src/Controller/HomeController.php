@@ -32,6 +32,8 @@ class HomeController extends AbstractController
         // Récupérer les produits
         $items = $em->getRepository(\App\Entity\Item::class)->findAll();
         $products = [];
+        $sizesByItem = [];
+        $colorsByProduct = [];
         foreach ($items as $item) {
             // Récupérer le dernier prix
             $priceObj = $em->getRepository(\App\Entity\PriceItems::class)->findOneBy([
@@ -52,13 +54,45 @@ class HomeController extends AbstractController
                 continue;
             }
 
-            // Récupérer les tailles
+            // Récupérer les tailles et couleurs par taille
             $sizes = [];
+            $colorsMapForItem = [];
             foreach ($item->getItemSizes() as $sizeObj) {
                 $sizes[] = [
                     'id' => $sizeObj->getId(),
                     'value' => $sizeObj->getValueSize()
                 ];
+
+                // colors for this size
+                $sizeColors = [];
+                foreach ($sizeObj->getItemSizeColors() as $isc) {
+                    $color = $isc->getColor();
+                    if ($color) {
+                        // Try to surface an image for this size/color variant (item_size_color.images)
+                        $img = null;
+                        try {
+                            if (method_exists($isc, 'getImages')) {
+                                $raw = $isc->getImages();
+                                if ($raw) {
+                                    $img = '/uploads/' . ltrim($raw, '/');
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            // ignore
+                        }
+
+                        $sizeColors[] = [
+                            'id' => $color->getId(),
+                            'name' => $color->getNameColor() ?? ('#'.$color->getId()),
+                            'image' => $img,
+                        ];
+                    }
+                }
+                $colorsMapForItem[$sizeObj->getId()] = $sizeColors;
+            }
+            if (!empty($sizes)) {
+                $sizesByItem[$item->getId()] = $sizes;
+                $colorsByProduct[$item->getId()] = $colorsMapForItem;
             }
 
             $sellerName = $item->getSeller() ? $item->getSeller()->getUsername() : 'N/A';
@@ -86,6 +120,8 @@ class HomeController extends AbstractController
             'cart' => $cart,
             'products' => $products,
             'categories' => $categoriesArr,
+            'sizesByItem' => $sizesByItem,
+            'colorsByProduct' => $colorsByProduct,
         ]);
     }
 }

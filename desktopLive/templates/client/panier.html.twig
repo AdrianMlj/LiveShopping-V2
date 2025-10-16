@@ -1,18 +1,12 @@
 {% include 'components/navbarClient.html.twig' %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 {% block content %}
 <div class="shopping-cart">
     {% if cart|length == 0 %}
         <div class="empty-cart">
-            <div class="empty-cart-animation">
-                <div class="cart-icon">
-                    <i class="fa-solid fa-cart-shopping"></i>
-                </div>
-                <div class="floating-products">
-                    <div class="floating-product">👕</div>
-                    <div class="floating-product">👖</div>
-                    <div class="floating-product">👟</div>
-                </div>
+            <div class="empty-icon">
+                <i class="fas fa-shopping-cart"></i>
             </div>
             <h2>Votre panier vous attend</h2>
             <p>Il semble un peu vide... Ajoutez vos produits préférés pour commencer vos achats</p>
@@ -114,12 +108,12 @@
                             <div class="quantity-section">
                                 <div class="quantity-controls">
                                     <button class="qty-btn decrease" data-id="{{ item.id }}" aria-label="Réduire la quantité">
-                                        <i class="fa-solid fa-minus">-</i>
+                                        <i class="fa-solid fa-minus"></i>
                                     </button>
                                     <input type="number" value="{{ item.quantity }}" min="1" class="qty-input" 
                                            data-id="{{ item.id }}" aria-label="Quantité">
                                     <button class="qty-btn increase" data-id="{{ item.id }}" aria-label="Augmenter la quantité">
-                                        <i class="fa-solid fa-plus">+</i>
+                                        <i class="fa-solid fa-plus"></i>
                                     </button>
                                 </div>
                                 
@@ -629,43 +623,23 @@ body {
     animation: fadeIn 0.6s ease-out;
 }
 
-.empty-cart-animation {
-    position: relative;
-    margin-bottom: 40px;
-}
-
-.cart-icon {
-    width: 120px;
-    height: 120px;
-    background: var(--gradient-primary);
+.empty-cart .empty-icon {
+    width: 100px;
+    height: 100px;
+    background: var(--primary-light);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
-    font-size: 3rem;
-    color: white;
+    margin: 0 auto 30px;
+    transition: var(--transition);
     animation: bounce 2s infinite;
 }
 
-.floating-products {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    height: 100%;
+.empty-cart .empty-icon i {
+    font-size: 2.8rem;
+    color: var(--primary);
 }
-
-.floating-product {
-    position: absolute;
-    font-size: 1.5rem;
-    animation: float 3s infinite ease-in-out;
-}
-
-.floating-product:nth-child(1) { top: 10%; left: 20%; animation-delay: 0s; }
-.floating-product:nth-child(2) { top: 20%; right: 20%; animation-delay: 1s; }
-.floating-product:nth-child(3) { bottom: 10%; left: 45%; animation-delay: 2s; }
 
 .empty-cart h2 {
     font-size: 2.5rem;
