@@ -5,6 +5,26 @@
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('css/live.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .video-wrapper { position: relative; }
+        .video-wrapper .hearts-layer {
+            position: absolute;
+            inset: 0; /* fill the video wrapper */
+            pointer-events: none;
+            overflow: visible;
+            z-index: 4;
+        }
+
+        .floating-heart {
+            transform: translateY(0);
+            will-change: transform, opacity;
+        }
+
+        @keyframes float-heart {
+            0% { transform: translateY(0) translateX(0); opacity: 1; }
+            100% { transform: translateY(-220px) translateX(40px); opacity: 0; }
+        }
+    </style>
 {% endblock %}
 
 {% block body %}
@@ -14,11 +34,17 @@
                 <!-- Section vidéo principale -->
                 <div class="video-main">
                     <div class="video-wrapper">
-                        <video id="webcamPreview" autoplay muted playsinline></video>
-                        <div class="video-overlay">
+                <video id="webcamPreview" autoplay muted playsinline></video>
+                {# Layer to contain floating hearts inside the video area #}
+                <div class="hearts-layer" aria-hidden="true"></div>
+                <div class="video-overlay">
                             <div class="viewer-count">
                                 <i class="fas fa-users"></i>
-                                <!-- <span id="viewerCount">0</span> spectateurs -->
+                                <span id="viewerCount">0</span> <span data-i18n="viewers">spectateurs</span>
+                            </div>
+                            <div class="likes-count">
+                                <i class="fas fa-heart"></i>
+                                <span id="likesCount">0</span>
                             </div>
                             <div class="video-controls">
                                 <button class="control-btn" id="toggleMic">
@@ -39,7 +65,7 @@
                             <h2>{{ live.titre }}</h2>
                             <div class="stream-meta">
                                 <span class="live-badge">
-                                    <i class="fas fa-circle"></i> EN DIRECT
+                                    <i class="fas fa-circle"></i> <span data-i18n="live">EN DIRECT</span>
                                 </span>
                                 <span class="stream-date">
                                     <i class="far fa-calendar-alt"></i> {{ live.startLive|date('d/m/Y H:i') }}
@@ -48,7 +74,7 @@
                         </div>
 
                         <div class="stream-description">
-                            <h3><i class="fas fa-info-circle"></i> Description</h3>
+                            <h3><i class="fas fa-info-circle"></i> <span data-i18n="description">Description</span></h3>
                             <p>{{ live.description }}</p>
                         </div>
 
@@ -56,20 +82,23 @@
                             <div class="stats-grid">
                                 <div class="stat-card">
                                     <div class="stat-value">--:--</div>
-                                    <div class="stat-label">Durée</div>
+                                    <div class="stat-label" data-i18n="duration">Durée</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="stream-actions">
-                        <a href="{{ path('admin_live_stop', {'id': live.id}) }}" class="stop-stream-btn">
-                            <i class="fas fa-stop"></i> Terminer le stream
-                        </a>
+                        <form id="stopLiveForm" method="POST" action="{{ path('admin_live_stop', {'id': live.id}) }}">
+                            <input type="hidden" name="likes_count" id="likesCountInput" value="0">
+                            <button type="submit" class="stop-stream-btn">
+                                <i class="fas fa-stop"></i> <span data-i18n="end_stream">Terminer le stream</span>
+                            </button>
+                        </form>
                     </div>
 
                     <div class="debug-console">
-                        <h3><i class="fas fa-terminal"></i> Console technique</h3>
+                        <h3><i class="fas fa-terminal"></i> <span data-i18n="technical_console">Console technique</span></h3>
                         <div class="debug-logs" id="debugLogs"></div>
                     </div>
                 </div>
@@ -80,10 +109,10 @@
                     <div class="no-live-icon">
                         <i class="fas fa-video-slash"></i>
                     </div>
-                    <h2>Aucun live en cours</h2>
-                    <p>Commencez un nouveau stream pour interagir avec votre audience</p>
+                    <h2 data-i18n="no_live_active">Aucun live en cours</h2>
+                    <p data-i18n="start_new_stream">Commencez un nouveau stream pour interagir avec votre audience</p>
                     <a href="{{ path('admin_live_start') }}" class="start-stream-btn">
-                        <i class="fas fa-play"></i> Démarrer un live
+                        <i class="fas fa-play"></i> <span data-i18n="start_live">Démarrer un live</span>
                     </a>
                 </div>
             </div>
@@ -122,262 +151,635 @@
             }
         }
 
+        // Fonction pour créer des animations de cœurs flottants
+        function createFloatingHeart() {
+            const heart = document.createElement('div');
+            const heartEmojis = ['❤️', '💖', '💕', '💓', '💗', '💘', '💝', '💞'];
+            const randomEmoji = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+
+            heart.className = 'floating-heart';
+            heart.innerHTML = randomEmoji;
+
+            // find hearts layer inside the video wrapper
+            const heartsLayer = document.querySelector('.video-wrapper .hearts-layer');
+            // fallback to body if not found
+            const container = heartsLayer || document.body;
+
+            const rect = container.getBoundingClientRect();
+            const startX = Math.random() * rect.width;
+            const duration = Math.random() * 1 + 3; // Durée entre 3 et 4 secondes
+            const size = Math.random() * 20 + 30; // Taille entre 30px et 50px
+
+            heart.style.cssText = `
+                position: absolute;
+                font-size: ${size}px;
+                left: ${startX}px;
+                bottom: -50px;
+                pointer-events: none;
+                z-index: 5;
+                opacity: 1;
+                animation: float-heart ${duration}s ease-out forwards;
+            `;
+
+            container.appendChild(heart);
+
+            // Supprimer le cœur après l'animation
+            setTimeout(() => {
+                if (heart.parentNode) {
+                    heart.remove();
+                }
+            }, duration * 1000);
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
-            function spawnHearts(container){
-                if (!container) return;
-                let layer = container.querySelector('.hearts-container');
-                if (!layer) {
-                    layer = document.createElement('div');
-                    layer.className = 'hearts-container';
-                    container.appendChild(layer);
-                }
-                const count = 6;
-                for (let i = 0; i < count; i++) {
-                    const heart = document.createElement('div');
-                    heart.className = 'heart';
-                    heart.textContent = '❤️';
-                    const left = Math.random() * 80 + 10;
-                    const size = Math.random() * 12 + 18;
-                    const drift = (Math.random() * 40 - 20);
-                    const duration = (Math.random() * 1.0 + 2.2).toFixed(2);
-                    const delay = (Math.random() * 0.2).toFixed(2);
-                    heart.style.left = left + '%';
-                    heart.style.fontSize = size + 'px';
-                    heart.style.animationDuration = duration + 's';
-                    heart.style.animationDelay = delay + 's';
-                    heart.style.setProperty('--drift', drift + '%');
-                    layer.appendChild(heart);
-                    const removeAfter = (parseFloat(duration) + parseFloat(delay)) * 1000 + 200;
-                    setTimeout(() => { heart.remove(); }, removeAfter);
-                }
-            }
+        debugLog('Initialisation du streamer...', 'info');
 
-            // click sur la vidéo pour déclencher l'animation, non intrusif
-            const videoWrapper = document.querySelector('.video-wrapper');
-            if (videoWrapper) {
-                videoWrapper.addEventListener('click', function(){
-                    spawnHearts(videoWrapper);
-                });
-            }
-            debugLog('Initialisation du streamer...', 'info');
+        const signalingServer = new WebSocket('ws://localhost:9090');
+        const peerConnections = new Map();
+        let localStream;
+        let totalLikes = 0; // Variable pour stocker le nombre de likes
+        let viewerCount = 0; // Variable pour stocker le nombre de spectateurs
+        let totalViewers = 0; // Variable pour stocker le nombre total de spectateurs (max)
 
-            const signalingServer = new WebSocket('ws://localhost:9090');
-            const peerConnections = new Map();
-            let localStream;
-
-            // Configuration des événements WebSocket
-            signalingServer.onopen = () => {
-                debugLog('Connexion WebSocket établie avec le serveur de signalisation', 'success');
-                const message = {
-                    type: 'streamer',
-                    adminId: '{{ seller.id }}'
-                };
-                debugLog(`Envoi identification streamer: ${JSON.stringify(message)}`, 'info');
-                signalingServer.send(JSON.stringify(message));
+        // Configuration des événements WebSocket
+        signalingServer.onopen = () => {
+            debugLog('Connexion WebSocket établie avec le serveur de signalisation', 'success');
+            const message = {
+                type: 'streamer',
+                adminId: '{{ seller.id }}'
             };
+            debugLog(`Envoi identification streamer: ${JSON.stringify(message)}`, 'info');
+            signalingServer.send(JSON.stringify(message));
+        };
 
-            signalingServer.onerror = (error) => {
-                debugLog(`Erreur WebSocket: ${error}`, 'error');
-                debugLog(`Vérifiez que le serveur Node.js est en cours d'exécution sur le port 9090`, 'warning');
-                console.error('WebSocket Error:', error);
-            };
+        signalingServer.onerror = (error) => {
+            debugLog(`Erreur WebSocket: ${error}`, 'error');
+            debugLog(`Vérifiez que le serveur Node.js est en cours d'exécution sur le port 9090`, 'warning');
+            console.error('WebSocket Error:', error);
+        };
 
-            signalingServer.onclose = (event) => {
-                debugLog(`Connexion WebSocket fermée: ${event.code} - ${event.reason}`, 'warning');
-            };
+        signalingServer.onclose = (event) => {
+            debugLog(`Connexion WebSocket fermée: ${event.code} - ${event.reason}`, 'warning');
+        };
 
-            // Gestion des messages WebSocket
-            signalingServer.onmessage = async (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    debugLog(`Message reçu: ${JSON.stringify(data)}`, 'info');
+        // Gestion des messages WebSocket
+        signalingServer.onmessage = async (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                debugLog(`Message reçu: ${JSON.stringify(data)}`, 'info');
 
-                    if (data.type === 'newViewer') {
-                        const viewerId = data.viewerId;
-                        debugLog(`Nouveau viewer connecté: ${viewerId}`, 'success');
+                if (data.type === 'newViewer') {
+                    const viewerId = data.viewerId;
+                    debugLog(`Nouveau viewer connecté: ${viewerId}`, 'success');
 
-                        if (!localStream) {
-                            debugLog('Aucun stream local disponible pour le viewer', 'warning');
-                            return;
-                        }
+                    // Incrémenter le compteur de spectateurs
+                    viewerCount++;
+                    document.getElementById('viewerCount').textContent = viewerCount;
 
-                        const pc = new RTCPeerConnection({
-                            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                        });
+                    // Mettre à jour le nombre total de spectateurs (max)
+                    if (viewerCount > totalViewers) {
+                        totalViewers = viewerCount;
+                    }
 
-                        // Ajouter les tracks
-                        localStream.getTracks().forEach(track => {
-                            pc.addTrack(track, localStream);
-                            debugLog(`Track ${track.kind} ajouté pour viewer ${viewerId}`, 'info');
-                        });
+                    debugLog(`Nombre de spectateurs: ${viewerCount} (Total: ${totalViewers})`, 'info');
 
-                        pc.onicecandidate = e => {
-                            if (e.candidate) {
-                                debugLog(`Envoi ICE candidate pour viewer ${viewerId}: ${e.candidate.type}`, 'info');
-                                signalingServer.send(JSON.stringify({
-                                    type: 'candidate',
-                                    candidate: e.candidate,
-                                    target: 'viewer',
-                                    viewerId: viewerId
-                                }));
-                            }
-                        };
+                    if (!localStream) {
+                        debugLog('Aucun stream local disponible pour le viewer', 'warning');
+                        return;
+                    }
 
-                        pc.onconnectionstatechange = () => {
-                            debugLog(`État de connexion pour ${viewerId}: ${pc.connectionState}`, 'info');
-                            if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-                                peerConnections.delete(viewerId);
-                            }
-                        };
+                    const pc = new RTCPeerConnection({
+                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    });
 
-                        try {
-                            debugLog(`Création de l'offre SDP pour viewer ${viewerId}...`, 'info');
-                            const offer = await pc.createOffer();
-                            await pc.setLocalDescription(offer);
-                            debugLog(`Offre créée pour viewer ${viewerId}`, 'success');
+                    localStream.getTracks().forEach(track => {
+                        pc.addTrack(track, localStream);
+                        debugLog(`Track ${track.kind} ajouté pour viewer ${viewerId}`, 'info');
+                    });
 
+                    pc.onicecandidate = e => {
+                        if (e.candidate) {
+                            debugLog(`Envoi ICE candidate pour viewer ${viewerId}: ${e.candidate.type}`, 'info');
                             signalingServer.send(JSON.stringify({
-                                type: 'offer',
-                                offer: offer,
+                                type: 'candidate',
+                                candidate: e.candidate,
+                                target: 'viewer',
                                 viewerId: viewerId
                             }));
+                        }
+                    };
 
-                            peerConnections.set(viewerId, pc);
-                            debugLog(`PeerConnection stockée pour viewer ${viewerId}`, 'info');
+                    pc.onconnectionstatechange = () => {
+                        debugLog(`État de connexion pour ${viewerId}: ${pc.connectionState}`, 'info');
+                        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                            peerConnections.delete(viewerId);
+                            // Décrémenter le compteur de spectateurs
+                            viewerCount = Math.max(0, viewerCount - 1);
+                            document.getElementById('viewerCount').textContent = viewerCount;
+                            debugLog(`Viewer déconnecté. Nombre de spectateurs: ${viewerCount}`, 'warning');
+                        }
+                    };
 
+                    try {
+                        debugLog(`Création de l'offre SDP pour viewer ${viewerId}...`, 'info');
+                        const offer = await pc.createOffer();
+                        await pc.setLocalDescription(offer);
+                        debugLog(`Offre créée pour viewer ${viewerId}`, 'success');
+
+                        signalingServer.send(JSON.stringify({
+                            type: 'offer',
+                            offer: offer,
+                            viewerId: viewerId
+                        }));
+
+                        peerConnections.set(viewerId, pc);
+                        debugLog(`PeerConnection stockée pour viewer ${viewerId}`, 'info');
+
+                    } catch (error) {
+                        debugLog(`Erreur lors de la création de l'offre pour ${viewerId}: ${error.message}`, 'error');
+                    }
+                }
+                else if (data.type === 'answer') {
+                    const viewerId = data.viewerId;
+                    debugLog(`Réponse SDP reçue du viewer ${viewerId}`, 'info');
+
+                    const pc = peerConnections.get(viewerId);
+                    if (pc) {
+                        try {
+                            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                            debugLog(`Réponse SDP acceptée pour viewer ${viewerId}`, 'success');
                         } catch (error) {
-                            debugLog(`Erreur lors de la création de l'offre pour ${viewerId}: ${error.message}`, 'error');
-                        }
-                    }
-                    else if (data.type === 'answer') {
-                        const viewerId = data.viewerId;
-                        debugLog(`Réponse SDP reçue du viewer ${viewerId}`, 'info');
-
-                        const pc = peerConnections.get(viewerId);
-                        if (pc) {
-                            try {
-                                await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-                                debugLog(`Réponse SDP acceptée pour viewer ${viewerId}`, 'success');
-                            } catch (error) {
-                                debugLog(`Erreur lors du traitement de la réponse pour ${viewerId}: ${error.message}`, 'error');
-                            }
-                        } else {
-                            debugLog(`Aucune PeerConnection trouvée pour viewer ${viewerId}`, 'warning');
-                        }
-                    }
-                    else if (data.type === 'candidate') {
-                        const viewerId = data.viewerId;
-                        debugLog(`ICE candidate reçu du viewer ${viewerId}`, 'info');
-
-                        const pc = peerConnections.get(viewerId);
-                        if (pc) {
-                            try {
-                                await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-                                debugLog(`ICE candidate ajouté pour viewer ${viewerId}`, 'success');
-                            } catch (error) {
-                                debugLog(`Erreur lors de l'ajout du ICE candidate pour ${viewerId}: ${error.message}`, 'error');
-                            }
-                        } else {
-                            debugLog(`Aucune PeerConnection trouvée pour ICE candidate de ${viewerId}`, 'warning');
+                            debugLog(`Erreur lors du traitement de la réponse pour ${viewerId}: ${error.message}`, 'error');
                         }
                     } else {
-                        debugLog(`Type de message non géré: ${data.type}`, 'warning');
+                        debugLog(`Aucune PeerConnection trouvée pour viewer ${viewerId}`, 'warning');
                     }
-                } catch (error) {
-                    debugLog(`Erreur lors du traitement du message: ${error.message}`, 'error');
+                }
+                else if (data.type === 'candidate') {
+                    const viewerId = data.viewerId;
+                    debugLog(`ICE candidate reçu du viewer ${viewerId}`, 'info');
+
+                    const pc = peerConnections.get(viewerId);
+                    if (pc) {
+                        try {
+                            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                            debugLog(`ICE candidate ajouté pour viewer ${viewerId}`, 'success');
+                        } catch (error) {
+                            debugLog(`Erreur lors de l'ajout du ICE candidate pour ${viewerId}: ${error.message}`, 'error');
+                        }
+                    } else {
+                        debugLog(`Aucune PeerConnection trouvée pour ICE candidate de ${viewerId}`, 'warning');
+                    }
+                }
+                else if (data.type === 'likeUpdate') {
+                    const previousLikes = totalLikes;
+                    totalLikes = data.count;
+                    debugLog(`Likes mis à jour: ${totalLikes}`, 'success');
+
+                    // Mettre à jour l'affichage
+                    document.getElementById('likesCount').textContent = totalLikes;
+
+                    // Mettre à jour le champ caché du formulaire
+                    const likesInput = document.getElementById('likesCountInput');
+                    if (likesInput) {
+                        likesInput.value = totalLikes;
+                    }
+
+                    // Créer une animation de cœur pour chaque nouveau like
+                    const newLikes = totalLikes - previousLikes;
+                    for (let i = 0; i < newLikes; i++) {
+                        setTimeout(() => {
+                            createFloatingHeart();
+                        }, i * 100); // Décalage de 100ms entre chaque cœur
+                    }
+                }
+                else if (data.type === 'likesCount') {
+                    totalLikes = data.count;
+                    debugLog(`Total de likes reçu: ${totalLikes}`, 'info');
+                    document.getElementById('likesCount').textContent = totalLikes;
+
+                    // Calculer la durée du live
+                    const liveDuration = document.querySelector('.stream-stats .stat-value').textContent;
+
+                    showLikesPopup(totalLikes, liveDuration, totalViewers);
+                }
+                else {
+                    debugLog(`Type de message non géré: ${data.type}`, 'warning');
+                }
+            } catch (error) {
+                debugLog(`Erreur lors du traitement du message: ${error.message}`, 'error');
+            }
+        };
+
+        // Fonction pour afficher le popup de likes
+        let likesPopupShown = false;
+        function showLikesPopup(likesCount, duration = '--:--', viewers = 0) {
+            if (likesPopupShown) return;
+            likesPopupShown = true;
+
+            const lang = localStorage.getItem('site_language') || 'en';
+            const texts = {
+                en: {
+                    title: 'Live Stream Summary',
+                    received: 'You received',
+                    loves: 'Love from your viewers',
+                    duration: 'Duration',
+                    viewers: 'Total viewers',
+                    close: 'Close'
+                },
+                fr: {
+                    title: 'Résumé du live',
+                    received: 'Vous avez reçu',
+                    loves: 'J\'adore de vos spectateurs',
+                    duration: 'Durée',
+                    viewers: 'Total spectateurs',
+                    close: 'Fermer'
                 }
             };
+            const t = texts[lang];
 
-            // Obtenir le stream local
-            debugLog('Demande d\'accès à la caméra et au microphone...', 'info');
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                    frameRate: { ideal: 30 }
-                },
-                audio: true
-            })
-            .then(stream => {
-                localStream = stream;
-                const webcam = document.getElementById("webcamPreview");
-                webcam.srcObject = stream;
-                debugLog(`Stream local obtenu avec ${stream.getTracks().length} pistes`, 'success');
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                color: #1f2937;
+                padding: 32px;
+                border-radius: 16px;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                z-index: 10000;
+                text-align: center;
+                animation: popupEntry 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                max-width: 500px;
+                width: 90%;
+                border: 1px solid #e5e7eb;
+                border-left: 6px solid #4361ee;
+                overflow: hidden;
+            `;
 
-                stream.getTracks().forEach(track => {
-                    debugLog(`Piste disponible: ${track.kind} - ${track.label}`, 'info');
-                    track.onended = () => {
-                        debugLog(`Piste ${track.kind} terminée`, 'warning');
-                    };
-                });
-
-                debugLog('Streamer prêt à diffuser', 'success');
-            })
-            .catch(err => {
-                debugLog(`Erreur d'accès aux médias: ${err.message}`, 'error');
-                alert("Erreur: Impossible d'accéder à la caméra/microphone. Veuillez vérifier vos permissions.");
-            });
-
-            // Gestion des boutons de contrôle
-            document.getElementById('toggleMic').addEventListener('click', function() {
-                if (localStream) {
-                    const audioTrack = localStream.getAudioTracks()[0];
-                    if (audioTrack) {
-                        audioTrack.enabled = !audioTrack.enabled;
-                        this.classList.toggle('muted', !audioTrack.enabled);
-                        debugLog(`Microphone ${audioTrack.enabled ? 'activé' : 'désactivé'}`, 'info');
+            popup.innerHTML = `
+                <style>
+                    @keyframes popupEntry {
+                        from {
+                            opacity: 0;
+                            transform: translate(-50%, -50%) scale(0.9) translateY(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translate(-50%, -50%) scale(1) translateY(0);
+                        }
                     }
-                }
-            });
-
-            document.getElementById('toggleCam').addEventListener('click', function() {
-                if (localStream) {
-                    const videoTrack = localStream.getVideoTracks()[0];
-                    if (videoTrack) {
-                        videoTrack.enabled = !videoTrack.enabled;
-                        this.classList.toggle('muted', !videoTrack.enabled);
-                        debugLog(`Caméra ${videoTrack.enabled ? 'activée' : 'désactivée'}`, 'info');
+                    @keyframes heartBeat {
+                        0%, 100% { transform: scale(1); }
+                        25% { transform: scale(1.15); }
+                        50% { transform: scale(1); }
                     }
+                    @keyframes countUp {
+                        from {
+                            opacity: 0;
+                            transform: translateY(10px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                </style>
+                <div style="
+                    position: absolute;
+                    top: -30px;
+                    right: -30px;
+                    width: 120px;
+                    height: 120px;
+                    background: linear-gradient(135deg, rgba(67, 97, 238, 0.08) 0%, transparent 70%);
+                    border-radius: 50%;
+                    z-index: 0;
+                "></div>
+                <div style="position: relative; z-index: 1;">
+                <h3 style="
+                    margin: 0 0 20px 0;
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #111827;
+                    animation: fadeIn 0.5s ease-out both;
+                ">
+                    ${t.title}
+                </h3>
+
+                <!-- Grille des statistiques -->
+                <div style="
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 12px;
+                    margin-bottom: 24px;
+                    animation: fadeIn 0.5s ease-out 0.1s both;
+                ">
+                    <div style="
+                        background: #f8fafc;
+                        padding: 16px;
+                        border-radius: 10px;
+                        border: 1px solid #e5e7eb;
+                    ">
+                        <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                            <i class="fas fa-clock" style="margin-right: 6px;"></i>${t.duration}
+                        </div>
+                        <div style="font-size: 28px; font-weight: 700; color: #4361ee;">
+                            ${duration}
+                        </div>
+                    </div>
+                    <div style="
+                        background: #f8fafc;
+                        padding: 16px;
+                        border-radius: 10px;
+                        border: 1px solid #e5e7eb;
+                    ">
+                        <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                            <i class="fas fa-users" style="margin-right: 6px;"></i>${t.viewers}
+                        </div>
+                        <div style="font-size: 28px; font-weight: 700; color: #4361ee;">
+                            ${viewers}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section des likes -->
+                <div style="
+                    background: linear-gradient(135deg, #fef3f4 0%, #fef2f2 100%);
+                    padding: 24px;
+                    border-radius: 12px;
+                    border: 1px solid #fecaca;
+                    margin-bottom: 24px;
+                    animation: fadeIn 0.5s ease-out 0.2s both;
+                ">
+                    <div style="
+                        font-size: 56px;
+                        margin-bottom: 12px;
+                        animation: heartBeat 2s ease-in-out infinite;
+                        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.1));
+                    ">
+                        ❤️
+                    </div>
+                    <p style="
+                        margin: 0 0 8px 0;
+                        font-size: 13px;
+                        color: #6b7280;
+                        font-weight: 500;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    ">
+                        ${t.received}
+                    </p>
+                    <div style="
+                        font-size: 48px;
+                        font-weight: 800;
+                        margin: 8px 0 12px 0;
+                        background: linear-gradient(135deg, #4361ee 0%, #f72585 100%);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                        animation: countUp 0.6s ease-out both;
+                    ">
+                        ${likesCount}
+                    </div>
+                    <p style="
+                        margin: 0;
+                        font-size: 14px;
+                        font-weight: 500;
+                        color: #374151;
+                        line-height: 1.5;
+                    ">
+                        ${t.loves}
+                    </p>
+                </div>
+
+                <button id="closePopup" style="
+                    padding: 12px 32px;
+                    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 12px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    animation: fadeIn 0.5s ease-out 0.4s both;
+                    box-shadow: 0 4px 8px rgba(67, 97, 238, 0.3);
+                ">
+                    ${t.close}
+                </button>
+                </div>
+            `;
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 9999;
+                backdrop-filter: blur(2px);
+                animation: overlayFade 0.3s ease-out;
+            `;
+
+            // Ajouter le style pour l'animation de l'overlay
+            const overlayStyle = document.createElement('style');
+            overlayStyle.textContent = `
+                @keyframes overlayFade {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
+            `;
+            document.head.appendChild(overlayStyle);
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(popup);
+
+            // Ajouter les effets hover au bouton
+            const closeBtn = document.getElementById('closePopup');
+            closeBtn.addEventListener('mouseenter', function() {
+                this.style.background = 'linear-gradient(135deg, #3a0ca3 0%, #4361ee 100%)';
+                this.style.transform = 'translateY(-3px)';
+                this.style.boxShadow = '0 8px 16px rgba(67, 97, 238, 0.4)';
             });
 
-            // Variables pour le timer
-            let startTime;
-            let durationInterval;
-            const durationElement = document.querySelector('.stream-stats .stat-value');
-
-            // Fonction pour démarrer le timer
-            function startDurationTimer() {
-                startTime = new Date();
-                durationInterval = setInterval(updateDuration, 1000);
-            }
-
-            // Fonction pour mettre à jour l'affichage de la durée
-            function updateDuration() {
-                const now = new Date();
-                const elapsed = Math.floor((now - startTime) / 1000); // en secondes
-
-                const hours = Math.floor(elapsed / 3600);
-                const minutes = Math.floor((elapsed % 3600) / 60);
-                const seconds = elapsed % 60;
-
-                // Format HH:MM:SS ou MM:SS selon la durée
-                const formattedTime = hours > 0
-                    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-                    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                durationElement.textContent = formattedTime;
-            }
-
-            // Démarrer le timer quand le stream commence
-            startDurationTimer();
-
-            window.addEventListener('beforeunload', function() {
-                if (durationInterval) {
-                    clearInterval(durationInterval);
-                }
+            closeBtn.addEventListener('mouseleave', function() {
+                this.style.background = 'linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%)';
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 4px 8px rgba(67, 97, 238, 0.3)';
             });
+
+            closeBtn.addEventListener('click', () => {
+                popup.style.animation = 'popupEntry 0.3s ease-in reverse';
+                overlay.style.animation = 'overlayFade 0.2s ease-in reverse';
+
+                setTimeout(() => {
+                    popup.remove();
+                    overlay.remove();
+                    overlayStyle.remove();
+
+                    // Mettre à jour le champ caché et soumettre le formulaire
+                    const likesInput = document.getElementById('likesCountInput');
+                    const form = document.getElementById('stopLiveForm');
+                    if (likesInput && form) {
+                        likesInput.value = totalLikes;
+                        debugLog(`Soumission du formulaire avec ${totalLikes} likes`, 'info');
+                        form.submit();
+                    }
+                }, 200);
+            });
+
+            overlay.addEventListener('click', () => {
+                popup.style.animation = 'popupEntry 0.3s ease-in reverse';
+                overlay.style.animation = 'overlayFade 0.2s ease-in reverse';
+
+                setTimeout(() => {
+                    popup.remove();
+                    overlay.remove();
+                    overlayStyle.remove();
+
+                    // Mettre à jour le champ caché et soumettre le formulaire
+                    const likesInput = document.getElementById('likesCountInput');
+                    const form = document.getElementById('stopLiveForm');
+                    if (likesInput && form) {
+                        likesInput.value = totalLikes;
+                        debugLog(`Soumission du formulaire avec ${totalLikes} likes`, 'info');
+                        form.submit();
+                    }
+                }, 200);
+            });
+        }
+
+        // Obtenir le stream local
+        debugLog('Demande d\'accès à la caméra et au microphone...', 'info');
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
+            },
+            audio: true
+        })
+        .then(stream => {
+            localStream = stream;
+            const webcam = document.getElementById("webcamPreview");
+            webcam.srcObject = stream;
+            debugLog(`Stream local obtenu avec ${stream.getTracks().length} pistes`, 'success');
+
+            stream.getTracks().forEach(track => {
+                debugLog(`Piste disponible: ${track.kind} - ${track.label}`, 'info');
+                track.onended = () => {
+                    debugLog(`Piste ${track.kind} terminée`, 'warning');
+                };
+            });
+
+            debugLog('Streamer prêt à diffuser', 'success');
+        })
+        .catch(err => {
+            debugLog(`Erreur d'accès aux médias: ${err.message}`, 'error');
+            alert('Erreur : Impossible d\'accéder à la caméra/microphone. Vérifiez vos autorisations.');
         });
+
+        // Gestion des boutons de contrôle
+        document.getElementById('toggleMic').addEventListener('click', function() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    this.classList.toggle('muted', !audioTrack.enabled);
+                    debugLog(`Microphone ${audioTrack.enabled ? 'activé' : 'désactivé'}`, 'info');
+                }
+            }
+        });
+
+        document.getElementById('toggleCam').addEventListener('click', function() {
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    this.classList.toggle('muted', !videoTrack.enabled);
+                    debugLog(`Caméra ${videoTrack.enabled ? 'activée' : 'désactivée'}`, 'info');
+                }
+            }
+        });
+
+        // Timer de durée
+        let startTime;
+        let durationInterval;
+        const durationElement = document.querySelector('.stream-stats .stat-value');
+
+        function startDurationTimer() {
+            startTime = new Date();
+            durationInterval = setInterval(updateDuration, 1000);
+        }
+
+        function updateDuration() {
+            const now = new Date();
+            const elapsed = Math.floor((now - startTime) / 1000);
+
+            const hours = Math.floor(elapsed / 3600);
+            const minutes = Math.floor((elapsed % 3600) / 60);
+            const seconds = elapsed % 60;
+
+            const formattedTime = hours > 0
+                ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+                : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            durationElement.textContent = formattedTime;
+        }
+
+        startDurationTimer();
+
+        window.addEventListener('beforeunload', function() {
+            if (durationInterval) {
+                clearInterval(durationInterval);
+            }
+        });
+
+        // Modifier le formulaire "Terminer le stream" pour récupérer les likes
+        const stopLiveForm = document.getElementById('stopLiveForm');
+        const likesCountInput = document.getElementById('likesCountInput');
+
+        stopLiveForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            debugLog('Demande du nombre total de likes...', 'info');
+
+            // Envoyer la demande de likes
+            if (signalingServer && signalingServer.readyState === WebSocket.OPEN) {
+                signalingServer.send(JSON.stringify({
+                    type: 'getLikes',
+                    adminId: '{{ seller.id }}'
+                }));
+            }
+
+            // Attendre 1 seconde pour recevoir la réponse et afficher le popup
+            setTimeout(() => {
+                // Si le popup n'a pas été affiché, l'afficher avec les likes actuels
+                if (!likesPopupShown) {
+                    const liveDuration = document.querySelector('.stream-stats .stat-value').textContent;
+                    showLikesPopup(totalLikes, liveDuration, totalViewers);
+                }
+
+                // Mettre à jour le champ caché avec le nombre total de likes
+                likesCountInput.value = totalLikes;
+                debugLog(`Nombre de likes à enregistrer: ${totalLikes}`, 'info');
+
+                // Attendre encore 5 secondes avant de soumettre le formulaire
+                setTimeout(() => {
+                    debugLog('Soumission du formulaire...', 'info');
+                    stopLiveForm.submit();
+                }, 5000);
+            }, 1000);
+        });
+    });
         </script>
     {% endif %}
 {% endblock %}
