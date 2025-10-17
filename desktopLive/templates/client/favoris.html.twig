@@ -47,7 +47,7 @@
 
                     <!-- Product Image -->
                     <div class="product-image">
-                        <img src="{{ fav.item.images ? '/uploads/' ~ fav.item.images : '/uploads/default-product.jpg' }}" 
+                        <img src="{{ fav.item.images ? '/uploads/' ~ fav.item.images : '/uploads/default-product.jpg' }}"
                              alt="{{ fav.item.nameitem }}" loading="lazy">
                         <div class="image-overlay">
                             {# <button class="quick-view-btn">
@@ -61,12 +61,12 @@
                     <div class="product-details">
                         <h3 class="product-name">{{ fav.item.nameitem }}</h3>
                         <p class="product-description">{{ fav.item.description|raw|striptags|slice(0, 80) }}...</p>
-                        
+
                         <div class="product-meta">
                             <div class="price-section">
                                 <span class="product-price">${{ fav.price }}</span>
                             </div>
-                            
+
                             <div class="size-section">
                                 <label class="size-label">Taille :</label>
                                 {% set selectedIds = [] %}
@@ -130,17 +130,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     card.style.transform = 'scale(0.8)';
                     card.style.opacity = '0';
                     card.style.transition = 'all 0.4s ease';
-                    
+
                     setTimeout(() => {
                         card.remove();
-                        
+
                         // Mettre à jour le compteur
                         const remainingCards = document.querySelectorAll('.favorite-card').length;
                         const statsBadge = document.querySelector('.stats-badge');
                         if (statsBadge) {
                             statsBadge.textContent = remainingCards + ' produit' + (remainingCards > 1 ? 's' : '') + ' favoris';
                         }
-                        
+
                         // Afficher l'état vide si nécessaire
                         if (remainingCards === 0) {
                             showEmptyState();
@@ -200,12 +200,12 @@ document.addEventListener('DOMContentLoaded', function () {
             <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}"></i>
             <span>${message}</span>
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         // Animation d'entrée
         setTimeout(() => notification.classList.add('show'), 100);
-        
+
         // Supprimer après 3 secondes
         setTimeout(() => {
             notification.classList.remove('show');
@@ -689,33 +689,33 @@ body {
         margin-top: 60px;
         padding: 0 15px;
     }
-    
+
     .hero-content {
         padding: 40px 20px;
     }
-    
+
     .hero-title {
         font-size: 2.2rem;
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .favorites-grid {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     .product-meta {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .size-section {
         flex-direction: column;
         align-items: flex-start;
         gap: 6px;
     }
-    
+
     .size-select {
         width: 100%;
     }
@@ -725,20 +725,20 @@ body {
     .hero-title {
         font-size: 1.8rem;
     }
-    
+
     .empty-favorites {
         padding: 60px 20px;
     }
-    
+
     .empty-icon {
         width: 80px;
         height: 80px;
     }
-    
+
     .empty-icon i {
         font-size: 2.5rem;
     }
-    
+
     .product-image {
         height: 180px;
     }

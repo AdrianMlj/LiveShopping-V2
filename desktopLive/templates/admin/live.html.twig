@@ -5,6 +5,26 @@
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('css/live.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .video-wrapper { position: relative; }
+        .video-wrapper .hearts-layer {
+            position: absolute;
+            inset: 0; /* fill the video wrapper */
+            pointer-events: none;
+            overflow: visible;
+            z-index: 4;
+        }
+
+        .floating-heart {
+            transform: translateY(0);
+            will-change: transform, opacity;
+        }
+
+        @keyframes float-heart {
+            0% { transform: translateY(0) translateX(0); opacity: 1; }
+            100% { transform: translateY(-220px) translateX(40px); opacity: 0; }
+        }
+    </style>
 {% endblock %}
 
 {% block body %}
@@ -14,8 +34,10 @@
                 <!-- Section vidéo principale -->
                 <div class="video-main">
                     <div class="video-wrapper">
-                        <video id="webcamPreview" autoplay muted playsinline></video>
-                        <div class="video-overlay">
+                <video id="webcamPreview" autoplay muted playsinline></video>
+                {# Layer to contain floating hearts inside the video area #}
+                <div class="hearts-layer" aria-hidden="true"></div>
+                <div class="video-overlay">
                             <div class="viewer-count">
                                 <i class="fas fa-users"></i>
                                 <span id="viewerCount">0</span> <span data-i18n="viewers">spectateurs</span>
@@ -132,29 +154,35 @@
         // Fonction pour créer des animations de cœurs flottants
         function createFloatingHeart() {
             const heart = document.createElement('div');
-            const heartEmojis = ['❤️', '💖', '💕', '💓', '💗', '💘', '💝', '💞'];
-            const randomEmoji = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+            const heartEmojis = '❤️';
+            heartEmojis.textContent;
+            // const randomEmoji = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
 
             heart.className = 'floating-heart';
-            heart.innerHTML = randomEmoji;
+            heart.innerHTML = heartEmojis;
 
-            const startX = Math.random() * window.innerWidth;
-            const drift = (Math.random() - 0.5) * 100; // Dérive horizontale réduite
+            // find hearts layer inside the video wrapper
+            const heartsLayer = document.querySelector('.video-wrapper .hearts-layer');
+            // fallback to body if not found
+            const container = heartsLayer || document.body;
+
+            const rect = container.getBoundingClientRect();
+            const startX = Math.random() * rect.width;
             const duration = Math.random() * 1 + 3; // Durée entre 3 et 4 secondes
             const size = Math.random() * 20 + 30; // Taille entre 30px et 50px
 
             heart.style.cssText = `
-                position: fixed;
+                position: absolute;
                 font-size: ${size}px;
                 left: ${startX}px;
                 bottom: -50px;
                 pointer-events: none;
-                z-index: 9999;
+                z-index: 5;
                 opacity: 1;
                 animation: float-heart ${duration}s ease-out forwards;
             `;
 
-            document.body.appendChild(heart);
+            container.appendChild(heart);
 
             // Supprimer le cœur après l'animation
             setTimeout(() => {

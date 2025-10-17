@@ -49,7 +49,15 @@
         {# Nouvelle structure e-commerce #}
         <div class="products-grid">
                     {% for item in rows %}
-                        {% set defaultImage = item.image ? asset('uploads/' ~ item.image) : asset('uploads/robe.jpg') %}
+                        {% if item.image %}
+                            {% if item.image starts with 'http' %}
+                                {% set defaultImage = item.image %}
+                            {% else %}
+                                {% set defaultImage = asset('uploads/' ~ item.image) %}
+                            {% endif %}
+                        {% else %}
+                            {% set defaultImage = asset('uploads/robe.jpg') %}
+                        {% endif %}
                 {% set totalQty = 0 %}
                                 {% for sz in item.sizes %}
                     {% set totalQty = totalQty + sz.qty_available %}
@@ -131,7 +139,15 @@
                                  <span class="section-label" data-i18n="colors">Couleurs:</span>
                                  <div class="colors-list">
                                      {% for c in item.colors %}
-                                         {% set img = c.color_image ? asset('uploads/' ~ c.color_image) : defaultImage %}
+                                         {% if c.color_image %}
+                                             {% if c.color_image starts with 'http' %}
+                                                 {% set img = c.color_image %}
+                                             {% else %}
+                                                 {% set img = asset('uploads/' ~ c.color_image) %}
+                                             {% endif %}
+                                         {% else %}
+                                             {% set img = defaultImage %}
+                                         {% endif %}
                                          <div class="color-item {{ loop.first ? 'active' : '' }}"
                                               title="{{ c.color_name }} - Qté: {{ c.qty_total|number_format(0, ',', ' ') }}"
                                               data-color-image="{{ img }}"
@@ -238,9 +254,9 @@
         </div>
     </div>
 
-    <!-- Modal d'édition rapide d'article (name + price) -->
+    <!-- Modal d'édition rapide d'article (name + price + images) -->
     <div id="editItemModal" class="promotion-modal" style="display:none;">
-        <div class="promotion-modal-content">
+        <div class="promotion-modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h3 id="editItemModalTitle" data-i18n="edit_item">Edit item</h3>
                 <span class="modal-close" aria-label="Close">&times;</span>
@@ -248,6 +264,7 @@
 
             <form id="editItemForm" class="promotion-form">
                 <input type="hidden" id="editItemId" name="item_id" />
+
                 <div class="form-group">
                     <label for="editItemName" data-i18n="name">Name</label>
                     <input type="text" id="editItemName" name="name" placeholder="Item name" data-i18n-placeholder="item_name" required />
@@ -260,6 +277,18 @@
                     <label for="editItemDescription" data-i18n="description">Description</label>
                     <textarea id="editItemDescription" name="description" rows="3" placeholder="Item description (optional)" data-i18n-placeholder="item_description_optional"></textarea>
                 </div>
+
+                <!-- Section Images des variantes de couleur -->
+                <div class="form-group">
+                    <label>Images des couleurs</label>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 10px;">
+                        💡 L'image principale affichée est celle de la première couleur
+                    </p>
+                    <div id="colorVariantsContainer" class="color-variants-grid">
+                        <!-- Les variantes de couleur seront chargées ici -->
+                    </div>
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" data-i18n="cancel">Cancel</button>
                     <button type="submit" class="btn-save" data-i18n="save">Save</button>
@@ -592,7 +621,7 @@
             const editItemClose = editItemModal ? editItemModal.querySelector('.modal-close') : null;
             const editItemCancel = editItemModal ? editItemModal.querySelector('.btn-cancel') : null;
 
-            function openEditItemModal(itemId, itemName, itemPrice, itemDescription) {
+            async function openEditItemModal(itemId, itemName, itemPrice, itemDescription) {
                 if (!editItemModal) return;
                 editItemForm.reset();
                 editItemForm.querySelector('#editItemId').value = itemId;
@@ -601,6 +630,10 @@
                 const descField = editItemForm.querySelector('#editItemDescription');
                 if (descField) descField.value = (typeof itemDescription !== 'undefined' && itemDescription !== null) ? itemDescription : '';
                 editItemTitle.textContent = 'Edit item – ' + (itemName || ('#' + itemId));
+
+                // Charger les variantes de couleur
+                await loadColorVariants(itemId);
+
                 editItemModal.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
             }
@@ -630,6 +663,103 @@
             document.addEventListener('keydown', function(e){
                 if (e.key === 'Escape' && editItemModal && editItemModal.style.display === 'flex') closeEditItemModal();
             });
+
+            // Fonction pour charger les variantes de couleur
+            async function loadColorVariants(itemId) {
+                try {
+                    const response = await fetch(`/promotion/item/${itemId}/colors`);
+                    const result = await response.json();
+
+                    if (result.success && result.colors) {
+                        const container = document.getElementById('colorVariantsContainer');
+                        container.innerHTML = '';
+
+                        result.colors.forEach((color, index) => {
+                            const colorCard = document.createElement('div');
+                            colorCard.className = 'color-variant-card';
+                            colorCard.innerHTML = `
+                                <div class="color-variant-preview">
+                                    <img src="${color.image || '/uploads/default-product.jpg'}" alt="${color.name}">
+                                </div>
+                                <div class="color-variant-info">
+                                    <strong>${color.name}</strong>
+                                    <input type="file" id="colorInput${color.item_size_color_id}" accept="image/*" style="display:none;">
+                                    <button type="button" class="btn-upload-small" onclick="document.getElementById('colorInput${color.item_size_color_id}').click()">
+                                        Changer l'image
+                                    </button>
+                                </div>
+                            `;
+                            container.appendChild(colorCard);
+
+                            // Gérer l'upload pour cette couleur
+                            const colorInput = document.getElementById(`colorInput${color.item_size_color_id}`);
+                            colorInput.addEventListener('change', async function(e) {
+                                const file = e.target.files[0];
+                                if (!file) return;
+
+                                // Prévisualiser
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    colorCard.querySelector('img').src = e.target.result;
+                                };
+                                reader.readAsDataURL(file);
+
+                                // Upload
+                                const formData = new FormData();
+                                formData.append('image', file);
+
+                                try {
+                                    const response = await fetch(`/promotion/color/${color.item_size_color_id}/upload-image`, {
+                                        method: 'POST',
+                                        body: formData
+                                    });
+
+                                    const result = await response.json();
+                                    if (result.success) {
+                                        showMessage('success', `Image de ${color.name} uploadée avec succès !`);
+                                        // Mettre à jour toutes les images de cette couleur dans la page
+                                        updateColorImages(itemId, color.id, result.image_url);
+
+                                        // Si c'est la première couleur, mettre à jour l'image principale dans la grille
+                                        if (index === 0) {
+                                            const productCard = document.querySelector(`[data-item-id="${itemId}"]`).closest('.product-card');
+                                            if (productCard) {
+                                                const mainImg = productCard.querySelector('.main-product-image');
+                                                if (mainImg) {
+                                                    mainImg.src = result.image_url;
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        showMessage('error', result.message || 'Erreur lors de l\'upload');
+                                    }
+                                } catch (error) {
+                                    console.error('Erreur upload couleur:', error);
+                                    showMessage('error', 'Erreur lors de l\'upload');
+                                }
+                            });
+                        });
+
+                        // Retourner les couleurs pour pouvoir les utiliser
+                        return result.colors;
+                    }
+                } catch (error) {
+                    console.error('Erreur chargement couleurs:', error);
+                }
+                return [];
+            }
+
+            // Fonction pour mettre à jour les images de couleur dans la grille
+            function updateColorImages(itemId, colorId, imageUrl) {
+                const productCard = document.querySelector(`[data-item-id="${itemId}"]`).closest('.product-card');
+                if (productCard) {
+                    const colorItems = productCard.querySelectorAll('.color-item img');
+                    colorItems.forEach(img => {
+                        // On met à jour toutes les images qui correspondent
+                        img.src = imageUrl;
+                    });
+                }
+            }
 
             if (editItemForm) {
                 editItemForm.addEventListener('submit', function(e){

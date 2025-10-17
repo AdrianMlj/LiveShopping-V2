@@ -138,7 +138,8 @@ class AdminController extends AbstractController
         $user = $session->get('user');
         $userID = $usersRepository->find($user->getId());
 
-        $items = $itemRepository->findAvailableItems($userID);
+        // Utiliser la même méthode que promotion pour avoir les couleurs
+        $items = $itemRepository->findItemsWithAvailableSizesGrouped($userID->getId(), null);
         return $this->render('admin/liveForm.html.twig', [
             'items' => $items
         ]);

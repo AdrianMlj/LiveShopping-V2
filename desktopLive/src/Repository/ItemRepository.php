@@ -140,7 +140,7 @@ class ItemRepository extends ServiceEntityRepository
                     'item_id' => $itemId,
                     'item_name' => $row['item_name'],
                     'item_description' => $row['item_description'] ?? null,
-                    'image' => $row['images'] ?? null,
+                    'image' => $row['color_image'] ?? $row['images'] ?? null, // Utiliser l'image de la première couleur
                     'category' => [
                         'id' => (int)$row['category_id'],
                         'name' => $row['category_name']

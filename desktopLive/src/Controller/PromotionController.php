@@ -15,6 +15,9 @@ use App\Entity\Category;
 use App\Entity\PriceItems;
 use App\Entity\Item;
 use App\Entity\Users;
+use App\Entity\ItemSizeColor;
+use App\Service\CloudinaryService;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class PromotionController extends AbstractController
 {
@@ -218,6 +221,111 @@ class PromotionController extends AbstractController
             return $this->json([
                 'success' => false,
                 'message' => 'Erreur serveur: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/promotion/item/{id}/colors', name: 'app_promotion_item_colors', methods: ['GET'])]
+    public function getItemColors(int $id): JsonResponse
+    {
+        $item = $this->entityManager->getRepository(Item::class)->find($id);
+
+        if (!$item) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Article introuvable.'
+            ], 404);
+        }
+
+        $colors = [];
+
+        // Parcourir les tailles pour récupérer les couleurs
+        foreach ($item->getItemSizes() as $itemSize) {
+            foreach ($itemSize->getItemSizeColors() as $itemSizeColor) {
+                $colorId = $itemSizeColor->getColor()->getId();
+
+                // Éviter les doublons
+                if (!isset($colors[$colorId])) {
+                    $colors[$colorId] = [
+                        'id' => $colorId,
+                        'name' => $itemSizeColor->getColor()->getNameColor(),
+                        'item_size_color_id' => $itemSizeColor->getId(),
+                        'image' => $itemSizeColor->getImages()
+                    ];
+                }
+            }
+        }
+
+        return $this->json([
+            'success' => true,
+            'colors' => array_values($colors)
+        ]);
+    }
+
+    #[Route('/promotion/color/{id}/upload-image', name: 'app_promotion_color_upload_image', methods: ['POST'])]
+    public function uploadColorImage(int $id, Request $request, CloudinaryService $cloudinaryService): JsonResponse
+    {
+        $itemSizeColor = $this->entityManager->getRepository(ItemSizeColor::class)->find($id);
+
+        if (!$itemSizeColor) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Variante de couleur introuvable.'
+            ], 404);
+        }
+
+        /** @var UploadedFile|null $imageFile */
+        $imageFile = $request->files->get('image');
+
+        if (!$imageFile) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Aucune image fournie.'
+            ], 400);
+        }
+
+        try {
+            // Supprimer l'ancienne image si elle existe sur Cloudinary
+            $oldImage = $itemSizeColor->getImages();
+            if ($oldImage && str_starts_with($oldImage, 'http') && str_contains($oldImage, 'cloudinary.com')) {
+                try {
+                    $cloudinaryService->deleteImage($oldImage);
+                } catch (\Exception $e) {
+                    // Continuer même si la suppression échoue
+                }
+            }
+
+            // Upload vers Cloudinary
+            $imageUrl = $cloudinaryService->uploadImageResized(
+                $imageFile,
+                'items/variants',
+                800,
+                800
+            );
+
+            // Mettre à jour toutes les variantes de cette couleur pour cet article
+            $item = $itemSizeColor->getItemSize()->getItem();
+            foreach ($item->getItemSizes() as $itemSize) {
+                foreach ($itemSize->getItemSizeColors() as $isc) {
+                    if ($isc->getColor()->getId() === $itemSizeColor->getColor()->getId()) {
+                        $isc->setImages($imageUrl);
+                    }
+                }
+            }
+
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Image de la variante uploadée avec succès.',
+                'image_url' => $imageUrl,
+                'color_name' => $itemSizeColor->getColor()->getNameColor()
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'upload : ' . $e->getMessage()
             ], 500);
         }
     }

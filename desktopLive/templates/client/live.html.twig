@@ -31,34 +31,34 @@
         .desc-list li { display:flex; align-items:flex-start; gap:8px; margin:6px 0; }
         .desc-list li .dot { width:8px; height:8px; background:#567AF4; border-radius:50%; margin-top:6px; }
         .products { display:flex; flex-direction:column; gap:16px; }
-        
+
         /* Styles pour les produits - MODIFIÉ selon l'image */
-        .product { 
-            display: flex; 
-            gap: 12px; 
-            background: #fff; 
-            border-radius: 16px; 
-            padding: 12px; 
-            box-shadow: 0 12px 24px rgba(0,0,0,0.12); 
+        .product {
+            display: flex;
+            gap: 12px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
             align-items: center;
             position: relative;
         }
-        .product img { 
-            width: 92px; 
-            height: 64px; 
-            object-fit: cover; 
-            border-radius: 12px; 
+        .product img {
+            width: 92px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 12px;
         }
         .product-info {
             flex-grow: 1;
         }
-        .product .name { 
-            font-weight: 800; 
+        .product .name {
+            font-weight: 800;
             margin-bottom: 4px;
         }
-        .product .price { 
-            color: #333; 
-            margin-top: 4px; 
+        .product .price {
+            color: #333;
+            margin-top: 4px;
             font-weight: 600;
         }
         .product-actions {
@@ -67,14 +67,14 @@
             align-items: flex-end;
             gap: 8px;
         }
-        .btn-bag { 
-            background: #567AF4; 
-            color: #fff; 
-            border: none; 
-            padding: 8px 12px; 
-            border-radius: 999px; 
-            cursor: pointer; 
-            font-weight: 700; 
+        .btn-bag {
+            background: #567AF4;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 700;
             white-space: nowrap;
             margin-top: 50px;
         }
@@ -99,24 +99,24 @@
             background-color: #e3f635ff;
             transform: scale(1.2);
         }
-        
-        @media (max-width: 992px) { 
-            .page { grid-template-columns: 1fr; } 
-            .right-actions{ margin-top:10px; } 
+
+        @media (max-width: 992px) {
+            .page { grid-template-columns: 1fr; }
+            .right-actions{ margin-top:10px; }
         }
-        
+
         /* Dark theme */
         body.dark-theme { background: #121212; }
-        body.dark-theme .player-card, 
-        body.dark-theme .description, 
-        body.dark-theme .product { 
-            background:#1f1f1f; 
-            box-shadow: 0 12px 24px rgba(0,0,0,0.5); 
+        body.dark-theme .player-card,
+        body.dark-theme .description,
+        body.dark-theme .product {
+            background:#1f1f1f;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.5);
         }
-        body.dark-theme .desc-title, 
-        body.dark-theme .product .name, 
-        body.dark-theme .product .price { 
-            color:#fff; 
+        body.dark-theme .desc-title,
+        body.dark-theme .product .name,
+        body.dark-theme .product .price {
+            color:#fff;
         }
         /* Lisibilité du contenu de la description en dark */
         body.dark-theme .description { color: #e6e6e6; }
@@ -301,7 +301,15 @@
             } else if (data.type === 'end') {
               console.warn('[CLIENT-LIVE] Fin du live reçue');
               videoEl.pause();
-              videoEl.poster = '{{ live.seller and live.seller.images ? '/uploads/' ~ live.seller.images : '/uploads/6891e6164b5d5.jpg' }}';
+              {% if live.seller and live.seller.images %}
+                {% if live.seller.images starts with 'http' %}
+                  videoEl.poster = '{{ live.seller.images }}';
+                {% else %}
+                  videoEl.poster = '/uploads/{{ live.seller.images }}';
+                {% endif %}
+              {% else %}
+                videoEl.poster = '/uploads/6891e6164b5d5.jpg';
+              {% endif %}
               if (videoEl.srcObject) {
                 videoEl.srcObject.getTracks().forEach(t => t.stop());
                 videoEl.srcObject = null;
@@ -334,7 +342,15 @@
         <div>
             <div class="player-card">
                 <div class="player-thumb">
-                    <video id="livePlayer" autoplay muted playsinline controls poster="{{ live.seller and live.seller.images ? '/uploads/' ~ live.seller.images : '/uploads/6891e6164b5d5.jpg' }}"></video>
+                    {% if live.seller and live.seller.images %}
+                        {% if live.seller.images starts with 'http' %}
+                            <video id="livePlayer" autoplay muted playsinline controls poster="{{ live.seller.images }}"></video>
+                        {% else %}
+                            <video id="livePlayer" autoplay muted playsinline controls poster="/uploads/{{ live.seller.images }}"></video>
+                        {% endif %}
+                    {% else %}
+                        <video id="livePlayer" autoplay muted playsinline controls poster="/uploads/6891e6164b5d5.jpg"></video>
+                    {% endif %}
                     {% if live.endLive is null %}<div class="live-badge">Live</div>{% endif %}
                     <div class="viewer-group">
                         <div class="viewer-icons">
@@ -350,7 +366,17 @@
                 <div class="below-bar">
                     <div>
                         <div class="meta">
-                            <div class="avatar"><img src="{{ live.seller and live.seller.images ? '/uploads/' ~ live.seller.images : '/uploads/6891f6e39d5a3.jpg' }}" alt="avatar"></div>
+                            <div class="avatar">
+                                {% if live.seller and live.seller.images %}
+                                    {% if live.seller.images starts with 'http' %}
+                                        <img src="{{ live.seller.images }}" alt="avatar">
+                                    {% else %}
+                                        <img src="/uploads/{{ live.seller.images }}" alt="avatar">
+                                    {% endif %}
+                                {% else %}
+                                    <img src="/uploads/6891f6e39d5a3.jpg" alt="avatar">
+                                {% endif %}
+                            </div>
                             <div class="username-chip">{{ live.seller ? live.seller.username : 'Username' }}</div>
                         </div>
                         <div class="follow-wrap">
@@ -390,7 +416,15 @@
                     aria-label="Basculer favori"
                     data-item-id="{{ product.getItem.getId }}"
                     onclick="toggleFavoriteProduct(this)"></button>
-                <img src="{{ product.getItem.getImages ? '/uploads/' ~ product.getItem.getImages : '/uploads/default-product.jpg' }}" alt="{{ product.getItem.getNameItem }}">
+                {% if product.getItem.getImages %}
+                    {% if product.getItem.getImages starts with 'http' %}
+                        <img src="{{ product.getItem.getImages }}" alt="{{ product.getItem.getNameItem }}">
+                    {% else %}
+                        <img src="/uploads/{{ product.getItem.getImages }}" alt="{{ product.getItem.getNameItem }}">
+                    {% endif %}
+                {% else %}
+                    <img src="/uploads/default-product.jpg" alt="{{ product.getItem.getNameItem }}">
+                {% endif %}
                 <div class="product-info">
                   <div class="name">{{ product.getItem.getNameItem }}</div>
                   <div class="sizes mt-2">

@@ -68,11 +68,26 @@
 
                 <div class="products-grid" id="productsGrid">
                     {% for item in items %}
+                        {% if item.image %}
+                            {% if item.image starts with 'http' %}
+                                {% set defaultImage = item.image %}
+                            {% else %}
+                                {% set defaultImage = asset('uploads/' ~ item.image) %}
+                            {% endif %}
+                        {% else %}
+                            {% set defaultImage = asset('uploads/robe.jpg') %}
+                        {% endif %}
+                        {% set totalQty = 0 %}
+                        {% for sz in item.sizes %}
+                            {% set totalQty = totalQty + sz.qty_available %}
+                        {% endfor %}
+
                         <label class="product-card-wrapper">
-                            <input type="checkbox" name="items[]" value="{{ item.id_item }}" class="product-checkbox">
-                            <article class="product-card">
+                            <input type="checkbox" name="items[]" value="{{ item.item_id }}" class="product-checkbox">
+                            <article class="product-card" data-item-id="{{ item.item_id }}">
                                 <div class="product-image-container">
-                                    <img src="{{ asset('uploads/' ~ item.images) }}" alt="{{ item.nameItem }}" class="product-image" loading="lazy">
+                                    <img src="{{ defaultImage }}" alt="{{ item.item_name }}" class="product-image main-product-image" loading="lazy"
+                                         data-product-name="{{ item.item_name }}">
                                     <div class="product-overlay">
                                         <div class="checkbox-indicator">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -80,32 +95,55 @@
                                             </svg>
                                         </div>
                                     </div>
-                                    {% if item.namePromotion|length > 0 %}
-                                        <div class="product-badge promo-badge">-{{ item.percentage }}%</div>
+                                    {% if item.promotion %}
+                                        <div class="product-badge promo-badge">-{{ item.promotion.percentage }}%</div>
                                     {% endif %}
-                                    {% if item.stock_disponible <= 10 and item.stock_disponible > 0 %}
+                                    {% if totalQty <= 10 and totalQty > 0 %}
                                         <div class="product-badge stock-badge">Stock faible</div>
-                                    {% elseif item.stock_disponible == 0 %}
+                                    {% elseif totalQty == 0 %}
                                         <div class="product-badge out-of-stock-badge">Rupture</div>
                                     {% endif %}
                                 </div>
 
                                 <div class="product-info">
-                                    <h3 class="product-name">{{ item.nameItem }}</h3>
+                                    <h3 class="product-name">{{ item.item_name }}</h3>
                                     <div class="product-meta">
-                                        <span class="product-category">{{ item.nameCategory }}</span>
-                                        <span class="product-stock">{{ item.stock_disponible }} en stock</span>
+                                        <span class="product-category">{{ item.category.name }}</span>
+                                        <span class="product-stock">{{ totalQty|number_format(0, ',', ' ') }} en stock</span>
                                     </div>
                                     <div class="product-pricing">
-                                        {% if item.namePromotion|length > 0 %}
-                                            <span class="product-price-original">{{ item.prix|number_format(2, '.', ' ') }} €</span>
-                                            <span class="product-price-discounted">
-                                                {{ (item.prix * (1 - item.percentage/100))|number_format(2, '.', ' ') }} €
-                                            </span>
+                                        {% if item.promotion %}
+                                            <span class="product-price-original">{{ item.original_price|number_format(2, ',', ' ') }} €</span>
+                                            <span class="product-price-discounted">{{ item.promotion.promo_price|number_format(2, ',', ' ') }} €</span>
                                         {% else %}
-                                            <span class="product-price">{{ item.prix|number_format(2, '.', ' ') }} €</span>
+                                            <span class="product-price">{{ item.original_price|number_format(2, ',', ' ') }} €</span>
                                         {% endif %}
                                     </div>
+
+                                    {# Section couleurs cliquables #}
+                                    {% if item.colors|length > 0 %}
+                                        <div class="colors-section">
+                                            <div class="colors-list">
+                                                {% for c in item.colors %}
+                                                    {% if c.color_image %}
+                                                        {% if c.color_image starts with 'http' %}
+                                                            {% set img = c.color_image %}
+                                                        {% else %}
+                                                            {% set img = asset('uploads/' ~ c.color_image) %}
+                                                        {% endif %}
+                                                    {% else %}
+                                                        {% set img = defaultImage %}
+                                                    {% endif %}
+                                                    <div class="color-item {{ loop.first ? 'active' : '' }}"
+                                                         title="{{ c.color_name }}"
+                                                         data-color-image="{{ img }}"
+                                                         data-color-name="{{ c.color_name }}">
+                                                        <img src="{{ img }}" alt="{{ c.color_name }}" />
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </article>
                         </label>
@@ -248,6 +286,30 @@
 
             // Initialiser le compteur
             updateSelectionCount();
+
+            // Gérer le changement d'image principale en cliquant sur une couleur
+            document.querySelectorAll('.color-item').forEach(function(colorItem) {
+                colorItem.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Empêcher la sélection de la checkbox
+                    e.preventDefault();
+
+                    const productCard = this.closest('.product-card');
+                    const mainImage = productCard.querySelector('.main-product-image');
+                    const colorImage = this.getAttribute('data-color-image');
+                    const colorName = this.getAttribute('data-color-name');
+
+                    // Changer l'image principale
+                    if (mainImage && colorImage) {
+                        mainImage.src = colorImage;
+                        mainImage.alt = colorName;
+
+                        // Mettre à jour la classe active
+                        const colorItems = productCard.querySelectorAll('.color-item');
+                        colorItems.forEach(item => item.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
         });
     </script>
 {% endblock %}

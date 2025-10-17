@@ -1755,3 +1755,232 @@ body.dark-theme .promotion-modal-content::-webkit-scrollbar-thumb {
 body.dark-theme .promotion-modal-content::-webkit-scrollbar-thumb:hover {
     background: var(--gray-400);
 }
+
+/* Styles pour l'upload d'images */
+.image-upload-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.image-preview-box {
+    width: 100%;
+    height: 250px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #f9f9f9;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.image-preview-box:hover {
+    border-color: #3498db;
+    background: #f0f8ff;
+}
+
+.upload-placeholder {
+    text-align: center;
+    color: #999;
+}
+
+.upload-placeholder svg {
+    margin-bottom: 10px;
+    stroke: #ccc;
+}
+
+.upload-placeholder p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.btn-upload, .btn-upload-small {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.btn-upload:hover, .btn-upload-small:hover {
+    background: #2980b9;
+}
+
+.btn-upload-small {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+/* Grille des variantes de couleur */
+.color-variants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.color-variant-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.color-variant-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.color-variant-preview {
+    width: 100%;
+    height: 120px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.color-variant-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.color-variant-info {
+    text-align: center;
+}
+
+.color-variant-info strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #333;
+}
+
+/* Ajustement du modal pour être plus large */
+.promotion-modal-content[style*="max-width: 900px"] {
+    overflow-y: auto;
+    max-height: 90vh;
+}
+
+/* Message de succès/erreur personnalisé */
+.form-message {
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    display: none;
+}
+
+.form-message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.form-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Animation de chargement pour l'upload */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.uploading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* Styles pour l'upload d'images des variantes de couleur */
+.btn-upload-small {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.btn-upload-small:hover {
+    background: #2980b9;
+}
+
+/* Grille des variantes de couleur */
+.color-variants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.color-variant-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.color-variant-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.color-variant-preview {
+    width: 100%;
+    height: 120px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.color-variant-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.color-variant-info {
+    text-align: center;
+}
+
+.color-variant-info strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #333;
+}
+
+/* Ajustement du modal pour être plus large */
+.promotion-modal-content[style*="max-width: 900px"] {
+    overflow-y: auto;
+    max-height: 90vh;
+}
