@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Users;
 use App\Service\CountryService;
+use App\Service\CloudinaryService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,9 +31,16 @@ final class ProfilAdminController extends AbstractController
             throw $this->createNotFoundException('Utilisateur non trouvé');
         }
 
+        // Gérer les images : Cloudinary (http) ou locale (chemin)
         $imagePath = null;
         if ($user->getImages()) {
-            $imagePath = '/uploads/' . $user->getImages();
+            if (str_starts_with($user->getImages(), 'http')) {
+                // URL Cloudinary complète
+                $imagePath = $user->getImages();
+            } else {
+                // Ancien format local
+                $imagePath = '/uploads/' . $user->getImages();
+            }
         }
 
         $countries = $countryService->getCountries();
@@ -45,7 +53,7 @@ final class ProfilAdminController extends AbstractController
     }
 
     #[Route('profil/update', name: 'app_admin_update_profile', methods: ['POST'])]
-    public function updateProfil(Request $request, EntityManagerInterface $em): Response
+    public function updateProfil(Request $request, EntityManagerInterface $em, CloudinaryService $cloudinaryService): Response
     {
         $session = $request->getSession();
         $userSession = $session->get('user');
@@ -80,19 +88,44 @@ final class ProfilAdminController extends AbstractController
         /** @var UploadedFile|null $imageFile */
         $imageFile = $request->files->get('image');
         if ($imageFile) {
-            // Supprimer l'ancienne image si elle existe
-            $oldImage = $user->getImages();
-            if ($oldImage) {
-                $oldImagePath = $this->getParameter('uploads_directory') . '/' . $oldImage;
-                if (file_exists($oldImagePath)) {
-                    unlink($oldImagePath);
+            try {
+                // Supprimer l'ancienne image si elle existe
+                $oldImage = $user->getImages();
+                if ($oldImage) {
+                    // Si c'est une URL Cloudinary
+                    if (str_starts_with($oldImage, 'http') && str_contains($oldImage, 'cloudinary.com')) {
+                        try {
+                            $cloudinaryService->deleteImage($oldImage);
+                        } catch (\Exception $e) {
+                            // Continuer même si la suppression échoue
+                        }
+                    }
+                    // Si c'est une ancienne image locale
+                    else {
+                        $oldImagePath = $this->getParameter('uploads_directory') . '/' . $oldImage;
+                        if (file_exists($oldImagePath)) {
+                            unlink($oldImagePath);
+                        }
+                    }
                 }
-            }
 
-            // Sauvegarder la nouvelle image
-            $imageName = uniqid() . '.' . $imageFile->guessExtension();
-            $imageFile->move($this->getParameter('uploads_directory'), $imageName);
-            $user->setImages($imageName);
+                // Upload vers Cloudinary avec redimensionnement
+                $imageUrl = $cloudinaryService->uploadImageResized(
+                    $imageFile,
+                    'users/profiles',  // Dossier sur Cloudinary
+                    500,               // Largeur max
+                    500                // Hauteur max
+                );
+
+                // Stocker l'URL complète Cloudinary
+                $user->setImages($imageUrl);
+
+                $this->addFlash('success', 'Photo de profil mise à jour avec succès sur Cloudinary: ' . $imageUrl);
+
+            } catch (\Exception $e) {
+                $this->addFlash('error', 'Erreur lors de l\'upload de l\'image : ' . $e->getMessage());
+                return $this->redirectToRoute('app_admin_profil');
+            }
         }
 
 
@@ -128,29 +161,34 @@ final class ProfilAdminController extends AbstractController
             return $this->json(['error' => 'Utilisateur non trouvé'], 404);
         }
 
+        // Gérer l'URL de l'image (Cloudinary ou locale)
+        $imageUrl = null;
+        if ($user->getImages()) {
+            if (str_starts_with($user->getImages(), 'http')) {
+                $imageUrl = $user->getImages(); // URL Cloudinary
+            } else {
+                $imageUrl = '/uploads/' . $user->getImages(); // URL locale
+            }
+        }
+
         return $this->json([
             'username' => $user->getUsername(),
             'email' => $user->getEmail(),
             'address' => $user->getAddress(),
             'country' => $user->getCountry(),
             'contact' => $user->getContact(),
-            'image' => $user->getImages(),
+            'image' => $imageUrl,
         ]);
     }
 
     #[Route('/api/admin/profil/update', name: 'api_admin_update_profile', methods: ['POST'])]
-    public function apiUpdateProfil(Request $request, EntityManagerInterface $em): Response
+    public function apiUpdateProfil(Request $request, EntityManagerInterface $em, CloudinaryService $cloudinaryService): Response
     {
         $session = $request->getSession();
         $userSession = $session->get('user');
 
         if (!$userSession) {
             return $this->json(['error' => 'Non authentifié'], 401);
-        }
-
-        $data = json_decode($request->getContent(), true);
-        if (!$data) {
-            return $this->json(['error' => 'Données JSON invalides'], 400);
         }
 
         /** @var Users $user */
@@ -160,19 +198,57 @@ final class ProfilAdminController extends AbstractController
             return $this->json(['error' => 'Utilisateur non trouvé'], 404);
         }
 
-        if (empty($data['username']) || empty($data['email'])) {
-            return $this->json(['error' => 'Champs obligatoires manquants'], 400);
-        }
+        // Gérer l'upload d'image via API
+        $imageFile = $request->files->get('image');
+        if ($imageFile) {
+            try {
+                // Supprimer l'ancienne image Cloudinary
+                $oldImage = $user->getImages();
+                if ($oldImage && str_contains($oldImage, 'cloudinary.com')) {
+                    try {
+                        $cloudinaryService->deleteImage($oldImage);
+                    } catch (\Exception $e) {
+                        // Continue même si la suppression échoue
+                    }
+                }
 
-        $user->setUsername($data['username']);
-        $user->setEmail($data['email']);
-        $user->setAddress($data['address'] ?? null);
-        $user->setCountry($data['country'] ?? null);
-        $user->setContact($data['contact'] ?? null);
+                // Upload nouvelle image
+                $imageUrl = $cloudinaryService->uploadImageResized(
+                    $imageFile,
+                    'users/profiles',
+                    500,
+                    500
+                );
+
+                $user->setImages($imageUrl);
+
+            } catch (\Exception $e) {
+                return $this->json([
+                    'error' => 'Erreur lors de l\'upload : ' . $e->getMessage()
+                ], 500);
+            }
+        }
+        // Sinon, gérer les données JSON classiques
+        else {
+            $data = json_decode($request->getContent(), true);
+            if (!$data) {
+                return $this->json(['error' => 'Données JSON invalides'], 400);
+            }
+
+            if (empty($data['username']) || empty($data['email'])) {
+                return $this->json(['error' => 'Champs obligatoires manquants'], 400);
+            }
+
+            $user->setUsername($data['username']);
+            $user->setEmail($data['email']);
+            $user->setAddress($data['address'] ?? null);
+            $user->setCountry($data['country'] ?? null);
+            $user->setContact($data['contact'] ?? null);
+        }
 
         $em->flush();
 
-        $userSession['username'] = $data['username'];
+        $userSession['username'] = $user->getUsername();
         $session->set('user', $userSession);
 
         return $this->json([

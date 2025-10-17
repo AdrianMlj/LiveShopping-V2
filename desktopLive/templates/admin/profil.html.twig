@@ -15,7 +15,11 @@
             <div class="avatar-section">
                 <div class="avatar-circle" id="avatar-preview">
                     {% if user.images %}
-                        <img src="/uploads/{{ user.images }}" alt="Photo de profil" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                        {% if user.images starts with 'http' %}
+                            <img src="{{ user.images }}" alt="Photo de profil" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                        {% else %}
+                            <img src="/uploads/{{ user.images }}" alt="Photo de profil" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                        {% endif %}
                     {% else %}
                         {{ user.username|first|upper }}
                     {% endif %}
@@ -60,7 +64,11 @@
                             <div style="display: flex; align-items: center; gap: 15px;">
                                 <div id="image-preview-container" style="width: 80px; height: 80px; border-radius: 50%; background: #f0f0f0; overflow: hidden;">
                                     {% if user.images %}
-                                        <img id="image-preview" src="/uploads/{{ user.images }}" style="width:100%; height:100%; object-fit:cover;">
+                                        {% if user.images starts with 'http' %}
+                                            <img id="image-preview" src="{{ user.images }}" style="width:100%; height:100%; object-fit:cover;">
+                                        {% else %}
+                                            <img id="image-preview" src="/uploads/{{ user.images }}" style="width:100%; height:100%; object-fit:cover;">
+                                        {% endif %}
                                     {% else %}
                                         <div id="image-preview" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:30px;">
                                             {{ user.username|first|upper }}

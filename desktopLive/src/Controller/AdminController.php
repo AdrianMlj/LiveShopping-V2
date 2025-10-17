@@ -12,6 +12,7 @@ use App\Entity\Live;
 use App\Entity\Item;
 use App\Entity\Category;
 use App\Entity\PriceItems;
+use App\Service\CloudinaryService;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -181,7 +182,7 @@ class AdminController extends AbstractController
         return $this->redirectToRoute('app_live', ['id' => $live->getId()]);
     }
 
-    #[Route('/stopLive/{id}', name: 'admin_live_stop')]
+    #[Route('/stopLive/{id}', name: 'admin_live_stop', methods: ['POST', 'GET'])]
     public function stopLive(Request $request, Live $live, EntityManagerInterface $em, UsersRepository $usersRepository): Response
     {
         $session = $request->getSession();
@@ -191,8 +192,14 @@ class AdminController extends AbstractController
         if ($live->getSeller()->getId() !== $user->getId()) {
             throw $this->createNotFoundException('Vous ne pouvez pas arrêter ce live.');
         }
+
+        // Récupérer le nombre de likes depuis la requête POST
+        $likesCount = $request->request->get('likes_count', 0);
+
         $live->setEndLive(new \DateTime());
+        $live->setNbrLike((int)$likesCount);
         $em->flush();
+
         $this->addFlash('success', 'Le live a été terminé avec succès.');
         return $this->redirectToRoute('app_dashboard');
     }
@@ -311,7 +318,7 @@ class AdminController extends AbstractController
     }
 
     #[Route('/api/items/upload-image', name: 'api_item_upload_image', methods: ['POST'])]
-    public function uploadItemImage(Request $request): JsonResponse
+    public function uploadItemImage(Request $request, CloudinaryService $cloudinaryService): JsonResponse
     {
         $uploadedFile = $request->files->get('image');
 
@@ -331,24 +338,25 @@ class AdminController extends AbstractController
         }
 
         try {
-            // Générer un nom de fichier unique
-            $originalName = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
-            $extension = $uploadedFile->guessExtension();
-            $fileName = $originalName . '_' . uniqid() . '.' . $extension;
-
-            // Déplacer le fichier vers le dossier uploads
-            $uploadedFile->move($this->getParameter('kernel.project_dir') . '/public/uploads', $fileName);
+            // Upload vers Cloudinary avec redimensionnement
+            $imageUrl = $cloudinaryService->uploadImageResized(
+                $uploadedFile,
+                'items',  // Dossier sur Cloudinary pour les articles
+                800,      // Largeur max pour les images d'articles
+                800       // Hauteur max
+            );
 
             return $this->json([
                 'success' => true,
-                'message' => 'Image uploadée avec succès',
-                'filename' => $fileName
+                'message' => 'Image uploadée sur Cloudinary avec succès',
+                'filename' => $imageUrl,  // Retourner l'URL complète
+                'url' => $imageUrl
             ]);
 
         } catch (\Exception $e) {
             return $this->json([
                 'success' => false,
-                'message' => 'Erreur lors de l\'upload : ' . $e->getMessage()
+                'message' => 'Erreur lors de l\'upload sur Cloudinary : ' . $e->getMessage()
             ], 500);
         }
     }

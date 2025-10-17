@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Users;
 use App\Service\CountryService;
+use App\Service\CloudinaryService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,7 +33,14 @@ final class ProfilClientController extends AbstractController
 
         $imagePath = null;
         if ($user->getImages()) {
-            $imagePath = '/uploads/' . $user->getImages();
+            // Support à la fois des URLs Cloudinary et des chemins locaux
+            if (str_starts_with($user->getImages(), 'http')) {
+                // URL Cloudinary complète
+                $imagePath = $user->getImages();
+            } else {
+                // Ancien chemin local (rétrocompatibilité)
+                $imagePath = '/uploads/' . $user->getImages();
+            }
         }
 
         $countries = $countryService->getCountries();
@@ -45,7 +53,7 @@ final class ProfilClientController extends AbstractController
     }
 
     #[Route('/client/profil/update', name: 'app_client_update_profile', methods: ['POST'])]
-    public function updateProfil(Request $request, EntityManagerInterface $em): Response
+    public function updateProfil(Request $request, EntityManagerInterface $em, CloudinaryService $cloudinaryService): Response
     {
         $session = $request->getSession();
         $userSession = $session->get('user');
@@ -80,19 +88,33 @@ final class ProfilClientController extends AbstractController
         /** @var UploadedFile|null $imageFile */
         $imageFile = $request->files->get('image');
         if ($imageFile) {
-            // Supprimer l'ancienne image si elle existe
-            $oldImage = $user->getImages();
-            if ($oldImage) {
-                $oldImagePath = $this->getParameter('uploads_directory') . '/' . $oldImage;
-                if (file_exists($oldImagePath)) {
-                    unlink($oldImagePath);
+            try {
+                // Supprimer l'ancienne image de Cloudinary si elle existe
+                $oldImage = $user->getImages();
+                if ($oldImage && str_starts_with($oldImage, 'http') && str_contains($oldImage, 'cloudinary.com')) {
+                    try {
+                        $cloudinaryService->deleteImage($oldImage);
+                    } catch (\Exception $e) {
+                        // Continuer même si la suppression échoue
+                    }
                 }
-            }
 
-            // Sauvegarder la nouvelle image
-            $imageName = uniqid() . '.' . $imageFile->guessExtension();
-            $imageFile->move($this->getParameter('uploads_directory'), $imageName);
-            $user->setImages($imageName);
+                // Upload vers Cloudinary avec redimensionnement automatique
+                $imageUrl = $cloudinaryService->uploadImageResized(
+                    $imageFile,
+                    'users/profiles',  // Dossier sur Cloudinary
+                    500,  // Largeur max
+                    500   // Hauteur max
+                );
+
+                // Stocker l'URL complète Cloudinary
+                $user->setImages($imageUrl);
+
+                $this->addFlash('success', 'Photo de profil téléchargée sur Cloudinary avec succès');
+            } catch (\Exception $e) {
+                $this->addFlash('error', 'Erreur lors de l\'upload de l\'image : ' . $e->getMessage());
+                return $this->redirectToRoute('app_client_profil');
+            }
         }
 
 

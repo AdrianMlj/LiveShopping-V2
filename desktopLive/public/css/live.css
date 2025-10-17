@@ -87,6 +87,82 @@ body {
     gap: 6px;
 }
 
+/* Compteur de likes simplifié */
+.likes-count {
+    align-self: flex-end;
+    background-color: rgba(255, 20, 147, 0.85);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    margin: 10px;
+    margin-top: 0;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 10px rgba(255, 20, 147, 0.3);
+}
+
+.likes-count i {
+    animation: heartbeat 1.5s infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    10%, 30% {
+        transform: scale(1.1);
+    }
+    20%, 40% {
+        transform: scale(0.9);
+    }
+}
+
+/* Animation améliorée pour les cœurs flottants */
+.floating-heart {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    font-size: 40px;
+    animation: float-heart 4s ease-out forwards;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+    filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.6));
+}
+
+@keyframes float-heart {
+    0% {
+        transform: translateY(0) translateX(0) rotate(0deg) scale(0.3);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(-20px) translateX(10px) rotate(45deg) scale(1.2);
+    }
+    40% {
+        opacity: 1;
+        transform: translateY(-80px) translateX(-15px) rotate(90deg) scale(1.1);
+    }
+    60% {
+        opacity: 1;
+        transform: translateY(-160px) translateX(20px) rotate(180deg) scale(0.9);
+    }
+    80% {
+        opacity: 0.7;
+        transform: translateY(-240px) translateX(-10px) rotate(270deg) scale(0.7);
+    }
+    100% {
+        transform: translateY(-320px) translateX(15px) rotate(360deg) scale(0.3);
+        opacity: 0;
+    }
+}
+
+
 .video-controls {
     display: flex;
     justify-content: center;
@@ -206,16 +282,23 @@ body {
     padding: 15px;
 }
 
+.stream-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+    margin-bottom: 15px;
+}
+
 .stream-header h2 {
     margin: 0 0 10px 0;
     font-size: 20px;
     color: var(--light-text);
+    font-weight: 600;
 }
 
 .stream-meta {
     display: flex;
     gap: 15px;
-    margin-bottom: 15px;
+    margin-bottom: 0;
     font-size: 14px;
     color: var(--gray-text);
 }
@@ -229,6 +312,12 @@ body {
 
 .live-badge i {
     font-size: 10px;
+}
+
+.stream-date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .stream-description {
@@ -249,6 +338,10 @@ body {
     font-size: 14px;
     line-height: 1.5;
     color: var(--gray-text);
+}
+
+.stream-stats {
+    margin-top: 20px;
 }
 
 .stream-stats h3 {
@@ -305,6 +398,7 @@ body {
     transition: all 0.2s;
     border: none;
     font-size: 14px;
+    text-decoration: none;
 }
 
 .stop-stream-btn {
@@ -429,6 +523,10 @@ body {
     .chat-section {
         height: 250px;
     }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
@@ -438,5 +536,18 @@ body {
 
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    .stream-header h2 {
+        font-size: 18px;
+    }
+
+    .stat-value {
+        font-size: 20px;
+    }
+
+    .likes-count {
+        padding: 6px 12px;
+        font-size: 14px;
     }
 }

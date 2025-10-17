@@ -31,3 +31,7 @@ services:
     # please note that last definitions always *replace* previous ones
     App\Service\CountryService:
         public: true
+
+    App\Service\CloudinaryService:
+        arguments:
+            $cloudinaryUrl: '%env(CLOUDINARY_URL)%'
