@@ -147,9 +147,11 @@
         body.dark-theme .description p { color: #e0e0e0; line-height: 1.55; }
         body.dark-theme .description li { color: #e0e0e0; }
         body.dark-theme .description a { color: #9ec1ff; }
-        /* Floating hearts animation */
-        .hearts-container { position:absolute; inset:0; pointer-events:none; overflow:hidden; contain: layout paint; }
-        .heart { position:absolute; bottom:10px; font-size:24px; will-change: transform, opacity; animation: floatUp 2.8s cubic-bezier(.22,.61,.36,1) forwards; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25)); transform: translate3d(0,0,0); backface-visibility: hidden; }
+  /* Floating hearts animation */
+  /* Layer that holds the hearts inside the player-thumb (so they appear on the video area) */
+  .player-thumb .hearts-layer { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
+  .hearts-container { position:absolute; inset:0; pointer-events:none; overflow:hidden; contain: layout paint; }
+  .heart { position:absolute; bottom:10px; font-size:24px; will-change: transform, opacity; animation: floatUp 2.8s cubic-bezier(.22,.61,.36,1) forwards; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25)); transform: translate3d(0,0,0); backface-visibility: hidden; }
         @keyframes floatUp {
           0% { transform: translate3d(var(--drift, 0%), 0, 0) scale(0.9); opacity: 0; }
           20% { transform: translate3d(var(--drift, 0%), -60%, 0) scale(1.0); opacity: 0.9; }
@@ -166,7 +168,7 @@
         }
 
         // animation de coeurs (non intrusive)
-        spawnHearts(document.querySelector('.player-thumb'));
+        spawnHearts(document.querySelector('.player-thumb'), 6);
 
         // 🔥 Envoi du like au serveur WebSocket
         if (window.signaling && window.signaling.readyState === WebSocket.OPEN) {
@@ -178,17 +180,23 @@
         }
       }
 
-      function spawnHearts(container){
+      function spawnHearts(container, count = 6){
         if (!container) return;
-        // créer le conteneur une seule fois
-        let heartsLayer = container.querySelector('.hearts-container');
+        // Ensure there is a dedicated hearts layer inside the player-thumb
+        let heartsLayer = container.querySelector('.hearts-layer');
         if (!heartsLayer) {
           heartsLayer = document.createElement('div');
-          heartsLayer.className = 'hearts-container';
+          heartsLayer.className = 'hearts-layer';
           container.appendChild(heartsLayer);
         }
+        // Inside the layer we keep a single hearts-container for positioning
+        let heartsContainer = heartsLayer.querySelector('.hearts-container');
+        if (!heartsContainer) {
+          heartsContainer = document.createElement('div');
+          heartsContainer.className = 'hearts-container';
+          heartsLayer.appendChild(heartsContainer);
+        }
 
-        const count = 6; // nombre de coeurs par clic
         for (let i = 0; i < count; i++) {
           const heart = document.createElement('div');
           heart.className = 'heart';
@@ -206,7 +214,7 @@
           heart.style.animationDelay = delay + 's';
           heart.style.setProperty('--drift', drift + '%');
 
-          heartsLayer.appendChild(heart);
+          heartsContainer.appendChild(heart);
 
           const removeAfter = (parseFloat(duration) + parseFloat(delay)) * 1000 + 200;
           setTimeout(() => { heart.remove(); }, removeAfter);
@@ -356,6 +364,8 @@
           window.signaling = signaling; // rendre accessible globalement
         };
 
+        let totalLikes = 0;
+
         signaling.onmessage = async (event) => {
           const data = JSON.parse(event.data);
           console.log('[CLIENT-LIVE] WS message', data);
@@ -381,11 +391,18 @@
               }
             }
             else if (data.type === 'likeUpdate') {
+              const prev = totalLikes || 0;
+              totalLikes = data.count || 0;
               const likeEl = document.getElementById('likeCount');
-              if (likeEl) likeEl.textContent = data.count;
+              if (likeEl) likeEl.textContent = totalLikes;
 
               const pillEl = document.querySelector('.viewer-pill');
-              if (pillEl) pillEl.textContent = data.count;
+              if (pillEl) pillEl.textContent = totalLikes;
+
+              const newLikes = Math.max(0, totalLikes - prev);
+              if (newLikes > 0) {
+                spawnHearts(document.querySelector('.player-thumb'), Math.min(12, newLikes));
+              }
             }
 
 
@@ -406,10 +423,11 @@
     <div class="page">
         <div>
             <div class="player-card">
-                <div class="player-thumb">
-                    <video id="livePlayer" autoplay muted playsinline controls poster="{{ live.seller and live.seller.images ? '/uploads/' ~ live.seller.images : '/uploads/6891e6164b5d5.jpg' }}"></video>
-                    {% if live.endLive is null %}<div class="live-badge">Live</div>{% endif %}
-                    <div class="viewer-group">
+        <div class="player-thumb">
+          <video id="livePlayer" autoplay muted playsinline controls poster="{{ live.seller and live.seller.images ? '/uploads/' ~ live.seller.images : '/uploads/6891e6164b5d5.jpg' }}"></video>
+          <div class="hearts-layer"></div>
+          {% if live.endLive is null %}<div class="live-badge">Live</div>{% endif %}
+          <div class="viewer-group">
                         <div class="viewer-icons">
                             <i class="fas fa-comments"></i>
                             <i class="fas fa-users"></i>

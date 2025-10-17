@@ -154,11 +154,12 @@
         // Fonction pour créer des animations de cœurs flottants
         function createFloatingHeart() {
             const heart = document.createElement('div');
-            const heartEmojis = ['❤️', '💖', '💕', '💓', '💗', '💘', '💝', '💞'];
-            const randomEmoji = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+            const heartEmojis = '❤️';
+            heartEmojis.textContent; 
+            // const randomEmoji = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
 
             heart.className = 'floating-heart';
-            heart.innerHTML = randomEmoji;
+            heart.innerHTML = heartEmojis;
 
             // find hearts layer inside the video wrapper
             const heartsLayer = document.querySelector('.video-wrapper .hearts-layer');
