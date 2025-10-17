@@ -123,6 +123,42 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
+            function spawnHearts(container){
+                if (!container) return;
+                let layer = container.querySelector('.hearts-container');
+                if (!layer) {
+                    layer = document.createElement('div');
+                    layer.className = 'hearts-container';
+                    container.appendChild(layer);
+                }
+                const count = 6;
+                for (let i = 0; i < count; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    heart.textContent = '❤️';
+                    const left = Math.random() * 80 + 10;
+                    const size = Math.random() * 12 + 18;
+                    const drift = (Math.random() * 40 - 20);
+                    const duration = (Math.random() * 1.0 + 2.2).toFixed(2);
+                    const delay = (Math.random() * 0.2).toFixed(2);
+                    heart.style.left = left + '%';
+                    heart.style.fontSize = size + 'px';
+                    heart.style.animationDuration = duration + 's';
+                    heart.style.animationDelay = delay + 's';
+                    heart.style.setProperty('--drift', drift + '%');
+                    layer.appendChild(heart);
+                    const removeAfter = (parseFloat(duration) + parseFloat(delay)) * 1000 + 200;
+                    setTimeout(() => { heart.remove(); }, removeAfter);
+                }
+            }
+
+            // click sur la vidéo pour déclencher l'animation, non intrusif
+            const videoWrapper = document.querySelector('.video-wrapper');
+            if (videoWrapper) {
+                videoWrapper.addEventListener('click', function(){
+                    spawnHearts(videoWrapper);
+                });
+            }
             debugLog('Initialisation du streamer...', 'info');
 
             const signalingServer = new WebSocket('ws://localhost:9090');
