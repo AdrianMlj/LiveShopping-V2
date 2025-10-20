@@ -367,15 +367,20 @@
         if (followBtn) {
           const sellerId = {{ live.seller ? live.seller.id : 0 }};
           const textEl = followBtn.querySelector('.follow-text');
-          followBtn.addEventListener('click', function(){
+          const iconEl = followBtn.querySelector('i');
+          followBtn.addEventListener('click', function() {
             fetch(`/client/follow/toggle/${sellerId}`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }})
               .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
               .then(data => {
                 if (!data.success) return;
                 if (data.action === 'followed') {
                   textEl.textContent = 'Following';
+                  iconEl.classList.remove('fa-user-plus');
+                  iconEl.classList.add('fa-user-check');
                 } else if (data.action === 'unfollowed') {
                   textEl.textContent = 'Follow';
+                  iconEl.classList.remove('fa-user-check');
+                  iconEl.classList.add('fa-user-plus');
                 }
               })
               .catch(err => console.error('Follow error:', err));
@@ -496,7 +501,7 @@
                         </div>
                         <div class="follow-wrap">
                             <button class="btn btn-follow" id="followBtn">
-                                <i class="fa-solid fa-user-plus"></i>
+                                <i class="fa-solid {{ isFollowing ? 'fa-user-check' : 'fa-user-plus' }}"></i>
                                 <span class="follow-text">{{ isFollowing ? 'Following' : 'Follow' }}</span>
                             </button>
                         </div>
@@ -507,10 +512,12 @@
                             Like 
                             {# <span id="likeCount">{{ live.nbrLike|default(0) }}</span> #}
                         </button>
-                        <button class="btn btn-cart">
+                        <form action="{{ path('app_client_panier') }}" method="get">
+                        <button type="submit" class="btn btn-cart">
                             <i class="fa-solid fa-bag-shopping"></i>
                             Cart
                         </button>
+                        </form>
                     </div>
                 </div>
             </div>
