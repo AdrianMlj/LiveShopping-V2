@@ -88,10 +88,10 @@
                     </div>
 
                     <div class="product-info">
-                        <h3 class="product-title">{{ item.item_name }}</h3>
+                        <h3 class="product-title" data-i18n="item_{{ item.item_id }}_name">{{ item.item_name }}</h3>
                         {% if item.item_description %}
                             {% set _desc = item.item_description %}
-                            <p class="product-description" title="{{ _desc }}">
+                            <p class="product-description" title="{{ _desc }}" data-i18n="item_{{ item.item_id }}_desc">
                                 {% if _desc|length > 90 %}
                                     {{ _desc|slice(0, 90) ~ '…' }}
                                 {% else %}
@@ -623,13 +623,18 @@
 
             async function openEditItemModal(itemId, itemName, itemPrice, itemDescription) {
                 if (!editItemModal) return;
+
+                // Traduire le nom et la description de l'article
+                const translatedName = window.t ? window.t(`item_${itemId}_name`, itemName || '') : (itemName || '');
+                const translatedDesc = window.t ? window.t(`item_${itemId}_desc`, itemDescription || '') : (itemDescription || '');
+
                 editItemForm.reset();
                 editItemForm.querySelector('#editItemId').value = itemId;
-                editItemForm.querySelector('#editItemName').value = itemName || '';
+                editItemForm.querySelector('#editItemName').value = translatedName;
                 editItemForm.querySelector('#editItemPrice').value = (typeof itemPrice !== 'undefined' && itemPrice !== null) ? itemPrice : '';
                 const descField = editItemForm.querySelector('#editItemDescription');
-                if (descField) descField.value = (typeof itemDescription !== 'undefined' && itemDescription !== null) ? itemDescription : '';
-                editItemTitle.textContent = 'Edit item – ' + (itemName || ('#' + itemId));
+                if (descField) descField.value = translatedDesc;
+                editItemTitle.textContent = 'Edit item – ' + (translatedName || ('#' + itemId));
 
                 // Charger les variantes de couleur
                 await loadColorVariants(itemId);
@@ -821,9 +826,12 @@
                     const originalPrice = parseFloat(this.getAttribute('data-original-price'));
                     const promotionId = this.getAttribute('data-promotion-id');
 
+                    // Traduire le nom de l'article
+                    const translatedName = window.t ? window.t(`item_${itemId}_name`, itemName) : itemName;
+
                     if (promotionId) {
                         // Modifier une promotion existante
-                        promotionModalTitle.textContent = 'Modifier la promotion - ' + itemName;
+                        promotionModalTitle.textContent = 'Modifier la promotion - ' + translatedName;
                         document.getElementById('promotionItemId').value = itemId;
                         document.getElementById('promotionId').value = promotionId;
 
@@ -843,7 +851,7 @@
                     document.getElementById('promotionEndDate').value = '';
 
                     // Mettre à jour l'affichage
-                    promotionModalTitle.textContent = 'Ajouter une promotion - ' + itemName;
+                    promotionModalTitle.textContent = 'Ajouter une promotion - ' + translatedName;
                     currentPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' €';
                     newPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' €';
 
@@ -987,8 +995,10 @@
                             currentPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' €';
                             newPriceDisplay.textContent = newPrice.toFixed(2).replace('.', ',') + ' €';
 
-                            // Mettre à jour le titre
-                            promotionModalTitle.textContent = 'Modifier la promotion - ' + document.querySelector(`[data-item-id="${itemId}"]`).getAttribute('data-item-name');
+                            // Mettre à jour le titre avec traduction
+                            const itemName = document.querySelector(`[data-item-id="${itemId}"]`).getAttribute('data-item-name');
+                            const translatedName = window.t ? window.t(`item_${itemId}_name`, itemName) : itemName;
+                            promotionModalTitle.textContent = 'Modifier la promotion - ' + translatedName;
 
                             // Afficher la modal
                             promotionModal.style.display = 'flex';

@@ -26,7 +26,7 @@ symfony serve --allow-http --port=8000 --allow-all-ip
 netsh advfirewall firewall add rule name="WebSocket" dir=in action=allow protocol=TCP localport=9090
 
 Gestion des médias
-Upload d’images et vidéos.
+ et vidéos.
 Stockage sécurisé sur cloud.
 Association directe aux événements.
 

@@ -18,7 +18,7 @@
             <section class="form-section">
                 <div class="section-header">
                     <h2 class="section-title" data-i18n="live_information">Informations du Live</h2>
-                    <div class="section-badge">Obligatoire</div>
+                    <div class="section-badge" data-i18n="required">Obligatoire</div>
                 </div>
 
                 <div class="form-group">
@@ -43,19 +43,19 @@
                         <span data-i18n="live_description">Description du live</span>
                     </label>
                     <textarea name="description" id="description" class="form-input form-textarea" placeholder="Décrivez votre live shopping, les produits présentés, les offres spéciales..." data-i18n-placeholder="live_description" rows="4" required></textarea>
-                    <div class="char-counter"><span id="charCount">0</span>/500 caractères</div>
+                    <div class="char-counter"><span id="charCount">0</span>/500 <span data-i18n="characters">caractères</span></div>
                 </div>
             </section>
 
             <section class="form-section">
                 <div class="section-header">
                     <h2 class="section-title" data-i18n="products_to_highlight">Produits à mettre en avant</h2>
-                    <div class="section-badge">{{ items|length }} produits</div>
+                    <div class="section-badge">{{ items|length }} <span data-i18n="products">produits</span></div>
                 </div>
 
                 <div class="selection-info">
                     <div class="selected-count">
-                        <span id="selectedProductsCount">0</span> produit(s) sélectionné(s)
+                        <span id="selectedProductsCount">0</span> <span data-i18n="products_selected">produit(s) sélectionné(s)</span>
                     </div>
                     <button type="button" class="select-all-btn" id="selectAllBtn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -99,17 +99,17 @@
                                         <div class="product-badge promo-badge">-{{ item.promotion.percentage }}%</div>
                                     {% endif %}
                                     {% if totalQty <= 10 and totalQty > 0 %}
-                                        <div class="product-badge stock-badge">Stock faible</div>
+                                        <div class="product-badge stock-badge" data-i18n="low_stock">Stock faible</div>
                                     {% elseif totalQty == 0 %}
-                                        <div class="product-badge out-of-stock-badge">Rupture</div>
+                                        <div class="product-badge out-of-stock-badge" data-i18n="out_of_stock">Rupture</div>
                                     {% endif %}
                                 </div>
 
                                 <div class="product-info">
-                                    <h3 class="product-name">{{ item.item_name }}</h3>
+                                    <h3 class="product-name" data-i18n="item_{{ item.item_id }}_name">{{ item.item_name }}</h3>
                                     <div class="product-meta">
                                         <span class="product-category">{{ item.category.name }}</span>
-                                        <span class="product-stock">{{ totalQty|number_format(0, ',', ' ') }} en stock</span>
+                                        <span class="product-stock">{{ totalQty|number_format(0, ',', ' ') }} <span data-i18n="in_stock">en stock</span></span>
                                     </div>
                                     <div class="product-pricing">
                                         {% if item.promotion %}
