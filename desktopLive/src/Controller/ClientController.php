@@ -868,6 +868,40 @@ class ClientController extends AbstractController
         // Récupère les entités Item associées au live
         $items = $liveDetailsRepository->findBy(['live' => $live]);
 
+        // Construire une image principale par article en privilégiant l'image variante (taille/couleur)
+        $mainImageByItemId = [];
+        foreach ($items as $ld) {
+            try {
+                $item = method_exists($ld, 'getItem') ? $ld->getItem() : null;
+                if (!$item) { continue; }
+
+                $chosen = null;
+                // Cherche une image au niveau ItemSizeColor
+                if (method_exists($item, 'getItemSizes')) {
+                    foreach ($item->getItemSizes() as $size) {
+                        if (!method_exists($size, 'getItemSizeColors')) { continue; }
+                        foreach ($size->getItemSizeColors() as $isc) {
+                            if (method_exists($isc, 'getImages')) {
+                                $raw = $isc->getImages();
+                                if ($raw) { $chosen = $raw; break 2; }
+                            }
+                        }
+                    }
+                }
+
+                // Repli sur l'image de l'article
+                if (!$chosen && method_exists($item, 'getImages')) {
+                    $chosen = $item->getImages();
+                }
+
+                if ($chosen) {
+                    $mainImageByItemId[$item->getId()] = $chosen;
+                }
+            } catch (\Throwable $e) {
+                // ignorer silencieusement pour éviter d'impacter l'affichage live
+            }
+        }
+
         // Récupérer les favoris de l'utilisateur
         $favorisIds = [];
         $favorisMap = [];
@@ -896,6 +930,7 @@ class ClientController extends AbstractController
             'favorisIds' => $favorisIds,
             'favorisMap' => $favorisMap,
             'isFollowing' => $isFollowing,
+            'mainImageByItem' => $mainImageByItemId,
         ]);
     }
 
