@@ -83,6 +83,64 @@
             margin-top: 4px; 
             font-weight: 600;
         }
+        /* Promo badge and price visuals */
+        .promo-badge {
+          background: linear-gradient(135deg, #ff4757, #ff3742);
+          color: #fff;
+          font-weight: 900;
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 11px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: 8px;
+          vertical-align: middle;
+          box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border: 2px solid #fff;
+        }
+        .product-promo-badge {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          background: linear-gradient(135deg, #ff4757, #ff3742);
+          color: #fff;
+          font-weight: 900;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 10px;
+          box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4);
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+          border: 1px solid #fff;
+          z-index: 2;
+        }
+        .price-container { 
+          display: flex; 
+          align-items: center; 
+          gap: 8px; 
+          flex-wrap: wrap;
+        }
+        .price-current { 
+          color: #e74c3c; 
+          font-weight: 900; 
+          font-size: 1.1rem; 
+          text-shadow: 0 1px 2px rgba(231, 76, 60, 0.2);
+        }
+        .price-base s { 
+          color: #95a5a6; 
+          font-weight: 600; 
+          font-size: 0.9rem; 
+          text-decoration-thickness: 2px;
+          text-decoration-color: #e74c3c;
+        }
+        .price-regular { 
+          font-weight: 700; 
+          font-size: 1rem; 
+          color: var(--dark); 
+        }
         .product-actions {
             display: flex;
             flex-direction: column;
@@ -120,7 +178,7 @@
             transform: scale(1.1);
         }
         .btn-favorite.active {
-            background-color: var(--primary-light);
+            background-color: #e3f635ff;
             transform: scale(1.2);
         }
         
@@ -147,6 +205,10 @@
         body.dark-theme .description p { color: #e0e0e0; line-height: 1.55; }
         body.dark-theme .description li { color: #e0e0e0; }
         body.dark-theme .description a { color: #9ec1ff; }
+        /* Dark theme pour les prix */
+        body.dark-theme .price-regular { color: #e0e0e0; }
+        body.dark-theme .price-current { color: #ff6b7a; }
+        body.dark-theme .price-base s { color: #9ca3af; }
   /* Floating hearts animation */
   /* Layer that holds the hearts inside the player-thumb (so they appear on the video area) */
   .player-thumb .hearts-layer { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
@@ -169,6 +231,16 @@
           80% { transform: translate3d(var(--drift, 0%), -220%, 0) scale(1.25); opacity: 0.9; }
           100% { transform: translate3d(var(--drift, 0%), -320%, 0) scale(1.35); opacity: 0; }
         }
+    /* Product variant selectors (sizes & colors) */
+    .product-variants { margin-top: 8px; display:flex; gap:12px; align-items:center; }
+    .variant-group { display:flex; flex-direction:column; gap:6px; }
+    .variant-label { font-size:12px; color:var(--gray); font-weight:700; }
+    .size-select { padding:6px 8px; border-radius:8px; border:1px solid #e5e7eb; }
+    .colors-list { display:flex; gap:8px; align-items:center; }
+    .color-item { width:28px; height:28px; border-radius:50%; overflow:hidden; cursor:pointer; border:2px solid transparent; display:flex; align-items:center; justify-content:center; }
+    .color-item.active { border-color: var(--primary); }
+    .color-item img { width:100%; height:100%; object-fit:cover; display:block; }
+    .color-swatch { width:18px; height:18px; border-radius:50%; display:block; }
     </style>
     {% include 'components/navbarClient.html.twig' %}
     <script>
@@ -534,30 +606,99 @@
             <div class="products">
                 {% if items is defined and items|length > 0 %}
                     {% for product in items %}
-                        <div class="product">
+                        <div class="product" data-product-id="{{ product.getItem.getId }}">
+                {# Price display: show promo price if an active promotion exists, and show base price struck-through #}
+                {% set priceItems = product.getItem.getPriceItems %}
+                {% set lastPrice = priceItems|length > 0 ? priceItems|last.getPrice : 0 %}
+                {% set previousPrice = priceItems|length > 1 ? priceItems[priceItems|length - 2].getPrice : null %}
+                
+                {# Check for active promotions #}
+                {% set activePromo = null %}
+                {% set now = "now"|date %}
+                {% for promo in product.getItem.getPromotions %}
+                  {# consider promotion active if within start/end dates (or no end date) #}
+                  {% if activePromo is null and promo.getStartDate is not null and promo.getStartDate <= now and (promo.getEndDate is null or promo.getEndDate >= now) %}
+                    {% set activePromo = promo %}
+                  {% endif %}
+                {% endfor %}
+                
+                {# Calculate percentage reduction if price dropped or if there's an active promotion #}
+                {% set percentage = null %}
+                {% set isPriceReduced = false %}
+                
+                {% if activePromo %}
+                  {% set percentage = activePromo.getPercentage + 0 %}
+                {% elseif previousPrice and previousPrice > lastPrice %}
+                  {# Calculate percentage reduction when price dropped #}
+                  {% set percentage = ((previousPrice - lastPrice) / previousPrice * 100)|round %}
+                  {% set isPriceReduced = true %}
+                {% endif %}
                 <button class="btn-favorite {% if product.getItem.getId in favorisIds %}active{% endif %}"
                     aria-label="Basculer favori"
                     data-item-id="{{ product.getItem.getId }}"
                     onclick="toggleFavoriteProduct(this)"></button>
+                {% if activePromo or isPriceReduced %}
+                  {# <div class="product-promo-badge">-{{ percentage|round(0, 'common') }}%</div> #}
+                {% endif %}
                 <img src="{{ product.getItem.getImages ? '/uploads/' ~ product.getItem.getImages : '/uploads/default-product.jpg' }}" alt="{{ product.getItem.getNameItem }}">
                 <div class="product-info">
                   <div class="name">{{ product.getItem.getNameItem }}</div>
-                  <div class="sizes mt-2">
-                    <strong>Tailles :</strong>
-                    {% if product.getItem.getItemSizes|length > 0 %}
-                      {% for size in product.getItem.getItemSizes %}
-                        <span class="badge bg-secondary me-1">{{ size.getValueSize }}{% if size.getSize %} ({{ size.getSize.getNameSize }}){% endif %}</span>
-                      {% endfor %}
+
+                  <div class="price-container">
+                    {% if activePromo %}
+                      {% set percentage = activePromo.getPercentage + 0 %}
+                      {% set promoPrice = (lastPrice * (100 - percentage) / 100) %}
+                      <span class="price-current">{{ promoPrice|number_format(2, '.', ',') }} $</span>
+                      <span class="price-base"><s>{{ lastPrice|number_format(2, '.', ',') }} $</s></span>
+                      <span class="promo-badge">-{{ percentage|round(0, 'common') }}%</span>
+                    {% elseif isPriceReduced %}
+                      <span class="price-current">{{ lastPrice|number_format(2, '.', ',') }} $</span>
+                      <span class="price-base"><s>{{ previousPrice|number_format(2, '.', ',') }} $</s></span>
+                      <span class="promo-badge">-{{ percentage|round(0, 'common') }}%</span>
                     {% else %}
-                      <span class="text-muted">Aucune taille</span>
+                      <span class="price-regular">{{ lastPrice|number_format(2, '.', ',') }} $</span>
                     {% endif %}
                   </div>
+
+                  {# helper text removed per user request #}
                 </div>
-          <div class="product-actions">
-            {% set lastPrice = product.getItem.getPriceItems|length > 0
-              ? product.getItem.getPriceItems|last.getPrice
-              : 0 %}
-            <button class="btn-bag" onclick="addToBag(this, {{ product.getItem.getId }}, '{{ product.getItem.getNameItem|e('js') }}', '{{ lastPrice }}', '{{ product.getItem.getImages|e('js') }}')">Add to bag</button>
+                {# embed sizes/colors JSON for modal usage (hidden) #}
+                {% set sizes_map = [] %}
+                {% for size in product.getItem.getItemSizes %}
+                  {% set sizes_map = sizes_map|merge([{'id': size.getId, 'value': size.getValueSize}]) %}
+                {% endfor %}
+                <script type="application/json" class="sizes-json" data-product-id="{{ product.getItem.getId }}">{{ sizes_map|json_encode|raw }}</script>
+                {% set colors_map = {} %}
+                {% for size in product.getItem.getItemSizes %}
+                  {% set size_colors = [] %}
+                  {% for isc in size.getItemSizeColors %}
+                    {% set color = isc.getColor %}
+                    {% if color %}
+                      {% set img = null %}
+                      {% if isc.getImages is defined and isc.getImages %}
+                        {% set img = '/uploads/' ~ isc.getImages %}
+                      {% endif %}
+                      {% set color_data = {'id': color.getId, 'name': color.getNameColor, 'image': img} %}
+                      {# Vérifier si cette couleur n'existe pas déjà pour éviter les doublons #}
+                      {% set exists = false %}
+                      {% for existing_color in size_colors %}
+                        {% if existing_color.id == color.getId %}
+                          {% set exists = true %}
+                        {% endif %}
+                      {% endfor %}
+                      {% if not exists %}
+                        {% set size_colors = size_colors|merge([color_data]) %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                  {% set colors_map = colors_map|merge({ (size.getId) : size_colors }) %}
+                {% endfor %}
+                
+                {# Debug: afficher les couleurs disponibles pour ce produit #}
+                <script>console.log('Colors for product {{ product.getItem.getId }}:', {{ colors_map|json_encode|raw }});</script>
+                <script type="application/json" class="colors-json" data-product-id="{{ product.getItem.getId }}">{{ colors_map|json_encode|raw }}</script>
+            <div class="product-actions">
+            <button class="btn-bag" onclick="openProductModal({{ product.getItem.getId }}, '{{ product.getItem.getNameItem|e('js') }}', '{{ lastPrice }}', '{{ product.getItem.getImages|default('')|e('js') }}', {{ (activePromo or isPriceReduced) ? percentage : 'null' }}, {{ isPriceReduced and previousPrice ? previousPrice : 'null' }})">Voir</button>
           </div>
   <script>
   function addToBag(btn, id, name, price, images) {
@@ -612,5 +753,281 @@
             </div>
         </aside>
     </div>
+  <script>
+    // Initialize color lists and wire size/color interactions for products in the live sidebar
+    (function(){
+      function renderColorsForProduct(productId) {
+        const jsonEl = document.querySelector(`.colors-json[data-product-id="${productId}"]`);
+        const container = document.querySelector(`.colors-list[data-product-id="${productId}"]`);
+        const sizeSelect = document.querySelector(`.size-select[data-product-id="${productId}"]`);
+        if (!jsonEl || !container) return;
+        let colorsMap = {};
+        try { colorsMap = JSON.parse(jsonEl.textContent || '{}'); } catch(e){ colorsMap = {}; }
+
+        const selectedSize = sizeSelect ? sizeSelect.value : Object.keys(colorsMap)[0];
+        container.innerHTML = '';
+        const colors = colorsMap[selectedSize] || [];
+        if (colors.length === 0) {
+          container.innerHTML = `<div class="text-muted">Non disponible</div>`;
+          return;
+        }
+
+        colors.forEach(c => {
+          const btn = document.createElement('div');
+          btn.className = 'color-item';
+          btn.dataset.colorId = c.id;
+          btn.dataset.productId = productId;
+          if (c.image) {
+            const img = document.createElement('img'); img.src = c.image; img.alt = c.name || 'color';
+            btn.appendChild(img);
+          } else {
+            const sw = document.createElement('span'); sw.className = 'color-swatch'; sw.style.background = c.name || '#ccc';
+            btn.appendChild(sw);
+          }
+          btn.addEventListener('click', () => {
+            // mark active
+            container.querySelectorAll('.color-item').forEach(x => x.classList.remove('active'));
+            btn.classList.add('active');
+            // swap product thumbnail image seulement si l'image de couleur existe
+            const productCard = btn.closest('.product');
+            if (productCard && c.image) {
+              const imgEl = productCard.querySelector('img');
+              if (imgEl) {
+                imgEl.src = c.image;
+                imgEl.alt = c.name || 'Produit';
+              }
+            }
+            // store selection on the container for addToBag
+            container.dataset.selectedColor = c.id;
+          });
+          container.appendChild(btn);
+        });
+      }
+
+      // init for all products
+      document.querySelectorAll('.colors-json').forEach(el => {
+        renderColorsForProduct(el.dataset.productId);
+      });
+
+      // size change handling
+      document.addEventListener('change', (e) => {
+        if (e.target && e.target.classList && e.target.classList.contains('size-select')) {
+          const productId = e.target.dataset.productId;
+          renderColorsForProduct(productId);
+        }
+      });
+
+      // override global addToBag to include selected variants
+      const originalAdd = window.addToBag;
+      window.addToBag = function(btn, id, name, price, images) {
+        const productCard = btn.closest('.product');
+        let itemSizeId = null;
+        let colorId = null;
+        if (productCard) {
+          const sizeSel = productCard.querySelector('.size-select');
+          if (sizeSel) itemSizeId = sizeSel.value || null;
+          const colorsList = productCard.querySelector('.colors-list');
+          if (colorsList) colorId = colorsList.dataset.selectedColor || null;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Ajout...';
+
+        const params = new URLSearchParams();
+        params.append('name', name);
+        params.append('price', price);
+        params.append('images', images);
+        params.append('quantity', '1');
+        if (itemSizeId) params.append('itemSizeId', itemSizeId);
+        if (colorId) params.append('colorId', colorId);
+
+        fetch(`/client/add-cart/${id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: params.toString()
+        }).then(res => {
+          if (!res.ok) throw new Error('Erreur serveur');
+          btn.textContent = 'Ajouté !';
+          btn.classList.add('added');
+          btn.style.background = '#28a745';
+        }).catch(() => {
+          btn.textContent = 'Erreur';
+          btn.style.background = '#dc3545';
+        });
+      };
+    })();
+    
+    // Product modal (global)
+    (function(){
+      const modalHtml = `
+        <div id="productModal" style="display:none; position:fixed; inset:0; z-index:10000; align-items:center; justify-content:center;">
+          <div style="background:#fff; border-radius:12px; padding:18px; width:420px; max-width:95%; box-shadow:0 10px 30px rgba(0,0,0,0.2); position:relative;">
+            <button id="closeModal" style="position:absolute; right:10px; top:10px; background:transparent; border:none; font-size:18px; cursor:pointer;">✕</button>
+            <div style="display:flex; gap:12px;">
+              <div style="position:relative;">
+                <img id="modalImage" src="" alt="" style="width:120px; height:90px; object-fit:cover; border-radius:8px;">
+                <div id="modalPromoBadge" style="position:absolute; top:4px; left:4px; background:linear-gradient(135deg, #ff4757, #ff3742); color:#fff; font-weight:900; padding:3px 6px; border-radius:8px; font-size:9px; box-shadow:0 2px 4px rgba(255,71,87,0.4); text-transform:uppercase; letter-spacing:0.3px; border:1px solid #fff; display:none;"></div>
+              </div>
+              <div style="flex:1;">
+                <h3 id="modalTitle" style="margin-top:0;margin-bottom:8px;font-size:16px"></h3>
+                <div id="modalPrice" style="font-weight:800;margin-bottom:8px"></div>
+                <div style="margin-bottom:8px">
+                  <label style="font-weight:700;display:block;margin-bottom:6px">Taille</label>
+                  <select id="modalSize" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e5e7eb"></select>
+                </div>
+                <div style="margin-bottom:12px">
+                  <label style="font-weight:700;display:block;margin-bottom:6px">Couleur</label>
+                  <div id="modalColors" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <button id="modalAddBtn" class="btn btn-bag">Ajouter au panier</button>
+                  <button id="modalCloseBtn" class="btn" style="background:#eee">Annuler</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+      const modal = document.getElementById('productModal');
+      const modalImage = document.getElementById('modalImage');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalPrice = document.getElementById('modalPrice');
+      const modalSize = document.getElementById('modalSize');
+      const modalColors = document.getElementById('modalColors');
+      const modalAddBtn = document.getElementById('modalAddBtn');
+      const closeModal = () => { modal.style.display = 'none'; };
+      document.getElementById('closeModal').addEventListener('click', closeModal);
+      document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+
+      window.openProductModal = function(productId, title, price, image, promoPercentage = null, originalPrice = null){
+        modalTitle.textContent = title;
+        
+        // Gérer l'affichage des prix avec promotion
+        const modalPromoBadge = document.getElementById('modalPromoBadge');
+        if (promoPercentage && promoPercentage > 0) {
+          if (originalPrice && originalPrice !== price) {
+            // Cas d'une réduction automatique : afficher le prix actuel et le prix barré
+            modalPrice.innerHTML = `
+              <span style="color: #e74c3c; font-weight: 900; font-size: 1.1rem;">${parseFloat(price).toFixed(2)} $</span>
+              <span style="color: #95a5a6; font-weight: 600; font-size: 0.9rem; text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #e74c3c;">${parseFloat(originalPrice).toFixed(2)} $</span>
+              <span style="background: linear-gradient(135deg, #ff4757, #ff3742); color: #fff; font-weight: 900; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid #fff;">-${promoPercentage}%</span>
+            `;
+          } else {
+            // Cas d'une vraie promotion : calculer le prix promo
+            const promoPrice = (parseFloat(price) * (100 - promoPercentage) / 100).toFixed(2);
+            modalPrice.innerHTML = `
+              <span style="color: #e74c3c; font-weight: 900; font-size: 1.1rem;">${promoPrice} $</span>
+              <span style="color: #95a5a6; font-weight: 600; font-size: 0.9rem; text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #e74c3c;">${price} $</span>
+              <span style="background: linear-gradient(135deg, #ff4757, #ff3742); color: #fff; font-weight: 900; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid #fff;">-${promoPercentage}%</span>
+            `;
+          }
+          modalPromoBadge.textContent = `-${promoPercentage}%`;
+          modalPromoBadge.style.display = 'block';
+        } else {
+          modalPrice.textContent = price + ' $';
+          modalPromoBadge.style.display = 'none';
+        }
+        
+        // Utiliser l'image de l'article de base si aucune image spécifique n'est fournie
+        modalImage.src = image && image.trim() !== '' ? '/uploads/' + image : '/uploads/default-product.jpg';
+
+        // populate sizes
+        const sizesJson = document.querySelector(`.sizes-json[data-product-id="${productId}"]`);
+        let sizes = [];
+        try { sizes = sizesJson ? JSON.parse(sizesJson.textContent || '[]') : []; } catch(e) { sizes = []; }
+        modalSize.innerHTML = '';
+        const defaultOpt = document.createElement('option'); defaultOpt.value=''; defaultOpt.textContent='Sélectionner'; modalSize.appendChild(defaultOpt);
+        sizes.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.value; modalSize.appendChild(o); });
+
+        // populate colors for first size (if available)
+        const colorsJson = document.querySelector(`.colors-json[data-product-id="${productId}"]`);
+        let colorsMap = {};
+        try { colorsMap = colorsJson ? JSON.parse(colorsJson.textContent || '{}') : {}; } catch(e){ colorsMap = {}; }
+        console.log('ColorsMap for product', productId, ':', colorsMap);
+        console.log('Available size keys in colorsMap:', Object.keys(colorsMap));
+        const firstSize = sizes.length ? sizes[0].id : null;
+        console.log('First size ID:', firstSize);
+        console.log('Colors for first size:', colorsMap[firstSize]);
+        
+        // Essayer de trouver une taille qui a des couleurs
+        let sizeWithColors = null;
+        for (const sizeId of Object.keys(colorsMap)) {
+          if (colorsMap[sizeId] && colorsMap[sizeId].length > 0) {
+            sizeWithColors = sizeId;
+            break;
+          }
+        }
+        console.log('Size with colors found:', sizeWithColors);
+        
+        // Utiliser la première taille avec des couleurs, ou la première taille disponible
+        const targetSize = sizeWithColors || firstSize;
+        populateModalColors(colorsMap[targetSize] || []);
+
+        modal.style.display = 'flex';
+
+        modalSize.onchange = () => {
+          const sz = modalSize.value;
+          console.log('Size changed to:', sz);
+          console.log('Colors for selected size:', colorsMap[sz]);
+          populateModalColors(colorsMap[sz] || []);
+        };
+
+        function populateModalColors(list){
+          console.log('populateModalColors called with:', list);
+          modalColors.innerHTML = '';
+          if (!list || list.length === 0) {
+            modalColors.innerHTML = '<div class="text-muted">Aucune couleur</div>';
+            return;
+          }
+          list.forEach(c => {
+            const el = document.createElement('div'); el.className = 'color-item'; el.style.cursor='pointer'; el.dataset.colorId = c.id; el.title = c.name || '';
+            if (c.image) { const img = document.createElement('img'); img.src = c.image; img.style.width='36px'; img.style.height='36px'; img.style.objectFit='cover'; img.style.borderRadius='6px'; el.appendChild(img); }
+            else { const sw = document.createElement('span'); sw.className='color-swatch'; sw.style.background = c.name || '#ccc'; el.appendChild(sw); }
+            el.onclick = () => { 
+              modalColors.querySelectorAll('.color-item').forEach(x=>x.classList.remove('active')); 
+              el.classList.add('active');
+              // Mettre à jour l'image du modal si l'image de couleur existe
+              if (c.image) {
+                modalImage.src = c.image;
+              }
+            };
+            modalColors.appendChild(el);
+          });
+        }
+
+        modalAddBtn.onclick = async () => {
+          const selectedSize = modalSize.value || null;
+          const selectedColorEl = modalColors.querySelector('.color-item.active');
+          const selectedColor = selectedColorEl ? selectedColorEl.dataset.colorId : null;
+          // call existing addToBag (overridden) by constructing a fake button to show UX
+          modalAddBtn.disabled = true; modalAddBtn.textContent = 'Ajout...';
+          const fakeBtn = document.createElement('button');
+          document.body.appendChild(fakeBtn);
+          // reuse addToBag override which reads modal DOM if present
+          // build params and POST directly to keep behavior consistent
+          const params = new URLSearchParams();
+          params.append('name', title);
+          params.append('price', price);
+          params.append('images', image);
+          params.append('quantity', '1');
+          if (selectedSize) params.append('itemSizeId', selectedSize);
+          if (selectedColor) params.append('colorId', selectedColor);
+
+          try {
+            const res = await fetch(`/client/add-cart/${productId}`, { method: 'POST', headers: { 'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest' }, body: params.toString() });
+            if (!res.ok) throw new Error('err');
+            modalAddBtn.textContent = 'Ajouté !';
+            setTimeout(closeModal, 700);
+          } catch(e){ modalAddBtn.textContent = 'Erreur'; }
+          modalAddBtn.disabled = false;
+        };
+      };
+    })();
+    </script>
   </body>
 </html>
