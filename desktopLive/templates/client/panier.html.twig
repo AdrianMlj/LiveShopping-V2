@@ -56,8 +56,14 @@
                 <div class="cart-item-card" data-item-id="{{ item.id }}">
                     <!-- Product Image -->
                     <div class="product-image-container">
-                        {% if item.images %}
-                            <img src="/uploads/{{ item.images }}" alt="{{ item.name }}" class="product-image" loading="lazy">
+                        {% set displayImage = null %}
+                        {% if item.colorImage is defined and item.colorImage %}
+                            {% set displayImage = item.colorImage %}
+                        {% elseif item.images %}
+                            {% set displayImage = item.images %}
+                        {% endif %}
+                        {% if displayImage %}
+                            <img src="/Uploads/{{ displayImage }}" alt="{{ item.name }}" class="product-image" loading="lazy">
                         {% else %}
                             <div class="product-image-placeholder">
                                 <i class="fa-solid fa-image"></i>
@@ -72,34 +78,57 @@
                             <p class="product-price-unit">{{ item.price|number_format(2, '.', ' ') }} $/unité</p>
                             
                             <div class="product-variants">
-                                <div class="variant-group">
-                                    <label class="variant-label">
-                                        <i class="fa-solid fa-ruler"></i>
-                                        Taille
-                                    </label>
-                                    <select class="variant-select size-select" data-item-id="{{ item.id }}">
-                                        <option value="">Sélectionner</option>
-                                        {% set sizes = sizesByItem[item.id]|default([]) %}
-                                        {% for s in sizes %}
-                                            <option value="{{ s.id }}" {{ item.itemSizeId is defined and item.itemSizeId == s.id ? 'selected' }}>{{ s.label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                                {% set sizes = sizesByItem[item.id]|default([]) %}
+                                {% set selectedSize = null %}
+                                {% for s in sizes %}
+                                    {% if item.itemSizeId is defined and item.itemSizeId == s.id %}
+                                        {% set selectedSize = s.label %}
+                                    {% endif %}
+                                {% endfor %}
                                 
-                                <div class="variant-group">
-                                    <label class="variant-label">
-                                        <i class="fa-solid fa-palette"></i>
-                                        Couleur
-                                    </label>
-                                    {% set currentSizeId = item.itemSizeId ?? (sizes|length ? sizes[0].id : null) %}
-                                    {% set colors = currentSizeId ? (colorsBySize[currentSizeId]|default([])) : [] %}
-                                    <select class="variant-select color-select" data-item-id="{{ item.id }}" {{ (colors|length == 0) ? 'disabled' : '' }}>
-                                        <option value="">{{ (colors|length == 0) ? 'Non disponible' : 'Sélectionner' }}</option>
-                                        {% for c in colors %}
-                                            <option value="{{ c.id }}" {{ item.colorId is defined and item.colorId == c.id ? 'selected' }}>{{ c.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                                {% set selectedColor = null %}
+                                {% set selectedColorImage = null %}
+                                
+                                {# Get color name from colorsBySize if available #}
+                                {% set currentSizeId = item.itemSizeId ?? (sizes|length ? sizes[0].id : null) %}
+                                {% set colors = currentSizeId ? (colorsBySize[currentSizeId]|default([])) : [] %}
+                                {% for c in colors %}
+                                    {% if item.colorId is defined and item.colorId == c.id %}
+                                        {% set selectedColor = c.name %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {# Use the color image directly from cart item if available #}
+                                {% if item.colorImage is defined and item.colorImage %}
+                                    {% set selectedColorImage = '/Uploads/' ~ item.colorImage %}
+                                {% endif %}
+                                
+                                {% if selectedSize or selectedColor %}
+                                    <div class="variant-display">
+                                        {% if selectedSize %}
+                                            <div class="variant-item">
+                                                <span class="variant-label">
+                                                    <i class="fa-solid fa-ruler"></i>
+                                                    Taille :
+                                                </span>
+                                                <span class="variant-value">{{ selectedSize }}</span>
+                                            </div>
+                                        {% endif %}
+                                        {% if selectedColor %}
+                                            <div class="variant-item">
+                                                <span class="variant-label">
+                                                    <i class="fa-solid fa-palette"></i>
+                                                    Couleur :
+                                                </span>
+                                                {% if selectedColorImage %}
+                                                    <img src="{{ selectedColorImage }}" alt="{{ selectedColor }}" class="color-preview" title="{{ selectedColor }}">
+                                                {% else %}
+                                                    <span class="variant-value">{{ selectedColor }}</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                         
@@ -798,6 +827,49 @@ body {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.variant-display {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.variant-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--primary-light);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.variant-item .variant-label {
+    margin-bottom: 0;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.variant-item .variant-value {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.color-preview {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.color-preview:hover {
+    transform: scale(1.15);
 }
 
 /* Product Controls */

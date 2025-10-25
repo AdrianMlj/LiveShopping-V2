@@ -155,6 +155,7 @@
             border-radius: 999px; 
             cursor: pointer; 
             font-weight: 700; 
+            margin-top: 70px;
             white-space: nowrap;
             margin-top: 50px;
             transition: var(--transition);
@@ -607,6 +608,8 @@
                 {% if items is defined and items|length > 0 %}
                     {% for product in items %}
                         <div class="product" data-product-id="{{ product.getItem.getId }}">
+ 
+                            {# --- DEBUG DUMP END --- #}
                 {# Price display: show promo price if an active promotion exists, and show base price struck-through #}
                 {% set priceItems = product.getItem.getPriceItems %}
                 {% set lastPrice = priceItems|length > 0 ? priceItems|last.getPrice : 0 %}
@@ -668,35 +671,35 @@
                   {% set sizes_map = sizes_map|merge([{'id': size.getId, 'value': size.getValueSize}]) %}
                 {% endfor %}
                 <script type="application/json" class="sizes-json" data-product-id="{{ product.getItem.getId }}">{{ sizes_map|json_encode|raw }}</script>
-                {% set colors_map = {} %}
-                {% for size in product.getItem.getItemSizes %}
-                  {% set size_colors = [] %}
-                  {% for isc in size.getItemSizeColors %}
-                    {% set color = isc.getColor %}
-                    {% if color %}
-                      {% set img = null %}
-                      {% if isc.getImages is defined and isc.getImages %}
-                        {% set img = '/uploads/' ~ isc.getImages %}
-                      {% endif %}
-                      {% set color_data = {'id': color.getId, 'name': color.getNameColor, 'image': img} %}
-                      {# Vérifier si cette couleur n'existe pas déjà pour éviter les doublons #}
-                      {% set exists = false %}
-                      {% for existing_color in size_colors %}
-                        {% if existing_color.id == color.getId %}
-                          {% set exists = true %}
-                        {% endif %}
-                      {% endfor %}
-                      {% if not exists %}
-                        {% set size_colors = size_colors|merge([color_data]) %}
-                      {% endif %}
-                    {% endif %}
-                  {% endfor %}
-                  {% set colors_map = colors_map|merge({ (size.getId) : size_colors }) %}
-                {% endfor %}
-                
-                {# Debug: afficher les couleurs disponibles pour ce produit #}
-                <script>console.log('Colors for product {{ product.getItem.getId }}:', {{ colors_map|json_encode|raw }});</script>
-                <script type="application/json" class="colors-json" data-product-id="{{ product.getItem.getId }}">{{ colors_map|json_encode|raw }}</script>
+                {# Build colors map by size ID #}
+                <script type="application/json" class="colors-json" data-product-id="{{ product.getItem.getId }}">
+                {%- set colors_by_size = [] -%}
+                {%- for size in product.getItem.getItemSizes -%}
+                  {%- set size_id = size.getId -%}
+                  {%- set size_colors = [] -%}
+                  {%- for isc in size.getItemSizeColors -%}
+                    {%- set color = isc.getColor -%}
+                    {%- if color -%}
+                      {%- set img = null -%}
+                      {%- if isc.getImages is defined and isc.getImages -%}
+                        {%- set img = '/uploads/' ~ isc.getImages -%}
+                      {%- endif -%}
+                      {%- set color_data = {'id': color.getId, 'itemSizeColorId': isc.getId, 'name': color.getNameColor, 'image': img} -%}
+                      {%- set exists = false -%}
+                      {%- for existing_color in size_colors -%}
+                        {%- if existing_color.id == color.getId -%}
+                          {%- set exists = true -%}
+                        {%- endif -%}
+                      {%- endfor -%}
+                      {%- if not exists -%}
+                        {%- set size_colors = size_colors|merge([color_data]) -%}
+                      {%- endif -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- set colors_by_size = colors_by_size|merge([{'sizeId': size_id, 'colors': size_colors}]) -%}
+                {%- endfor -%}
+                {{ colors_by_size|json_encode|raw }}
+                </script>
             <div class="product-actions">
             <button class="btn-bag" onclick="openProductModal({{ product.getItem.getId }}, '{{ product.getItem.getNameItem|e('js') }}', '{{ lastPrice }}', '{{ product.getItem.getImages|default('')|e('js') }}', {{ (activePromo or isPriceReduced) ? percentage : 'null' }}, {{ isPriceReduced and previousPrice ? previousPrice : 'null' }})">Voir</button>
           </div>
@@ -817,17 +820,28 @@
         }
       });
 
-      // override global addToBag to include selected variants
+      // override global addToBag to include selected variants and current displayed image (color)
       const originalAdd = window.addToBag;
       window.addToBag = function(btn, id, name, price, images) {
         const productCard = btn.closest('.product');
         let itemSizeId = null;
         let colorId = null;
+        let imageToSend = images || '';
         if (productCard) {
           const sizeSel = productCard.querySelector('.size-select');
           if (sizeSel) itemSizeId = sizeSel.value || null;
           const colorsList = productCard.querySelector('.colors-list');
           if (colorsList) colorId = colorsList.dataset.selectedColor || null;
+          // prefer the currently displayed product image (thumbnail) if present
+          const thumb = productCard.querySelector('img');
+          if (thumb && thumb.src) {
+            imageToSend = thumb.src;
+          }
+        }
+
+        // normalize to filename if path contains /uploads/
+        if (imageToSend && imageToSend.includes('/uploads/')) {
+          imageToSend = imageToSend.split('/uploads/').pop();
         }
 
         btn.disabled = true;
@@ -836,7 +850,7 @@
         const params = new URLSearchParams();
         params.append('name', name);
         params.append('price', price);
-        params.append('images', images);
+        params.append('images', imageToSend);
         params.append('quantity', '1');
         if (itemSizeId) params.append('itemSizeId', itemSizeId);
         if (colorId) params.append('colorId', colorId);
@@ -946,57 +960,67 @@
 
         // populate colors for first size (if available)
         const colorsJson = document.querySelector(`.colors-json[data-product-id="${productId}"]`);
-        let colorsMap = {};
-        try { colorsMap = colorsJson ? JSON.parse(colorsJson.textContent || '{}') : {}; } catch(e){ colorsMap = {}; }
-        console.log('ColorsMap for product', productId, ':', colorsMap);
-        console.log('Available size keys in colorsMap:', Object.keys(colorsMap));
-        const firstSize = sizes.length ? sizes[0].id : null;
-        console.log('First size ID:', firstSize);
-        console.log('Colors for first size:', colorsMap[firstSize]);
+        let colorsBySize = [];
+        try { colorsBySize = colorsJson ? JSON.parse(colorsJson.textContent || '[]') : []; } catch(e){ colorsBySize = []; }
         
-        // Essayer de trouver une taille qui a des couleurs
+        // Convert array format to object map: {sizeId: colors}
+        let colorsMap = {};
+        colorsBySize.forEach(item => { colorsMap[item.sizeId] = item.colors; });
+        const firstSize = sizes.length ? sizes[0].id : null;
+
+        // Find first size that has colors, otherwise fall back to firstSize
         let sizeWithColors = null;
         for (const sizeId of Object.keys(colorsMap)) {
-          if (colorsMap[sizeId] && colorsMap[sizeId].length > 0) {
-            sizeWithColors = sizeId;
-            break;
-          }
+          if (colorsMap[sizeId] && colorsMap[sizeId].length > 0) { sizeWithColors = parseInt(sizeId); break; }
         }
-        console.log('Size with colors found:', sizeWithColors);
-        
-        // Utiliser la première taille avec des couleurs, ou la première taille disponible
         const targetSize = sizeWithColors || firstSize;
-        populateModalColors(colorsMap[targetSize] || []);
 
+        // If we have a target size, set it as selected in the dropdown so the UI state matches the displayed colors
+        if (targetSize) {
+          modalSize.value = targetSize;
+        }
+
+        // populate modal colors and show modal
+        populateModalColors(colorsMap[targetSize] || []);
         modal.style.display = 'flex';
 
         modalSize.onchange = () => {
-          const sz = modalSize.value;
-          console.log('Size changed to:', sz);
-          console.log('Colors for selected size:', colorsMap[sz]);
+          const sz = parseInt(modalSize.value);
           populateModalColors(colorsMap[sz] || []);
         };
 
         function populateModalColors(list){
-          console.log('populateModalColors called with:', list);
           modalColors.innerHTML = '';
+          modalColors.dataset.selectedColor = '';
+          // fallback image: use product base image passed to openProductModal
+          const fallbackImage = (image && image.trim() !== '') ? ('/uploads/' + image) : '/uploads/default-product.jpg';
           if (!list || list.length === 0) {
             modalColors.innerHTML = '<div class="text-muted">Aucune couleur</div>';
+            // ensure modal image is set to fallback when no color image exists for this size
+            modalImage.src = fallbackImage;
             return;
           }
-          list.forEach(c => {
+          list.forEach((c, idx) => {
             const el = document.createElement('div'); el.className = 'color-item'; el.style.cursor='pointer'; el.dataset.colorId = c.id; el.title = c.name || '';
             if (c.image) { const img = document.createElement('img'); img.src = c.image; img.style.width='36px'; img.style.height='36px'; img.style.objectFit='cover'; img.style.borderRadius='6px'; el.appendChild(img); }
             else { const sw = document.createElement('span'); sw.className='color-swatch'; sw.style.background = c.name || '#ccc'; el.appendChild(sw); }
             el.onclick = () => { 
-              modalColors.querySelectorAll('.color-item').forEach(x=>x.classList.remove('active')); 
+              modalColors.querySelectorAll('.color-item').forEach(x=>x.classList.remove('active'));
               el.classList.add('active');
-              // Mettre à jour l'image du modal si l'image de couleur existe
-              if (c.image) {
-                modalImage.src = c.image;
-              }
+              modalColors.dataset.selectedColor = c.id;
+              // Mettre à jour l'image du modal si l'image de couleur existe, sinon fallback
+              if (c.image) { modalImage.src = c.image; }
+              else { modalImage.src = fallbackImage; }
             };
             modalColors.appendChild(el);
+
+            // auto-activer la première couleur and set image (or fallback)
+            if (idx === 0) {
+              el.classList.add('active');
+              modalColors.dataset.selectedColor = c.id;
+              if (c.image) { modalImage.src = c.image; }
+              else { modalImage.src = fallbackImage; }
+            }
           });
         }
 
@@ -1004,19 +1028,38 @@
           const selectedSize = modalSize.value || null;
           const selectedColorEl = modalColors.querySelector('.color-item.active');
           const selectedColor = selectedColorEl ? selectedColorEl.dataset.colorId : null;
-          // call existing addToBag (overridden) by constructing a fake button to show UX
           modalAddBtn.disabled = true; modalAddBtn.textContent = 'Ajout...';
-          const fakeBtn = document.createElement('button');
-          document.body.appendChild(fakeBtn);
-          // reuse addToBag override which reads modal DOM if present
-          // build params and POST directly to keep behavior consistent
+
+          // determine the actual image filename to send: prefer the modal image (selected color) if present
+          let imageToSend = modalImage && modalImage.src ? modalImage.src : (image || '');
+          // normalize to filename if path contains /uploads/
+          if (imageToSend && imageToSend.includes('/uploads/')) {
+            imageToSend = imageToSend.split('/uploads/').pop();
+          }
+
+          // Extract color image if it's different from base image
+          let colorImageToSend = '';
+          if (modalImage && modalImage.src) {
+            let fullColorImage = modalImage.src;
+            if (fullColorImage.includes('/uploads/')) {
+              colorImageToSend = fullColorImage.split('/uploads/').pop();
+            } else {
+              colorImageToSend = fullColorImage;
+            }
+            // Only send colorImage if it's different from imageToSend
+            if (colorImageToSend === imageToSend) {
+              colorImageToSend = '';
+            }
+          }
+
           const params = new URLSearchParams();
           params.append('name', title);
           params.append('price', price);
-          params.append('images', image);
+          params.append('images', imageToSend);
           params.append('quantity', '1');
           if (selectedSize) params.append('itemSizeId', selectedSize);
           if (selectedColor) params.append('colorId', selectedColor);
+          if (colorImageToSend) params.append('colorImage', colorImageToSend);
 
           try {
             const res = await fetch(`/client/add-cart/${productId}`, { method: 'POST', headers: { 'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest' }, body: params.toString() });

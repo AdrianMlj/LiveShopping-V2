@@ -197,18 +197,28 @@ class ClientController extends AbstractController
                 $price = 0.0;
             }
         }
-        // Vérifie si le produit existe déjà dans le panier
+        // Get variant selection for this item
+        $selectedSizeId = $request->request->get('itemSizeId');
+        $selectedColorId = $request->request->get('colorId');
+        $selectedColorImage = $request->request->get('colorImage');
+        
+        // Debug logging
+        error_log("ADD-CART: itemSizeId={$selectedSizeId}, colorId={$selectedColorId}, colorImage={$selectedColorImage}");
+        
+        // Vérifie si le produit AVEC LA MÊME VARIANTE existe déjà dans le panier
         $found = false;
         foreach ($cart as &$item) {
-            if ($item['id'] == $id) {
+            // Match by id AND same size/color combination
+            if ($item['id'] == $id && 
+                ((int)($item['itemSizeId'] ?? 0)) === ((int)($selectedSizeId ?? 0)) &&
+                ((int)($item['colorId'] ?? 0)) === ((int)($selectedColorId ?? 0))) {
                 $item['quantity'] += $quantity;
                 $found = true;
                 break;
             }
         }
+        // If not found, add as new entry with variant info
         if (!$found) {
-            $selectedSizeId = $request->request->get('itemSizeId');
-            $selectedColorId = $request->request->get('colorId');
             $cart[] = [
                 'id' => $id,
                 'name' => $name,
@@ -217,6 +227,7 @@ class ClientController extends AbstractController
                 'quantity' => $quantity,
                 'itemSizeId' => $selectedSizeId ? (int)$selectedSizeId : null,
                 'colorId' => $selectedColorId ? (int)$selectedColorId : null,
+                'colorImage' => $selectedColorImage,
             ];
         }
         $session->set('cart', $cart);
@@ -259,9 +270,17 @@ class ClientController extends AbstractController
                     $colorsBySize[$sid] = [];
                     foreach ($sz->getItemSizeColors() as $isc) {
                         if ($isc->getColor()) {
+                            $img = null;
+                            if (method_exists($isc, 'getImages')) {
+                                $raw = $isc->getImages();
+                                if ($raw) {
+                                    $img = '/uploads/' . ltrim($raw, '/');
+                                }
+                            }
                             $colorsBySize[$sid][] = [
                                 'id' => $isc->getColor()->getId(),
                                 'name' => $isc->getColor()->getNameColor() ?? ('#'.$isc->getColor()->getId()),
+                                'image' => $img,
                             ];
                         }
                     }

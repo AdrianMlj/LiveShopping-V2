@@ -74,7 +74,8 @@ class HomeController extends AbstractController
                             if (method_exists($isc, 'getImages')) {
                                 $raw = $isc->getImages();
                                 if ($raw) {
-                                    $img = '/uploads/' . ltrim($raw, '/');
+                                    // Store just the filename, not the full path
+                                    $img = ltrim($raw, '/');
                                 }
                             }
                         } catch (\Throwable $e) {
@@ -94,7 +95,7 @@ class HomeController extends AbstractController
                 $sizesByItem[$item->getId()] = $sizes;
                 $colorsByProduct[$item->getId()] = $colorsMapForItem;
             }
-
+            
             $sellerName = $item->getSeller() ? $item->getSeller()->getUsername() : 'N/A';
             $products[] = [
                 'id' => $item->getId(),
@@ -103,7 +104,8 @@ class HomeController extends AbstractController
                 'price' => $price,
                 'sizes' => $sizes,
                 'description' => $item->getDescription() ?: 'Pas de description disponible',
-                'seller' => $sellerName
+                'seller' => $sellerName,
+                'item' => $item // Passer l'entité complète pour accéder aux promotions
             ];
         }
 
