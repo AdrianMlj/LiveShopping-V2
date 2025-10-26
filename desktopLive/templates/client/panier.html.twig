@@ -52,8 +52,16 @@
 
             <!-- Cart Items -->
             <div class="cart-items-section">
+                {# DEBUG: Show cart data #}
+                {# <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; font-family: monospace; font-size: 12px;">
+                    <strong>DEBUG PANIER ({{ cart|length }} items):</strong><br>
+                    {% for item in cart %}
+                        [{{ loop.index }}] ID={{ item.id }}, NAME={{ item.name }}, CART_KEY={{ item.cart_key|default('NONE') }}, SIZE={{ item.itemSizeId|default('NONE') }}, COLOR={{ item.colorId|default('NONE') }}, QTY={{ item.quantity }}<br>
+                    {% endfor %}
+                </div> #}
                 {% for item in cart %}
-                <div class="cart-item-card" data-item-id="{{ item.id }}">
+                <!-- DEBUG ITEM: id={{ item.id }}, cart_key={{ item.cart_key|default('NONE') }}, colorId={{ item.colorId|default('NONE') }}, colorImage={{ item.colorImage|default('NONE') }}, images={{ item.images|default('NONE') }} -->
+                <div class="cart-item-card" data-cart-key="{{ item.cart_key|default(item.id) }}">
                     <!-- Product Image -->
                     <div class="product-image-container">
                         {% set displayImage = null %}
@@ -136,12 +144,12 @@
                         <div class="product-controls">
                             <div class="quantity-section">
                                 <div class="quantity-controls">
-                                    <button class="qty-btn decrease" data-id="{{ item.id }}" aria-label="Réduire la quantité">
+                                    <button class="qty-btn decrease" data-cart-key="{{ item.cart_key|default(item.id) }}" aria-label="Réduire la quantité">
                                         <i class="fa-solid fa-minus"></i>
                                     </button>
                                     <input type="number" value="{{ item.quantity }}" min="1" class="qty-input" 
-                                           data-id="{{ item.id }}" aria-label="Quantité">
-                                    <button class="qty-btn increase" data-id="{{ item.id }}" aria-label="Augmenter la quantité">
+                                           data-cart-key="{{ item.cart_key|default(item.id) }}" aria-label="Quantité">
+                                    <button class="qty-btn increase" data-cart-key="{{ item.cart_key|default(item.id) }}" aria-label="Augmenter la quantité">
                                         <i class="fa-solid fa-plus"></i>
                                     </button>
                                 </div>
@@ -153,8 +161,8 @@
                             </div>
                             
                             <!-- Remove Button -->
-                            <form method="post" action="{{ path('app_client_remove_cart', {'id': item.id}) }}" class="remove-form">
-                                <button type="submit" class="btn-remove" data-id="{{ item.id }}" title="Supprimer l'article">
+                            <form method="post" action="{{ path('app_client_remove_cart', {'cartKey': item.cart_key|default(item.id)}) }}" class="remove-form">
+                <button type="submit" class="btn-remove" data-cart-key="{{ item.cart_key|default(item.id) }}" title="Supprimer l'article">
                                     <i class="fa-solid fa-trash"></i>
                                     Supprimer
                                 </button>
@@ -304,8 +312,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gestion des quantités
     document.querySelectorAll('.qty-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const itemId = this.getAttribute('data-id');
-            const input = document.querySelector(`.qty-input[data-id="${itemId}"]`);
+            const cartKey = this.getAttribute('data-cart-key');
+            const input = document.querySelector(`.qty-input[data-cart-key="${cartKey}"]`);
             let currentValue = parseInt(input.value);
             
             if (this.classList.contains('increase')) {
@@ -314,16 +322,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.value = currentValue - 1;
             }
             
-            updateQuantity(itemId, input.value);
+            updateQuantity(cartKey, input.value);
         });
     });
     
     // Mise à jour manuelle de la quantité
     document.querySelectorAll('.qty-input').forEach(input => {
         input.addEventListener('change', function() {
-            const itemId = this.getAttribute('data-id');
+            const cartKey = this.getAttribute('data-cart-key');
             if (this.value < 1) this.value = 1;
-            updateQuantity(itemId, this.value);
+            updateQuantity(cartKey, this.value);
         });
     });
     
@@ -331,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.btn-remove').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            const itemId = this.dataset.id;
+            const cartKey = this.dataset.cartKey;
             const cartItem = this.closest('.cart-item-card');
             const form = this.closest('.remove-form');
             
@@ -394,9 +402,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    function updateQuantity(itemId, quantity) {
+    function updateQuantity(cartKey, quantity) {
         // Simulation de mise à jour - à remplacer par votre logique AJAX
-        console.log(`Mise à jour article ${itemId}: ${quantity}`);
+        console.log(`Mise à jour article ${cartKey}: ${quantity}`);
         
         // Exemple de requête AJAX:
         /*

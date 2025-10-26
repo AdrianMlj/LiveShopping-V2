@@ -140,13 +140,13 @@ class ClientController extends AbstractController
             'cartTotal' => $cartTotal
         ]);
     }
-    #[Route('/client/remove-cart/{id}', name: 'app_client_remove_cart', methods: ['POST'])]
-    public function removeCart(Request $request, $id): Response
+    #[Route('/client/remove-cart/{cartKey}', name: 'app_client_remove_cart', methods: ['POST'])]
+    public function removeCart(Request $request, $cartKey): Response
     {
         $session = $request->getSession();
         $cart = $session->get('cart', []);
-        $cart = array_filter($cart, function($item) use ($id) {
-            return $item['id'] != $id;
+        $cart = array_filter($cart, function($item) use ($cartKey) {
+            return ($item['cart_key'] ?? '') !== $cartKey;
         });
         $session->set('cart', array_values($cart));
         return $this->redirectToRoute('app_client_panier');
@@ -161,6 +161,9 @@ class ClientController extends AbstractController
         $images = $request->request->get('images');
         $quantityInput = $request->request->get('quantity', 1);
 
+        // Normaliser l'ID
+        $id = (int)$id;
+        
         $quantity = (int) $quantityInput;
         if ($quantity <= 0) {
             $quantity = 1;
@@ -197,42 +200,89 @@ class ClientController extends AbstractController
                 $price = 0.0;
             }
         }
-        // Get variant selection for this item
-        $selectedSizeId = $request->request->get('itemSizeId');
-        $selectedColorId = $request->request->get('colorId');
-        $selectedColorImage = $request->request->get('colorImage');
-        
-        // Debug logging
-        error_log("ADD-CART: itemSizeId={$selectedSizeId}, colorId={$selectedColorId}, colorImage={$selectedColorImage}");
-        
+    // Get variant selection for this item and normalize values (avoid 'null' string issues)
+    $rawSize = $request->request->get('itemSizeId');
+    $rawColor = $request->request->get('colorId');
+    $selectedColorImage = $request->request->get('colorImage');
+
+    $selectedSizeId = (is_numeric($rawSize) && (int)$rawSize > 0) ? (int)$rawSize : 0;
+    $selectedColorId = (is_numeric($rawColor) && (int)$rawColor > 0) ? (int)$rawColor : 0;
+
+        // Create unique cart key for this variant (use normalized ints)
+        $cartKey = $id . '_' . $selectedSizeId . '_' . $selectedColorId;
+
+        // Debug logging - Write to a file we can check (log pre-normalization)
+        $debugLog = dirname(__DIR__, 2) . '/var/log/cart_debug.log';
+        $debugMsg = sprintf(
+            "[%s] ADD-CART REQUEST: id=%s, itemSizeId=%s, colorId=%s, colorImage=%s, cartKey=%s\n",
+            date('Y-m-d H:i:s'),
+            $id,
+            $selectedSizeId,
+            $selectedColorId,
+            $selectedColorImage ?? 'NULL',
+            $cartKey
+        );
+        @file_put_contents($debugLog, $debugMsg, FILE_APPEND);
+
         // Vérifie si le produit AVEC LA MÊME VARIANTE existe déjà dans le panier
         $found = false;
         foreach ($cart as &$item) {
-            // Match by id AND same size/color combination
-            if ($item['id'] == $id && 
-                ((int)($item['itemSizeId'] ?? 0)) === ((int)($selectedSizeId ?? 0)) &&
-                ((int)($item['colorId'] ?? 0)) === ((int)($selectedColorId ?? 0))) {
-                $item['quantity'] += $quantity;
+            // Normalise les valeurs pour la comparaison
+            $itemId = isset($item['id']) ? (int)$item['id'] : 0;
+            $itemSizeId = isset($item['itemSizeId']) ? (int)$item['itemSizeId'] : 0;
+            $itemColorId = isset($item['colorId']) ? (int)$item['colorId'] : 0;
+            
+            // Compare avec les nouvelles valeurs
+            if ($itemId === (int)$id && $itemSizeId === $selectedSizeId && $itemColorId === $selectedColorId) {
+                // Article trouvé, augmenter la quantité
+                $item['quantity'] = ((int)($item['quantity'] ?? 1)) + $quantity;
+                // Mettre à jour le cart_key pour assurer la cohérence
+                $item['cart_key'] = $cartKey;
+                $item['itemSizeId'] = $selectedSizeId;
+                $item['colorId'] = $selectedColorId;
+                // Mettre à jour l'image de couleur si fournie
+                if ($selectedColorImage) {
+                    $item['colorImage'] = $selectedColorImage;
+                }
                 $found = true;
                 break;
             }
         }
+        unset($item);
+        
         // If not found, add as new entry with variant info
         if (!$found) {
             $cart[] = [
-                'id' => $id,
+                'cart_key' => $cartKey,
+                'id' => (int)$id,
                 'name' => $name,
                 'price' => $price,
                 'images' => $images,
                 'quantity' => $quantity,
-                'itemSizeId' => $selectedSizeId ? (int)$selectedSizeId : null,
-                'colorId' => $selectedColorId ? (int)$selectedColorId : null,
+                'itemSizeId' => $selectedSizeId,
+                'colorId' => $selectedColorId,
                 'colorImage' => $selectedColorImage,
             ];
         }
-        $session->set('cart', $cart);
+    // Save normalized cart back to session and log result for debugging
+    $session->set('cart', $cart);
+    @file_put_contents($debugLog, date('Y-m-d H:i:s') . " CART AFTER ADD:\n" . json_encode($cart, JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+
+        // If request is AJAX (fetch from client), return JSON with updated cart to avoid redirects
+        if ($request->isXmlHttpRequest()) {
+            return $this->json(['success' => true, 'cart' => $cart], 200, [], ['json_encode_options' => JSON_PRETTY_PRINT]);
+        }
+
         return $this->redirectToRoute('app_home');
     }
+    #[Route('/client/debug-cart', name: 'app_client_debug_cart')]
+    public function debugCart(Request $request): JsonResponse
+    {
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
+        return $this->json(['cart' => $cart], 200, [], ['json_encode_options' => JSON_PRETTY_PRINT]);
+    }
+    
     #[Route('/client/panier', name: 'app_client_panier')]
     public function panier(Request $request, \App\Repository\ItemRepository $itemRepo, \App\Repository\ItemSizeRepository $itemSizeRepo): Response
     {
@@ -245,6 +295,45 @@ class ClientController extends AbstractController
         if (!$userSession) {
             return $this->redirectToRoute('app_connection');
         }
+        
+        // Dédupliquer le panier en cas de doublons (par cart_key)
+        $deduplicatedCart = [];
+        $seenKeys = [];
+        foreach ($cart as $item) {
+            // Assurer que cart_key existe
+            if (!isset($item['cart_key'])) {
+                $itemId = $item['id'] ?? 0;
+                $sizeId = $item['itemSizeId'] ?? 0;
+                $colorId = $item['colorId'] ?? 0;
+                $item['cart_key'] = $itemId . '_' . $sizeId . '_' . $colorId;
+            }
+            
+            $key = $item['cart_key'];
+            if (!isset($seenKeys[$key])) {
+                $seenKeys[$key] = true;
+                $deduplicatedCart[] = $item;
+            } else {
+                // Si doublon trouvé, ajouter la quantité au premier
+                foreach ($deduplicatedCart as &$existingItem) {
+                    if ($existingItem['cart_key'] === $key) {
+                        $existingItem['quantity'] = ((int)($existingItem['quantity'] ?? 1)) + ((int)($item['quantity'] ?? 1));
+                        break;
+                    }
+                }
+                unset($existingItem);
+            }
+        }
+        
+        // Mettre à jour le panier si déduplication effectuée
+        if (count($deduplicatedCart) !== count($cart)) {
+            $cart = $deduplicatedCart;
+            $session->set('cart', $cart);
+        }
+        
+        // Debug: dump cart to file
+        $debugFile = dirname(__DIR__, 2) . '/var/log/panier_debug.log';
+        @file_put_contents($debugFile, date('Y-m-d H:i:s') . " CART:\n" . json_encode($cart, JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+        
         foreach ($cart as $item) {
             $cartTotal += ((float)($item['price'] ?? 0)) * ((int)($item['quantity'] ?? 1));
         }

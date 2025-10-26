@@ -1159,7 +1159,7 @@
                                     <i class="{% if product.id in favorites %}fas{% else %}far{% endif %} fa-bookmark"></i>
                                 </button>
                                 
-                                <button class="cart-btn" onclick="openProductModal({{ product.id }}, '{{ product.name|e('js') }}', '{{ lastPrice }}', '{{ product.images|default('')|e('js') }}', {{ (activePromo or isPriceReduced) ? percentage : 'null' }}, {{ isPriceReduced and previousPrice ? previousPrice : 'null' }})" style="flex: none; padding: 10px 16px;">
+                                <button class="view-btn" onclick="openProductModal({{ product.id }}, '{{ product.name|e('js') }}', '{{ lastPrice }}', '{{ product.images|default('')|e('js') }}', {{ (activePromo or isPriceReduced) ? percentage : 'null' }}, {{ isPriceReduced and previousPrice ? previousPrice : 'null' }})" style="flex: 1; padding: 10px 16px;background:var(--primary); color:white; border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer; transition:var(--transition); display:flex; align-items:center; justify-content:center; gap:8px;">
                                     <i class="fas fa-eye"></i> Voir
                                 </button>
                             </div>
@@ -1633,8 +1633,8 @@
                       <div id="modalColors" style="display:flex;gap:8px;flex-wrap:wrap"></div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center">
-                      <button id="modalAddBtn" style="background:#7c3aed;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-shopping-basket"></i> Ajouter au panier</button>
-                      <button id="modalCloseBtn" style="background:#eee;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600;">Annuler</button>
+                      <button id="modalAddBtn" style="background:#7c3aed;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-shopping-basket"></i> Ajouter au panier</button>
+                      <button id="modalCloseBtn" style="background:#eee;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;">Annuler</button>
                     </div>
                   </div>
                 </div>
@@ -1655,6 +1655,12 @@
           document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
           window.openProductModal = function(productId, title, price, image, promoPercentage = null, originalPrice = null){
+            // Reset modal state
+            modalColors.innerHTML = '';
+            modalColors.dataset.selectedColor = '';
+            modalColors.dataset.selectedColorImage = '';
+            modalSize.innerHTML = '';
+            
             modalTitle.textContent = title;
             
             const modalPromoBadge = document.getElementById('modalPromoBadge');
@@ -1742,8 +1748,14 @@
 
             modalAddBtn.onclick = async () => {
               const selectedSize = modalSize.value || null;
-              const selectedColorEl = modalColors.querySelector('[data-colorId][style*="border-color: rgb"]') || modalColors.querySelector('[data-colorId]');
-              const selectedColor = selectedColorEl ? selectedColorEl.dataset.colorId : null;
+              // Use the stored selectedColor from dataset
+              const selectedColor = modalColors.dataset.selectedColor || null;
+              
+              console.log('=== HOME MODAL DEBUG ===');
+              console.log('selectedSize:', selectedSize);
+              console.log('selectedColor:', selectedColor);
+              console.log('modalColors.dataset:', modalColors.dataset);
+              
               modalAddBtn.disabled = true;
               const originalHtml = modalAddBtn.innerHTML;
 
@@ -1762,6 +1774,9 @@
                   colorImageToSend = fullImage.split('/uploads/').pop();
                 }
               }
+              
+              console.log('imageToSend:', imageToSend);
+              console.log('colorImageToSend:', colorImageToSend);
 
               const params = new URLSearchParams();
               params.append('name', title);
@@ -1771,6 +1786,10 @@
               if (selectedSize) params.append('itemSizeId', selectedSize);
               if (selectedColor) params.append('colorId', selectedColor);
               if (colorImageToSend) params.append('colorImage', colorImageToSend);
+
+              console.log('=== HOME MODAL ADD-CART ===');
+              console.log('URL:', `/client/add-cart/${productId}`);
+              console.log('BODY:', params.toString());
 
               try {
                 const res = await fetch(`/client/add-cart/${productId}`, { method: 'POST', headers: { 'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest' }, body: params.toString() });

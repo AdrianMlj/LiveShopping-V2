@@ -824,20 +824,35 @@
       const originalAdd = window.addToBag;
       window.addToBag = function(btn, id, name, price, images) {
         const productCard = btn.closest('.product');
-        let itemSizeId = null;
-        let colorId = null;
+        let rawSize = null;
+        let rawColor = null;
         let imageToSend = images || '';
+        let colorImageToSend = '';
         if (productCard) {
           const sizeSel = productCard.querySelector('.size-select');
-          if (sizeSel) itemSizeId = sizeSel.value || null;
+          if (sizeSel) rawSize = sizeSel.value || '';
           const colorsList = productCard.querySelector('.colors-list');
-          if (colorsList) colorId = colorsList.dataset.selectedColor || null;
+          if (colorsList) rawColor = colorsList.dataset.selectedColor || '';
           // prefer the currently displayed product image (thumbnail) if present
           const thumb = productCard.querySelector('img');
           if (thumb && thumb.src) {
             imageToSend = thumb.src;
           }
+          // attempt to get color image filename from the active color item inside colorsList
+          if (colorsList && colorsList.dataset && colorsList.dataset.selectedColor) {
+            const activeEl = colorsList.querySelector(`.color-item[data-color-id="${colorsList.dataset.selectedColor}"]`);
+            if (activeEl) {
+              const img = activeEl.querySelector('img');
+              if (img && img.src) {
+                colorImageToSend = img.src.includes('/uploads/') ? img.src.split('/uploads/').pop() : img.src;
+              }
+            }
+          }
         }
+
+        // normalize values
+        const itemSizeId = (rawSize && !isNaN(parseInt(rawSize))) ? parseInt(rawSize) : 0;
+        const colorId = (rawColor && !isNaN(parseInt(rawColor))) ? parseInt(rawColor) : 0;
 
         // normalize to filename if path contains /uploads/
         if (imageToSend && imageToSend.includes('/uploads/')) {
@@ -851,9 +866,14 @@
         params.append('name', name);
         params.append('price', price);
         params.append('images', imageToSend);
+        if (colorImageToSend) params.append('colorImage', colorImageToSend);
         params.append('quantity', '1');
-        if (itemSizeId) params.append('itemSizeId', itemSizeId);
-        if (colorId) params.append('colorId', colorId);
+        if (itemSizeId > 0) params.append('itemSizeId', String(itemSizeId));
+        if (colorId > 0) params.append('colorId', String(colorId));
+
+        console.log('=== FETCH ADD-CART ===');
+        console.log('URL:', `/client/add-cart/${id}`);
+        console.log('BODY:', params.toString());
 
         fetch(`/client/add-cart/${id}`, {
           method: 'POST',
@@ -862,12 +882,15 @@
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: params.toString()
-        }).then(res => {
-          if (!res.ok) throw new Error('Erreur serveur');
+        }).then(async res => {
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data || !data.success) throw new Error('Erreur serveur');
           btn.textContent = 'Ajouté !';
           btn.classList.add('added');
           btn.style.background = '#28a745';
-        }).catch(() => {
+          console.log('ADD-CART response:', data);
+        }).catch((err) => {
+          console.error('Add to cart error:', err);
           btn.textContent = 'Erreur';
           btn.style.background = '#dc3545';
         });
@@ -1025,9 +1048,12 @@
         }
 
         modalAddBtn.onclick = async () => {
-          const selectedSize = modalSize.value || null;
-          const selectedColorEl = modalColors.querySelector('.color-item.active');
-          const selectedColor = selectedColorEl ? selectedColorEl.dataset.colorId : null;
+          // normalize selections
+          const rawSelectedSize = modalSize.value || '';
+          const rawSelectedColor = (modalColors.querySelector('.color-item.active') || {}).dataset?.colorId || '';
+          const selectedSize = (rawSelectedSize && !isNaN(parseInt(rawSelectedSize))) ? parseInt(rawSelectedSize) : 0;
+          const selectedColor = (rawSelectedColor && !isNaN(parseInt(rawSelectedColor))) ? parseInt(rawSelectedColor) : 0;
+
           modalAddBtn.disabled = true; modalAddBtn.textContent = 'Ajout...';
 
           // determine the actual image filename to send: prefer the modal image (selected color) if present
@@ -1037,7 +1063,7 @@
             imageToSend = imageToSend.split('/uploads/').pop();
           }
 
-          // Extract color image if it's different from base image
+          // Extract color image when color is selected (use modalImage as authoritative)
           let colorImageToSend = '';
           if (modalImage && modalImage.src) {
             let fullColorImage = modalImage.src;
@@ -1046,27 +1072,28 @@
             } else {
               colorImageToSend = fullColorImage;
             }
-            // Only send colorImage if it's different from imageToSend
-            if (colorImageToSend === imageToSend) {
-              colorImageToSend = '';
-            }
           }
 
           const params = new URLSearchParams();
           params.append('name', title);
           params.append('price', price);
           params.append('images', imageToSend);
+          params.append('colorImage', colorImageToSend);
           params.append('quantity', '1');
-          if (selectedSize) params.append('itemSizeId', selectedSize);
-          if (selectedColor) params.append('colorId', selectedColor);
-          if (colorImageToSend) params.append('colorImage', colorImageToSend);
+          if (selectedSize > 0) params.append('itemSizeId', String(selectedSize));
+          if (selectedColor > 0) params.append('colorId', String(selectedColor));
 
           try {
             const res = await fetch(`/client/add-cart/${productId}`, { method: 'POST', headers: { 'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest' }, body: params.toString() });
-            if (!res.ok) throw new Error('err');
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data || !data.success) throw new Error('Erreur add-cart');
             modalAddBtn.textContent = 'Ajouté !';
+            console.log('ADD-CART response:', data);
             setTimeout(closeModal, 700);
-          } catch(e){ modalAddBtn.textContent = 'Erreur'; }
+          } catch(e){
+            modalAddBtn.textContent = 'Erreur';
+            console.error('Error adding to cart:', e);
+          }
           modalAddBtn.disabled = false;
         };
       };
