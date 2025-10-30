@@ -1116,4 +1116,39 @@ class ClientController extends AbstractController
         return $this->json(['success' => true, 'action' => 'added']);
     }
 
+    // #[Route('/client/cart/update-quantity', name: 'app_client_update_quantity', methods: ['POST'])]
+    // public function updateCartQuantity(Request $request): JsonResponse
+    // {
+    //     $data = json_decode($request->getContent(), true);
+    //     $cartKey = $data['cartKey'] ?? null;
+    //     $quantity = (int) ($data['quantity'] ?? 1);
+
+    //     if (!$cartKey || $quantity < 1) {
+    //         return new JsonResponse([
+    //             'success' => false,
+    //             'message' => 'Paramètres invalides',
+    //             'previousQuantity' => 1
+    //         ], 400);
+    //     }
+
+    //     $cart = $this->get('session')->get('cart', []);
+    //     if (!isset($cart[$cartKey])) {
+    //         return new JsonResponse([
+    //             'success' => false,
+    //             'message' => 'Article non trouvé dans le panier',
+    //             'previousQuantity' => 1
+    //         ], 404);
+    //     }
+
+    //     $previousQuantity = $cart[$cartKey]['quantity'];
+    //     $cart[$cartKey]['quantity'] = $quantity;
+
+    //     $this->get('session')->set('cart', $cart);
+
+    //     return new JsonResponse([
+    //         'success' => true,
+    //         'message' => 'Quantité mise à jour',
+    //         'previousQuantity' => $previousQuantity
+    //     ]);
+    // }
 }

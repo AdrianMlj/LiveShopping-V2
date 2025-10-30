@@ -1,5 +1,5 @@
 {% include 'components/navbarClient.html.twig' %}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 {% block content %}
 <div class="shopping-cart">
@@ -52,16 +52,8 @@
 
             <!-- Cart Items -->
             <div class="cart-items-section">
-                {# DEBUG: Show cart data #}
-                {# <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; font-family: monospace; font-size: 12px;">
-                    <strong>DEBUG PANIER ({{ cart|length }} items):</strong><br>
-                    {% for item in cart %}
-                        [{{ loop.index }}] ID={{ item.id }}, NAME={{ item.name }}, CART_KEY={{ item.cart_key|default('NONE') }}, SIZE={{ item.itemSizeId|default('NONE') }}, COLOR={{ item.colorId|default('NONE') }}, QTY={{ item.quantity }}<br>
-                    {% endfor %}
-                </div> #}
                 {% for item in cart %}
-                <!-- DEBUG ITEM: id={{ item.id }}, cart_key={{ item.cart_key|default('NONE') }}, colorId={{ item.colorId|default('NONE') }}, colorImage={{ item.colorImage|default('NONE') }}, images={{ item.images|default('NONE') }} -->
-                <div class="cart-item-card" data-cart-key="{{ item.cart_key|default(item.id) }}">
+                <div class="cart-item-card" data-cart-key="{{ item.cart_key|default(item.id) }}" data-price="{{ item.price }}">
                     <!-- Product Image -->
                     <div class="product-image-container">
                         {% set displayImage = null %}
@@ -97,7 +89,6 @@
                                 {% set selectedColor = null %}
                                 {% set selectedColorImage = null %}
                                 
-                                {# Get color name from colorsBySize if available #}
                                 {% set currentSizeId = item.itemSizeId ?? (sizes|length ? sizes[0].id : null) %}
                                 {% set colors = currentSizeId ? (colorsBySize[currentSizeId]|default([])) : [] %}
                                 {% for c in colors %}
@@ -106,7 +97,6 @@
                                     {% endif %}
                                 {% endfor %}
                                 
-                                {# Use the color image directly from cart item if available #}
                                 {% if item.colorImage is defined and item.colorImage %}
                                     {% set selectedColorImage = '/Uploads/' ~ item.colorImage %}
                                 {% endif %}
@@ -162,7 +152,7 @@
                             
                             <!-- Remove Button -->
                             <form method="post" action="{{ path('app_client_remove_cart', {'cartKey': item.cart_key|default(item.id)}) }}" class="remove-form">
-                <button type="submit" class="btn-remove" data-cart-key="{{ item.cart_key|default(item.id) }}" title="Supprimer l'article">
+                                <button type="submit" class="btn-remove" data-cart-key="{{ item.cart_key|default(item.id) }}" title="Supprimer l'article">
                                     <i class="fa-solid fa-trash"></i>
                                     Supprimer
                                 </button>
@@ -182,10 +172,6 @@
                             <span>Sous-total ({{ cart|length }} article{{ cart|length > 1 ? 's' : '' }})</span>
                             <span>{{ cartTotal|number_format(2, '.', ' ') }} $</span>
                         </div>
-                        {# <div class="summary-row">
-                            <span>Livraison</span>
-                            <span class="free-shipping">Gratuite</span>
-                        </div> #}
                         <div class="summary-divider"></div>
                         <div class="summary-total">
                             <span>Total TTC</span>
@@ -309,9 +295,56 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Fonction pour formater les nombres avec 2 décimales
+    function formatPrice(price) {
+        return parseFloat(price).toFixed(2).replace('.', ' ');
+    }
+
+    // Mettre à jour l'affichage du sous-total et du total global
+    function updateCartDisplay(cartKey, quantity) {
+        const cartItem = document.querySelector(`.cart-item-card[data-cart-key="${cartKey}"]`);
+        const price = parseFloat(cartItem.getAttribute('data-price'));
+        const subTotalElement = cartItem.querySelector('.total-price');
+        const subTotal = price * quantity;
+
+        // Mettre à jour le sous-total de l'article
+        subTotalElement.textContent = `${formatPrice(subTotal)} $`;
+        subTotalElement.classList.add('updated');
+        setTimeout(() => subTotalElement.classList.remove('updated'), 500);
+
+        // Recalculer et mettre à jour le total global
+        updateCartTotal();
+    }
+
+    // Recalculer le total global du panier
+    function updateCartTotal() {
+        let total = 0;
+        document.querySelectorAll('.cart-item-card').forEach(item => {
+            const price = parseFloat(item.getAttribute('data-price'));
+            const quantity = parseInt(item.querySelector('.qty-input').value);
+            total += price * quantity;
+        });
+
+        // Mettre à jour le récapitulatif
+        const summaryTotal = document.querySelector('.summary-total strong');
+        summaryTotal.textContent = `${formatPrice(total)} $`;
+        summaryTotal.classList.add('updated');
+        setTimeout(() => summaryTotal.classList.remove('updated'), 500);
+
+        // Mettre à jour le bouton de paiement
+        const checkoutButton = document.querySelector('.btn-checkout');
+        checkoutButton.innerHTML = `<i class="fa-solid fa-lock"></i> Payer ${formatPrice(total)} $`;
+        checkoutButton.classList.add('updated');
+        setTimeout(() => checkoutButton.classList.remove('updated'), 500);
+
+        // Mettre à jour le sous-total dans le récapitulatif
+        const summarySubTotal = document.querySelector('.summary-row span:last-child');
+        summarySubTotal.textContent = `${formatPrice(total)} $`;
+    }
+
     // Gestion des quantités
     document.querySelectorAll('.qty-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', async function() {
             const cartKey = this.getAttribute('data-cart-key');
             const input = document.querySelector(`.qty-input[data-cart-key="${cartKey}"]`);
             let currentValue = parseInt(input.value);
@@ -322,19 +355,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.value = currentValue - 1;
             }
             
-            updateQuantity(cartKey, input.value);
+            const newQuantity = parseInt(input.value);
+            updateCartDisplay(cartKey, newQuantity);
+            await updateQuantity(cartKey, newQuantity);
         });
     });
-    
+
     // Mise à jour manuelle de la quantité
     document.querySelectorAll('.qty-input').forEach(input => {
-        input.addEventListener('change', function() {
+        input.addEventListener('change', async function() {
             const cartKey = this.getAttribute('data-cart-key');
             if (this.value < 1) this.value = 1;
-            updateQuantity(cartKey, this.value);
+            const newQuantity = parseInt(this.value);
+            updateCartDisplay(cartKey, newQuantity);
+            await updateQuantity(cartKey, newQuantity);
         });
     });
-    
+
+    // Fonction pour envoyer la mise à jour de la quantité au serveur
+    async function updateQuantity(cartKey, quantity) {
+        try {
+            const response = await fetch('/client/cart/update-quantity', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ cartKey, quantity })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showNotification('Quantité mise à jour', 'success');
+            } else {
+                showNotification(data.message || 'Erreur lors de la mise à jour', 'error');
+                // Revenir à la quantité précédente en cas d'erreur
+                const input = document.querySelector(`.qty-input[data-cart-key="${cartKey}"]`);
+                input.value = data.previousQuantity || 1;
+                updateCartDisplay(cartKey, input.value);
+            }
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la quantité:', error);
+            showNotification('Erreur lors de la mise à jour', 'error');
+        }
+    }
+
     // Gestion de la suppression
     document.querySelectorAll('.btn-remove').forEach(button => {
         button.addEventListener('click', function(e) {
@@ -353,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 400);
         });
     });
-    
+
     // Gestion des méthodes de paiement
     document.querySelectorAll('.payment-radio').forEach(radio => {
         radio.addEventListener('change', function() {
@@ -369,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     // Soumission du formulaire de paiement
     document.getElementById('payment-form').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -389,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
             location.reload();
         });
     });
-    
+
     document.querySelectorAll('.color-select').forEach(sel => {
         sel.addEventListener('change', async (e) => {
             const itemId = e.target.getAttribute('data-item-id');
@@ -401,23 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
             await fetch('/client/cart/update-color', { method: 'POST', body: fd });
         });
     });
-    
-    function updateQuantity(cartKey, quantity) {
-        // Simulation de mise à jour - à remplacer par votre logique AJAX
-        console.log(`Mise à jour article ${cartKey}: ${quantity}`);
-        
-        // Exemple de requête AJAX:
-        /*
-        fetch('/update-cart-quantity', {
-            method: 'POST',
-            body: JSON.stringify({ itemId, quantity })
-        }).then(response => response.json())
-          .then(data => {
-              // Mettre à jour l'interface
-          });
-        */
-    }
-    
+
     async function processPayment() {
         const formData = new FormData(document.getElementById('payment-form'));
         const paymentMethod = formData.get('payment');
@@ -450,9 +498,8 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Erreur lors de la commande', 'error');
         }
     }
-    
+
     function showNotification(message, type = 'info') {
-        // Créer une notification toast
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.innerHTML = `
@@ -462,10 +509,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.body.appendChild(notification);
         
-        // Animation d'entrée
         setTimeout(() => notification.classList.add('show'), 100);
         
-        // Supprimer après 3 secondes
         setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 300);
@@ -502,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 * {
-    margin: 0;
+    margindzielony na: 0;
     padding: 0;
     box-sizing: border-box;
 }
@@ -957,6 +1002,15 @@ body {
     font-weight: 700;
 }
 
+.total-price.updated, .summary-total strong.updated, .btn-checkout.updated {
+    animation: priceUpdate 0.5s ease;
+}
+
+@keyframes priceUpdate {
+    0% { background: rgba(124, 58, 237, 0.2); }
+    100% { background: none; }
+}
+
 .btn-remove {
     background: var(--danger);
     color: white;
@@ -1260,7 +1314,7 @@ body {
 }
 
 /* Notifications */
-.notification {
+/* .notification {
     position: fixed;
     top: 20px;
     right: 20px;
@@ -1299,8 +1353,7 @@ body {
 .notification.warning {
     background: var(--warning);
     border-left: 4px solid #d97706;
-}
-
+} */
 
 /* Animations existantes */
 @keyframes fadeIn {
