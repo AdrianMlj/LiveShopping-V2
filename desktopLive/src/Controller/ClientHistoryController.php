@@ -11,6 +11,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Repository\SaleRepository as HistoryRepository;
 use App\Repository\StateCommandeRepository;
 use App\Entity\Sale;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class ClientHistoryController extends AbstractController
 {
@@ -100,5 +102,122 @@ class ClientHistoryController extends AbstractController
         $this->em->flush();
 
         return new JsonResponse(['success' => true]);
+    }
+
+    #[Route('/client/history/download-invoice', name: 'app_client_history_download_invoice', methods: ['GET'])]
+    public function downloadInvoice(Request $request): Response
+    {
+        $session = $request->getSession();
+        $user = $session->get('user');
+        if (!$user) {
+            return new Response('Non connecté', 401);
+        }
+
+        $saleId = (int)$request->query->get('sale_id');
+        if (!$saleId) {
+            return new Response('ID de vente manquant', 400);
+        }
+
+        $sale = $this->historyRepo->getSaleDetailsByIdForClient($saleId, $user->getId());
+        if (!$sale) {
+            return new Response('Vente introuvable', 404);
+        }
+
+        // Calculer le total
+        $totalHT = 0;
+        foreach ($sale->getCommande()->getDetails() as $detail) {
+            $totalHT += $detail->getQuantity() * $detail->getPrice();
+        }
+        $tva = $totalHT * 0.2;
+        $totalTTC = $totalHT + $tva;
+
+        // Vérifier si GD est disponible
+        $gdAvailable = extension_loaded('gd');
+        
+        // Préparer les données avec images en base64 (seulement si GD est disponible)
+        $projectDir = $this->getParameter('kernel.project_dir');
+        $itemsWithImages = [];
+        
+        foreach ($sale->getCommande()->getDetails() as $detail) {
+            $item = $detail->getItemSize()->getItem();
+            $imageBase64 = null;
+            
+            // Ne charger les images que si GD est disponible
+            if ($gdAvailable && $item->getImages()) {
+                $imagePath = $projectDir . '/public/Uploads/' . $item->getImages();
+                if (file_exists($imagePath) && is_file($imagePath)) {
+                    $imageData = file_get_contents($imagePath);
+                    if ($imageData) {
+                        // Déterminer le type MIME à partir de l'extension
+                        $extension = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
+                        $mimeTypes = [
+                            'jpg' => 'image/jpeg',
+                            'jpeg' => 'image/jpeg',
+                            'png' => 'image/png',
+                            'gif' => 'image/gif',
+                            'webp' => 'image/webp',
+                            'svg' => 'image/svg+xml',
+                        ];
+                        $mimeType = $mimeTypes[$extension] ?? 'image/jpeg';
+                        $imageBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                    }
+                }
+            }
+            
+            $itemsWithImages[] = [
+                'item' => $item,
+                'detail' => $detail,
+                'imageBase64' => $imageBase64,
+            ];
+        }
+
+        // Générer le HTML pour le PDF
+        $html = $this->renderView('client/invoice_pdf.html.twig', [
+            'sale' => $sale,
+            'totalHT' => $totalHT,
+            'tva' => $tva,
+            'totalTTC' => $totalTTC,
+            'invoiceNumber' => $saleId,
+            'invoiceDate' => new \DateTime(),
+            'orderDate' => $sale->getCommande()->getCreatedAt() ?? new \DateTime(),
+            'itemsWithImages' => $itemsWithImages,
+            'gdAvailable' => $gdAvailable,
+        ]);
+
+        // Si GD n'est pas disponible, supprimer toutes les balises img du HTML
+        if (!$gdAvailable) {
+            $html = preg_replace('/<img[^>]*>/i', '', $html);
+            $html = preg_replace('/<img[^>]*\/>/i', '', $html);
+        }
+
+        // Configuration DomPDF
+        $options = new Options();
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('isRemoteEnabled', false);
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('chroot', $projectDir);
+        $options->set('enableCssFloat', true);
+        $options->set('isPhpEnabled', false);
+
+        try {
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            // Générer le nom du fichier
+            $filename = 'Facture_' . $saleId . '_' . date('Y') . '.pdf';
+
+            // Retourner le PDF
+            return new Response($dompdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'private, max-age=0, must-revalidate',
+                'Pragma' => 'public',
+            ]);
+        } catch (\Exception $e) {
+            error_log('Erreur génération PDF: ' . $e->getMessage());
+            return new Response('Erreur lors de la génération du PDF: ' . $e->getMessage(), 500);
+        }
     }
 }

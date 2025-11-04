@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { margin: 22mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 10.5pt; color: #2c3e50; line-height: 1.6; background: #f5f7fb; }
+        .paper { background: #ffffff; border: 1px solid #e5e7eb; padding: 12mm; }
+
+        /* Accent */
+        .accent { color: #5865f2; }
+        .muted { color: #6b7280; }
+
+        /* Header as table for Dompdf compatibility */
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 14mm; }
+        .header-table td { vertical-align: top; }
+        .brand-title { font-size: 18pt; font-weight: 700; letter-spacing: .5pt; }
+        .doc-title { font-size: 22pt; font-weight: 700; margin-top: 2mm; }
+        .invoice-no { font-size: 9pt; margin-top: 1mm; }
+
+        .meta { width: 100%; border-collapse: collapse; }
+        .meta td { font-size: 9.5pt; padding: 1.5mm 0; }
+        .badge { display: inline-block; background: #27ae60; color: #fff; padding: 1mm 4mm; border-radius: 2mm; font-size: 8pt; font-weight: 700; }
+
+        /* Address blocks */
+        .addr-wrap { width: 100%; border-collapse: collapse; margin: 12mm 0 16mm; }
+        .addr-box { width: 50%; background: #f7f8fc; border: 1px solid #eef2f7; border-top: 2px solid #5865f2; padding: 10mm; border-radius: 2mm; }
+        .addr-title { font-size: 10pt; font-weight: 700; color: #5865f2; margin-bottom: 3mm; }
+        .addr-box strong { font-weight: 700; color: #111827; }
+        .spacer-line { height: 1px; background: #5865f2; margin: 8mm 0; }
+
+        /* Items table */
+        .items { width: 100%; border-collapse: collapse; margin-top: 2mm; }
+        .items thead th { background: #5865f2; color: #fff; padding: 3mm 2mm; font-size: 8.5pt; text-transform: uppercase; }
+        .items thead .group { text-align: center; }
+        .items tbody td { padding: 2.5mm 2mm; border-bottom: 1px solid #e5e7eb; font-size: 9pt; }
+        .items th, .items td { vertical-align: middle; }
+        .right { text-align: right; }
+        .center { text-align: center; }
+        .img { width: 18mm; height: 18mm; object-fit: cover; border: 1px solid #e5e7eb; border-radius: 1mm; }
+        .noimg { width: 18mm; height: 18mm; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 1mm; text-align: center; font-size: 7pt; color: #9ca3af; line-height: 18mm; }
+        .row { page-break-inside: avoid; }
+
+        /* Summary */
+        .summary { width: 55%; margin-left: auto; margin-top: 10mm; }
+        .summary-row { width: 100%; border-collapse: collapse; }
+        .summary-row td { padding: 2.5mm 0; font-size: 10pt; }
+        .summary-line { border-top: 1.5px solid #e5e7eb; margin: 4mm 0; }
+        .grand { color: #10b981; font-weight: 800; font-size: 12pt; }
+
+        /* Footer */
+        .footer { text-align: center; color: #6b7280; font-size: 8.5pt; margin-top: 16mm; padding-top: 6mm; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="paper">
+    <!-- Header -->
+    <table class="header-table">
+        <tr>
+            <td>
+                <div class="brand-title accent">LIVE SHOP</div>
+                <div class="doc-title">FACTURE</div>
+                <div class="invoice-no muted">N° {{ invoiceNumber }} / {{ invoiceDate|date('Y') }}</div>
+            </td>
+            <td style="text-align: right;">
+                <div class="addr-title" style="margin:0 0 2mm;">Informations</div>
+                <table class="meta" style="margin-left:auto;">
+                    <tr><td class="muted">Date d'émission:</td><td>{{ invoiceDate|date('d/m/Y') }}</td></tr>
+                    <tr><td class="muted">Date de commande:</td><td>{{ orderDate|date('d/m/Y') }}</td></tr>
+                    <tr><td class="muted">Statut:</td><td><span class="badge">{% if sale.isPaid %}PAYÉ{% else %}EN ATTENTE{% endif %}</span></td></tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div class="spacer-line"></div>
+
+    <!-- Addresses -->
+    <table class="addr-wrap">
+        <tr>
+            <td class="addr-box">
+                <div class="addr-title">Facturé à</div>
+                <div><strong>{{ sale.commande.client.username|default('N/A') }}</strong></div>
+                <div>{{ sale.commande.client.email|default('N/A') }}</div>
+                <div>Tél: {{ sale.commande.client.contact|default('N/A') }}</div>
+                <div>{{ sale.commande.client.address|default('') }}</div>
+                {% if sale.commande.client.country %}<div>{{ sale.commande.client.country }}</div>{% endif %}
+            </td>
+            <td class="addr-box">
+                <div class="addr-title">Vendu par</div>
+                <div><strong>{{ sale.commande.seller.username|default('N/A') }}</strong></div>
+                <div>{{ sale.commande.seller.email|default('N/A') }}</div>
+                <div>Tél: {{ sale.commande.seller.contact|default('N/A') }}</div>
+                <div>Vendeur certifié</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Items table -->
+    <table class="items">
+        <thead>
+            <tr>
+                {% if gdAvailable is defined and gdAvailable %}
+                    <th class="center">IMAGE</th>
+                {% endif %}
+                <th>PRODUIT</th>
+                <th class="center">TAILLE</th>
+                <th class="center">QTÉ</th>
+                <th class="center">UNITAIRE</th>
+                <th class="center">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for itemData in itemsWithImages %}
+                {% set item = itemData.item %}
+                {% set detail = itemData.detail %}
+                {% set lineTotal = detail.quantity * detail.price %}
+                <tr class="row">
+                    {% if gdAvailable is defined and gdAvailable %}
+                        <td class="center">
+                            {% if itemData.imageBase64 %}
+                                <img src="{{ itemData.imageBase64 }}" class="img" alt="{{ item.nameItem }}">
+                            {% else %}
+                                <div class="noimg">Pas d'image</div>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td><strong>{{ item.nameItem }}</strong></td>
+                    <td class="center">{{ detail.itemSize.valueSize }}</td>
+                    <td class="center">{{ detail.quantity }}</td>
+                    <td class="right">{{ detail.price|number_format(2, ',', ' ') }} $</td>
+                    <td class="right"><strong>{{ lineTotal|number_format(2, ',', ' ') }} $</strong></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Summary -->
+    <div class="summary">
+        <table class="summary-row">
+            <tr><td class="muted">Sous-total HT:</td><td class="right">{{ totalHT|number_format(2, ',', ' ') }} $</td></tr>
+            <tr><td class="muted">TVA (20%):</td><td class="right">{{ tva|number_format(2, ',', ' ') }} $</td></tr>
+        </table>
+        <div class="summary-line"></div>
+        <table class="summary-row">
+            <tr><td class="grand">Total TTC:</td><td class="right grand">{{ totalTTC|number_format(2, ',', ' ') }} $</td></tr>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        LIVE SHOP - Votre partenaire shopping de confiance<br>
+        Merci pour votre achat !
+    </div>
+    </div>
+</body>
+</html>

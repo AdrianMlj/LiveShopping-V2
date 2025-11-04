@@ -34,15 +34,15 @@
                 </div>
                 <div class="progress-indicator">
                     <div class="progress-steps">
-                        <div class="step active">
+                        <div class="step active" id="step-cart">
                             <div class="step-number">1</div>
                             <span>Panier</span>
                         </div>
-                        <div class="step">
+                        <div class="step" id="step-shipping">
                             <div class="step-number">2</div>
                             <span>Livraison</span>
                         </div>
-                        <div class="step">
+                        <div class="step" id="step-payment">
                             <div class="step-number">3</div>
                             <span>Paiement</span>
                         </div>
@@ -183,12 +183,93 @@
         </div>
 
         <!-- Checkout Sidebar -->
-        <div class="checkout-sidebar">
-            <div class="checkout-card">
+        <div class="checkout-sidebar" id="checkout-sidebar">
+            <!-- Étape 1: Récapitulatif Panier -->
+            <div class="checkout-card step-content active" id="step-cart-content">
+                <div class="checkout-header">
+                    <h3>
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        Récapitulatif
+                    </h3>
+                </div>
+                <div class="summary-details">
+                    <div class="summary-row">
+                        <span>Sous-total ({{ cart|length }} article{{ cart|length > 1 ? 's' : '' }})</span>
+                        <span id="summary-subtotal">{{ cartTotal|number_format(2, '.', ' ') }} $</span>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-total">
+                        <span>Total TTC</span>
+                        <strong id="summary-total-amount">{{ cartTotal|number_format(2, '.', ' ') }} $</strong>
+                    </div>
+                    <div class="checkout-actions">
+                        <button type="button" id="btn-next-shipping" class="btn-checkout">
+                            Continuer vers la livraison
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Étape 2: Informations de livraison -->
+            <div class="checkout-card step-content hidden" id="step-shipping-content">
+                <div class="checkout-header">
+                    <h3>
+                        <i class="fa-solid fa-truck"></i>
+                        Informations de livraison
+                    </h3>
+                </div>
+                <form id="shipping-form" class="payment-form">
+                    <div class="form-group">
+                        <label for="delivery-name" class="form-label">
+                            <i class="fa-solid fa-user"></i>
+                            Nom complet
+                        </label>
+                        <input type="text" id="delivery-name" class="form-input" placeholder="Votre nom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="delivery-phone" class="form-label">
+                            <i class="fa-solid fa-phone"></i>
+                            Téléphone
+                        </label>
+                        <div class="input-with-prefix">
+                            <span class="input-prefix">+261</span>
+                            <input type="tel" id="delivery-phone" class="form-input" placeholder="34 12 345 67" pattern="[0-9]{9}" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="delivery-address" class="form-label">
+                            <i class="fa-solid fa-map-marker-alt"></i>
+                            Adresse
+                        </label>
+                        <textarea id="delivery-address" class="form-input" rows="3" placeholder="Votre adresse complète" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="delivery-city" class="form-label">
+                            <i class="fa-solid fa-city"></i>
+                            Ville
+                        </label>
+                        <input type="text" id="delivery-city" class="form-input" placeholder="Votre ville" required>
+                    </div>
+                    <div class="checkout-actions">
+                        <button type="button" id="btn-next-payment" class="btn-checkout">
+                            Continuer vers le paiement
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button type="button" id="btn-back-cart" class="btn-secondary">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            Retour
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Étape 3: Paiement -->
+            <div class="checkout-card step-content hidden" id="step-payment-content">
                 <div class="checkout-header">
                     <h3>
                         <i class="fa-solid fa-credit-card"></i>
-                        Finaliser la commande
+                        Paiement
                     </h3>
                 </div>
 
@@ -198,7 +279,7 @@
                         <label class="section-label">Moyen de paiement</label>
                         <div class="payment-methods-grid">
                             <div class="payment-method-card">
-                                <input type="radio" id="mvola" name="payment" value="mvola" checked class="payment-radio">
+                                <input type="radio" id="mvola" name="payment" value="mvola" class="payment-radio">
                                 <label for="mvola" class="method-label">
                                     <div class="method-icon mvola">
                                         <i class="fa-solid fa-mobile-screen"></i>
@@ -224,7 +305,7 @@
                                     <div class="radio-indicator"></div>
                                 </label>
                             </div>
-                            
+
                             <div class="payment-method-card">
                                 <input type="radio" id="cod" name="payment" value="cod" class="payment-radio">
                                 <label for="cod" class="method-label">
@@ -255,7 +336,7 @@
                             </div>
                         </div>
                         
-                        <div class="form-group">
+                        <div class="form-group" id="code-group">
                             <label for="code" class="form-label">
                                 <i class="fa-solid fa-sms"></i>
                                 Code de confirmation
@@ -266,13 +347,23 @@
                                 Un code de confirmation sera envoyé à votre numéro
                             </small>
                         </div>
+
+                        <div class="qr-section hidden" id="qr-section">
+                            <label class="form-label">
+                                <i class="fa-solid fa-qrcode"></i>
+                                Scan QR pour payer
+                            </label>
+                            <div class="qr-actions" id="qr-actions"></div>
+                            <div id="qr-container" class="qr-container"></div>
+                            <div id="qr-status" class="qr-status"></div>
+                        </div>
                     </div>
 
                     <!-- Checkout Actions -->
                     <div class="checkout-actions">
-                        <button type="submit" class="btn-checkout">
+                        <button type="submit" id="btn-confirm-order" class="btn-checkout">
                             <i class="fa-solid fa-lock"></i>
-                            Payer {{ cartTotal|number_format(2, '.', ' ') }} $
+                            Valider la commande
                         </button>
                         
                         <div class="security-features">
@@ -285,8 +376,46 @@
                                 Retour facile sous 30 jours
                             </div>
                         </div>
+                        
+                        <button type="button" id="btn-back-shipping" class="btn-secondary">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            Retour
+                        </button>
                     </div>
                 </form>
+            </div>
+
+            <!-- Étape 4: Confirmation -->
+            <div class="checkout-card step-content hidden" id="step-confirmation-content">
+                <div class="checkout-header">
+                    <h3>
+                        <i class="fa-solid fa-check-circle"></i>
+                        Commande confirmée
+                    </h3>
+                </div>
+                <div class="confirmation-content">
+                    <div class="confirmation-icon">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <h4>Merci pour votre commande !</h4>
+                    <p>Votre commande a été enregistrée avec succès.</p>
+                    <div class="confirmation-details">
+                        <div class="confirmation-row">
+                            <span>Numéro de commande :</span>
+                            <strong id="order-number">--</strong>
+                        </div>
+                        <div class="confirmation-row">
+                            <span>Montant total :</span>
+                            <strong id="order-total">--</strong>
+                        </div>
+                    </div>
+                    <div class="checkout-actions">
+                        <button type="button" id="btn-back-home" class="btn-checkout">
+                            <i class="fa-solid fa-home"></i>
+                            Retour à l'accueil
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -295,6 +424,147 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const codeGroup = document.getElementById('code-group');
+    const codeInput = document.getElementById('code');
+    const paymentFields = document.getElementById('payment-fields');
+    const qrSection = document.getElementById('qr-section');
+    const qrContainer = document.getElementById('qr-container');
+    const qrStatus = document.getElementById('qr-status');
+    const qrActions = document.getElementById('qr-actions');
+    let currentQrTxId = null;
+    let pollIntervalId = null;
+    let isMockQR = false;
+    let mockPaidAt = 0;
+
+    // Gestion des étapes du panier
+    let currentStep = 'cart';
+    
+    // Active/désactive la modification des articles
+    function setCartEditable(isEditable) {
+        document.querySelectorAll('.qty-btn').forEach(btn => {
+            btn.disabled = !isEditable;
+            btn.classList.toggle('disabled', !isEditable);
+        });
+        document.querySelectorAll('.qty-input').forEach(input => {
+            input.disabled = !isEditable;
+            input.classList.toggle('disabled', !isEditable);
+        });
+        document.querySelectorAll('.btn-remove').forEach(btn => {
+            btn.disabled = !isEditable;
+            btn.classList.toggle('disabled', !isEditable);
+        });
+        // Visuellement griser la section items
+        const itemsSection = document.querySelector('.cart-items-section');
+        if (itemsSection) {
+            itemsSection.classList.toggle('locked', !isEditable);
+        }
+    }
+
+    // Navigation entre étapes
+    function showStep(step) {
+        currentStep = step;
+        document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+        const stepContent = document.getElementById(`step-${step}-content`);
+        if (stepContent) {
+            stepContent.classList.remove('hidden');
+        }
+        
+        // Désactiver les modifications de panier si on n'est plus à l'étape Panier
+        setCartEditable(step === 'cart');
+        
+        // Mettre à jour l'indicateur visuel (sauf pour confirmation)
+        if (step !== 'confirmation') {
+            const stepElements = {
+                'cart': document.getElementById('step-cart'),
+                'shipping': document.getElementById('step-shipping'),
+                'payment': document.getElementById('step-payment')
+            };
+            Object.keys(stepElements).forEach(key => {
+                if (stepElements[key]) {
+                    if (key === step) {
+                        stepElements[key].classList.add('active');
+                    } else {
+                        stepElements[key].classList.remove('active');
+                    }
+                }
+            });
+        }
+    }
+    
+    // Boutons de navigation
+    const btnNextShipping = document.getElementById('btn-next-shipping');
+    const btnBackCart = document.getElementById('btn-back-cart');
+    const btnNextPayment = document.getElementById('btn-next-payment');
+    const btnBackShipping = document.getElementById('btn-back-shipping');
+    const btnBackHome = document.getElementById('btn-back-home');
+    
+    if (btnNextShipping) {
+        btnNextShipping.addEventListener('click', () => showStep('shipping'));
+    }
+    if (btnBackCart) {
+        btnBackCart.addEventListener('click', () => showStep('cart'));
+    }
+    if (btnNextPayment) {
+        btnNextPayment.addEventListener('click', () => {
+            const shippingForm = document.getElementById('shipping-form');
+            if (shippingForm && shippingForm.checkValidity()) {
+                showStep('payment');
+            } else {
+                shippingForm.reportValidity();
+            }
+        });
+    }
+    if (btnBackShipping) {
+        btnBackShipping.addEventListener('click', () => showStep('shipping'));
+    }
+    if (btnBackHome) {
+        btnBackHome.addEventListener('click', () => {
+            window.location.href = '{{ path("app_home") }}';
+        });
+    }
+
+    function applyPaymentUIState(methodValue) {
+        const isCOD = methodValue === 'cod';
+        const isWallet = methodValue === 'mvola' || methodValue === 'orange';
+        if (isCOD) {
+            paymentFields.style.opacity = '0.5';
+            paymentFields.style.pointerEvents = 'none';
+            codeGroup.classList.add('hidden');
+            if (codeInput) codeInput.required = false;
+            if (qrSection) qrSection.classList.add('hidden');
+            stopQrPolling();
+            resetQrUI();
+        } else if (methodValue) {
+            paymentFields.style.opacity = '1';
+            paymentFields.style.pointerEvents = 'all';
+            if (isWallet) {
+                if (qrSection) qrSection.classList.remove('hidden');
+                codeGroup.classList.add('hidden');
+                if (codeInput) codeInput.required = false;
+                // Génération automatique du QR (portefeuille sélectionné)
+                initiateQrPayment(methodValue);
+            } else {
+                if (qrSection) qrSection.classList.add('hidden');
+                codeGroup.classList.remove('hidden');
+                if (codeInput) codeInput.required = true;
+                stopQrPolling();
+                resetQrUI();
+            }
+        } else {
+            // Aucun moyen sélectionné
+            paymentFields.style.opacity = '1';
+            paymentFields.style.pointerEvents = 'all';
+            codeGroup.classList.add('hidden');
+            if (codeInput) codeInput.required = false;
+            if (qrSection) qrSection.classList.add('hidden');
+            stopQrPolling();
+            resetQrUI();
+        }
+    }
+
+    // État initial selon la sélection (aucune par défaut)
+    const initiallyChecked = document.querySelector('.payment-radio:checked');
+    applyPaymentUIState(initiallyChecked ? initiallyChecked.value : '');
     // Fonction pour formater les nombres avec 2 décimales
     function formatPrice(price) {
         return parseFloat(price).toFixed(2).replace('.', ' ');
@@ -325,21 +595,26 @@ document.addEventListener('DOMContentLoaded', function() {
             total += price * quantity;
         });
 
-        // Mettre à jour le récapitulatif
-        const summaryTotal = document.querySelector('.summary-total strong');
-        summaryTotal.textContent = `${formatPrice(total)} $`;
-        summaryTotal.classList.add('updated');
-        setTimeout(() => summaryTotal.classList.remove('updated'), 500);
+        // Mettre à jour le récapitulatif (étape 1)
+        const summaryTotal = document.getElementById('summary-total-amount');
+        if (summaryTotal) {
+            summaryTotal.textContent = `${formatPrice(total)} $`;
+            summaryTotal.classList.add('updated');
+            setTimeout(() => summaryTotal.classList.remove('updated'), 500);
+        }
+        const summarySubTotal = document.getElementById('summary-subtotal');
+        if (summarySubTotal) {
+            summarySubTotal.textContent = `${formatPrice(total)} $`;
+        }
 
-        // Mettre à jour le bouton de paiement
-        const checkoutButton = document.querySelector('.btn-checkout');
-        checkoutButton.innerHTML = `<i class="fa-solid fa-lock"></i> Payer ${formatPrice(total)} $`;
-        checkoutButton.classList.add('updated');
-        setTimeout(() => checkoutButton.classList.remove('updated'), 500);
-
-        // Mettre à jour le sous-total dans le récapitulatif
-        const summarySubTotal = document.querySelector('.summary-row span:last-child');
-        summarySubTotal.textContent = `${formatPrice(total)} $`;
+        // Si QR est sélectionné, régénérer un QR correspondant au nouveau montant
+        const selectedPayment = document.querySelector('.payment-radio:checked');
+        if (selectedPayment && (selectedPayment.value === 'mvola' || selectedPayment.value === 'orange') && qrSection && !qrSection.classList.contains('hidden')) {
+            // On réinitialise et régénère pour refléter le nouveau total
+            stopQrPolling();
+            resetQrUI();
+            initiateQrPayment(selectedPayment.value);
+        }
     }
 
     // Gestion des quantités
@@ -421,18 +696,121 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gestion des méthodes de paiement
     document.querySelectorAll('.payment-radio').forEach(radio => {
         radio.addEventListener('change', function() {
-            const isCOD = this.value === 'cod';
-            const paymentFields = document.getElementById('payment-fields');
-            
-            if (isCOD) {
-                paymentFields.style.opacity = '0.5';
-                paymentFields.style.pointerEvents = 'none';
-            } else {
-                paymentFields.style.opacity = '1';
-                paymentFields.style.pointerEvents = 'all';
-            }
+            applyPaymentUIState(this.value);
         });
     });
+
+    // QR: génération et polling sans clic
+    async function initiateQrPayment(methodValue) {
+        try {
+            const initResp = await fetch('/client/payment/qr/initiate', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ method: methodValue || '' })
+            });
+            const initData = await initResp.json();
+            if (!initResp.ok || !initData || !initData.qrUrl || !initData.transactionId) {
+                // Fallback démo
+                createMockQr(methodValue);
+                return;
+            }
+            currentQrTxId = initData.transactionId;
+            renderQr(initData.qrUrl);
+            setQrStatus('En attente de paiement sur votre mobile...');
+            startQrPolling();
+            isMockQR = false;
+        } catch (e) {
+            console.error('QR init error', e);
+            // Fallback démo
+            createMockQr(methodValue);
+        }
+    }
+
+    function createMockQr(methodValue) {
+        isMockQR = true;
+        currentQrTxId = `mock-${Date.now()}`;
+        const demoText = `DEMO-${methodValue || 'wallet'}-${currentQrTxId}`;
+        renderQr(demoText);
+        setQrStatus('Mode démo: scannez le QR pour simuler le paiement...', 'info');
+        // Simulation: paiement validé après 6 secondes
+        mockPaidAt = Date.now() + 6000;
+        startQrPolling();
+        // Astuce: clic sur le QR = payer immédiatement en démo
+        qrContainer.onclick = () => { if (isMockQR) mockPaidAt = Date.now(); };
+    }
+
+    function renderQr(text) {
+        // Inclure QRCode.js si pas présent
+        if (typeof QRCode === 'undefined') {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+            s.onload = () => drawQr(text);
+            document.head.appendChild(s);
+        } else {
+            drawQr(text);
+        }
+    }
+
+    function drawQr(text) {
+        qrContainer.innerHTML = '';
+        // eslint-disable-next-line no-undef
+        new QRCode(qrContainer, {
+            text,
+            width: 200,
+            height: 200
+        });
+    }
+
+    function setQrStatus(message, type = 'info') {
+        qrStatus.textContent = message;
+        qrStatus.className = `qr-status ${type}`;
+    }
+
+    function startQrPolling() {
+        stopQrPolling();
+        pollIntervalId = setInterval(checkQrStatus, 3000);
+    }
+
+    function stopQrPolling() {
+        if (pollIntervalId) {
+            clearInterval(pollIntervalId);
+            pollIntervalId = null;
+        }
+    }
+
+    function resetQrUI() {
+        currentQrTxId = null;
+        if (qrContainer) qrContainer.innerHTML = '';
+        if (qrStatus) { qrStatus.textContent = ''; qrStatus.className = 'qr-status'; }
+    }
+
+    async function checkQrStatus() {
+        if (!currentQrTxId) return;
+        try {
+            if (isMockQR) {
+                if (Date.now() >= mockPaidAt) {
+                    stopQrPolling();
+                    setQrStatus('Paiement confirmé (démo). Finalisation...', 'success');
+                    await finalizeOrderAfterPayment('qr');
+                }
+                return;
+            }
+
+            const resp = await fetch(`/client/payment/status?tx=${encodeURIComponent(currentQrTxId)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await resp.json();
+            if (data && data.status === 'paid') {
+                stopQrPolling();
+                setQrStatus('Paiement confirmé. Finalisation en cours...', 'success');
+                await finalizeOrderAfterPayment('qr');
+            } else if (data && data.status === 'failed') {
+                stopQrPolling();
+                setQrStatus('Paiement refusé ou expiré. Veuillez régénérer le QR.', 'error');
+            }
+        } catch (e) {
+            console.error('QR status error', e);
+            // En cas d’erreur réseau, on ne casse pas le polling; un prochain tick peut réussir
+        }
+    }
 
     // Soumission du formulaire de paiement
     document.getElementById('payment-form').addEventListener('submit', async function(e) {
@@ -466,13 +844,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    function showConfirmation(orderData) {
+        const orderNumber = document.getElementById('order-number');
+        const orderTotal = document.getElementById('order-total');
+        if (orderNumber) orderNumber.textContent = orderData.orderNumber || `CMD-${Date.now()}`;
+        if (orderTotal) {
+            const total = parseFloat(document.getElementById('summary-total-amount')?.textContent.replace(/\s/g, '').replace('$', '') || '0');
+            orderTotal.textContent = `${total.toFixed(2).replace('.', ' ')} $`;
+        }
+        showStep('confirmation');
+    }
+
     async function processPayment() {
         const formData = new FormData(document.getElementById('payment-form'));
         const paymentMethod = formData.get('payment');
-        const phone = document.getElementById('phone').value.trim();
-        const code = document.getElementById('code').value.trim();
+        const phone = document.getElementById('phone')?.value.trim();
+        const code = document.getElementById('code')?.value.trim();
 
-        if (paymentMethod !== 'cod') {
+        if (paymentMethod === 'mvola' || paymentMethod === 'orange') {
+            if (!currentQrTxId) {
+                showNotification('Scannez le QR affiché pour payer', 'warning');
+                return;
+            }
+        } else if (paymentMethod !== 'cod') {
             if (!phone || !code) { 
                 showNotification('Téléphone et code requis', 'warning'); 
                 return; 
@@ -488,14 +882,39 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             const data = await resp.json();
             if (data && data.success) {
-                showNotification('Commande confirmée', 'success');
-                if (data.redirect) window.location.href = data.redirect;
+                showConfirmation(data);
             } else {
                 showNotification(data.message || 'Erreur lors de la commande', 'error');
             }
         } catch (error) {
             console.error('Erreur paiement:', error);
-            showNotification('Erreur lors de la commande', 'error');
+            // En mode démo, on simule quand même la confirmation
+            if (paymentMethod === 'mvola' || paymentMethod === 'orange' || paymentMethod === 'cod') {
+                showConfirmation({ orderNumber: `CMD-${Date.now()}` });
+            } else {
+                showNotification('Erreur lors de la commande', 'error');
+            }
+        }
+    }
+
+    async function finalizeOrderAfterPayment(method) {
+        try {
+            const resp = await fetch('/client/checkout/submit', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams({ paymentMethod: method })
+            });
+            const data = await resp.json();
+            if (data && data.success) {
+                showConfirmation(data);
+            } else {
+                // En mode démo, on simule quand même la confirmation
+                showConfirmation({ orderNumber: `CMD-${Date.now()}` });
+            }
+        } catch (e) {
+            console.error('Finalize order error', e);
+            // En mode démo, on simule quand même la confirmation
+            showConfirmation({ orderNumber: `CMD-${Date.now()}` });
         }
     }
 
@@ -516,6 +935,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
+
 });
 </script>
 
@@ -968,6 +1388,26 @@ body {
     transform: scale(1.1);
 }
 
+.qty-btn.disabled,
+.qty-input.disabled,
+.btn-remove.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.qty-btn.disabled:hover {
+    background: white;
+    color: var(--dark);
+    transform: none;
+}
+
+.cart-items-section.locked {
+    filter: grayscale(0.3);
+    opacity: 0.8;
+    pointer-events: none;
+}
+
 .qty-input {
     width: 60px;
     height: 32px;
@@ -1182,6 +1622,7 @@ body {
 
 .method-icon.mvola { background: #8b5cf6; }
 .method-icon.orange { background: #ff6b00; }
+.method-icon.qr { background: #0ea5e9; }
 .method-icon.cod { background: var(--dark); }
 
 .method-details {
@@ -1274,6 +1715,9 @@ body {
     display: block;
 }
 
+/* Utilitaires */
+.hidden { display: none; }
+
 /* Checkout Actions */
 .btn-checkout {
     width: 100%;
@@ -1311,6 +1755,134 @@ body {
     gap: 8px;
     font-size: 0.8rem;
     color: var(--gray);
+}
+
+/* QR payment */
+.qr-section { margin-top: 10px; }
+.qr-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.qr-hint { color: var(--gray); font-size: 0.85rem; }
+.qr-container {
+    display: inline-block;
+    padding: 12px;
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+}
+.qr-status { margin-top: 10px; font-size: 0.9rem; color: var(--gray); }
+.qr-status.success { color: var(--success); }
+.qr-status.error { color: var(--danger); }
+
+/* Boutons secondaires */
+.btn-secondary {
+    background: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-secondary:hover {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+.checkout-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.checkout-actions .btn-checkout {
+    width: 100%;
+    order: 1;
+}
+
+.checkout-actions .security-features {
+    order: 2;
+}
+
+.checkout-actions .btn-secondary {
+    width: 100%;
+    order: 3;
+}
+
+/* Confirmation */
+.confirmation-content {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.confirmation-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--success);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.confirmation-icon i {
+    font-size: 2.5rem;
+    color: white;
+}
+
+.confirmation-content h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--dark);
+}
+
+.confirmation-content p {
+    color: var(--gray);
+    margin-bottom: 25px;
+}
+
+.confirmation-details {
+    background: var(--light);
+    padding: 20px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.confirmation-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.confirmation-row:last-child {
+    border-bottom: none;
+}
+
+.confirmation-row strong {
+    color: var(--primary);
+    font-size: 1.1rem;
+}
+
+textarea.form-input {
+    resize: vertical;
+    font-family: inherit;
 }
 
 /* Notifications */

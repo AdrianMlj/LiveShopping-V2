@@ -162,9 +162,9 @@
               </span>
             </div>
             <div class="order-status-badge">
-              <span class="status-badge status-{{ sale.commande.state.nameState|lower|replace({' ': '-'}) }}">
+              {# <span class="status-badge status-{{ sale.commande.state.nameState|lower|replace({' ': '-'}) }}">
                 {{ sale.commande.state.nameState }}
-              </span>
+              </span> #}
             </div>
           </div>
           <div class="order-actions">
@@ -313,29 +313,76 @@ function viewOrderDetails(saleId) {
   orderItem.classList.add('loading');
   
   fetch(`/client/history/details?sale_id=${saleId}`)
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.error || `Erreur ${response.status}`);
+        });
+      }
+      return response.json();
+    })
     .then(data => {
       orderItem.classList.remove('loading');
       if (data.html) {
         document.getElementById('orderDetailsContent').innerHTML = data.html;
         openModal();
       } else {
-        showNotification(data.error || 'Erreur lors du chargement', 'error');
+        console.error('Pas de HTML dans la réponse:', data);
+        showNotification(data.error || 'Erreur lors du chargement des détails', 'error');
       }
     })
     .catch(error => {
       orderItem.classList.remove('loading');
-      showNotification('Erreur de connexion', 'error');
+      console.error('Erreur lors du chargement:', error);
+      showNotification(error.message || 'Erreur de connexion', 'error');
     });
 }
 
 function downloadInvoice(saleId) {
+  if (!saleId) {
+    showNotification('ID de commande manquant', 'error');
+    return;
+  }
+  
   showNotification('Préparation du téléchargement...', 'info');
   
-  // Simulation du téléchargement
-  setTimeout(() => {
+  // Utiliser fetch pour mieux gérer les erreurs
+  const downloadUrl = `/client/history/download-invoice?sale_id=${saleId}`;
+  
+  fetch(downloadUrl, {
+    method: 'GET',
+  })
+  .then(response => {
+    if (!response.ok) {
+      return response.text().then(text => {
+        throw new Error(text || `Erreur ${response.status}`);
+      });
+    }
+    return response.blob();
+  })
+  .then(blob => {
+    // Vérifier que c'est bien un PDF
+    if (blob.type !== 'application/pdf' && blob.size > 0) {
+      // Si ce n'est pas un PDF mais qu'il y a du contenu, essayer quand même
+      console.warn('Type MIME inattendu:', blob.type);
+    }
+    
+    // Créer le lien de téléchargement
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Facture_${saleId}_${new Date().getFullYear()}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
     showNotification('Facture téléchargée avec succès', 'success');
-  }, 1500);
+  })
+  .catch(error => {
+    console.error('Erreur téléchargement PDF:', error);
+    showNotification(error.message || 'Erreur lors du téléchargement de la facture', 'error');
+  });
 }
 
 function openModal() {
@@ -930,37 +977,42 @@ body {
   transform: translate(-50%, -50%);
   background: white;
   border-radius: var(--radius);
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
+  width: 92%;
+  max-width: 950px;
+  max-height: 90vh;
   overflow: hidden;
   box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 25px;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
   background: var(--light);
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   font-weight: 600;
+  margin: 0;
 }
 
 .modal-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.75rem;
 }
 
 .modal-body {
-  padding: 25px;
-  max-height: 60vh;
+  padding: 0;
+  max-height: calc(90vh - 80px);
   overflow-y: auto;
+  flex: 1;
 }
 
 /* Empty State */
