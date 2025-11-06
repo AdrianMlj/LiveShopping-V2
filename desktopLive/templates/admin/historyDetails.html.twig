@@ -52,8 +52,8 @@
                         <td>{{ detail.itemSize.item.nameItem }}</td>
                         <td>{{ detail.itemSize.valueSize }}</td>
                         <td>{{ detail.quantity }}</td>
-                        <td>{{ detail.price|number_format(2, ',', ' ') }} €</td>
-                        <td>{{ lineTotal|number_format(2, ',', ' ') }} €</td>
+                        <td>{{ detail.price|number_format(0, ' ', ' ') }} Ar</td>
+                        <td>{{ lineTotal|number_format(0, ' ', ' ') }} Ar</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -62,6 +62,6 @@
 
     <!-- Totaux -->
     <div class="invoice-totals">
-        <h4>Total TTC : {{ (total * 1.2)|number_format(2, ',', ' ') }} €</h4>
+        <h4>Total TTC : {{ (total * 1.2)|number_format(0, ' ', ' ') }} Ar</h4>
     </div>
 </div>

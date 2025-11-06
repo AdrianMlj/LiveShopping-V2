@@ -34,17 +34,17 @@
             <div class="card-header">
                 <h3 class="card-title">Chiffre d'affaires</h3>
                 <div class="card-icon">
-                    <i class="fas fa-euro-sign"></i>
+                    <i class="fas fa-coins"></i>
                 </div>
             </div>
             <div class="summary-content">
                 <div class="summary-item">
                     <span class="summary-label">Objectif moyen:</span>
-                    <span class="summary-value">{{ (monthlyGoals|map(g => g.target_ca)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} €</span>
+                    <span class="summary-value">{{ (monthlyGoals|map(g => g.target_ca)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(0, ' ', ' ') }} Ar</span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">Réalisation moyenne:</span>
-                    <span class="summary-value">{{ (monthlyGoals|map(g => g.ca_realise)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} €</span>
+                    <span class="summary-value">{{ (monthlyGoals|map(g => g.ca_realise)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(0, ' ', ' ') }} Ar</span>
                 </div>
             </div>
         </div>
@@ -92,17 +92,17 @@
     <!-- TABLEAU CHIFFRE D'AFFAIRES -->
     <div class="table-section">
         <div class="table-header">
-            <h3 class="table-title"><i class="fas fa-euro-sign"></i> Détail mensuel - Chiffre d'Affaires</h3>
+            <h3 class="table-title"><i class="fas fa-coins"></i> Détail mensuel - Chiffre d'Affaires</h3>
         </div>
         <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>Mois/Année</th>
-                        <th>Objectif CA (€)</th>
-                        <th>CA Réalisé (€)</th>
-                        <th>Projection CA (€)</th>
-                        <th>Écart CA (€)</th>
+                        <th>Objectif CA (Ar)</th>
+                        <th>CA Réalisé (Ar)</th>
+                        <th>Projection CA (Ar)</th>
+                        <th>Écart CA (Ar)</th>
                         <th>Réalisation CA</th>
                     </tr>
                 </thead>
@@ -111,11 +111,11 @@
                         {% set taux_ca = (goal.target_ca > 0) ? (goal.ca_realise / goal.target_ca * 100) : 0 %}
                         <tr>
                             <td class="period-cell">{{ goal.mois ~ '/' ~ goal.annee }}</td>
-                            <td class="target-cell">{{ goal.target_ca|number_format(2, ',', ' ') }}</td>
-                            <td class="actual-cell">{{ goal.ca_realise|number_format(2, ',', ' ') }}</td>
-                            <td class="projection-cell">{{ goal.projection_ca|number_format(2, ',', ' ') }}</td>
+                            <td class="target-cell">{{ goal.target_ca|number_format(0, ' ', ' ') }}</td>
+                            <td class="actual-cell">{{ goal.ca_realise|number_format(0, ' ', ' ') }}</td>
+                            <td class="projection-cell">{{ goal.projection_ca|number_format(0, ' ', ' ') }}</td>
                             <td class="{% if goal.ecart_ca < 0 %}negative-gap{% else %}positive-gap{% endif %}">
-                                {{ goal.ecart_ca|number_format(2, ',', ' ') }}
+                                {{ goal.ecart_ca|number_format(0, ' ', ' ') }}
                             </td>
                             <td>
                                 <div class="progress-container">

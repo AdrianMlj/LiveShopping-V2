@@ -94,7 +94,7 @@
                     <i class="fas fa-chart-pie"></i> Total turnover
                 </h4>
                 <p style="font-size: 1.3rem; font-weight: bold;">
-                    {{ stats.ca_total|number_format(0, ',', ' ') }} €
+                    {{ stats.ca_total|number_format(0, ' ', ' ') }} Ar
                 </p>
             </div>
 
@@ -151,9 +151,9 @@
                 </h4>
                 <p>
                     {% if stats.ventes_total > 0 %}
-                        {{ (stats.ca_total / stats.ventes_total)|number_format(2, ',', ' ') }} €
+                        {{ (stats.ca_total / stats.ventes_total)|number_format(0, ' ', ' ') }} Ar
                     {% else %}
-                        0 €
+                        0 Ar
                     {% endif %}
                 </p>
             </div>

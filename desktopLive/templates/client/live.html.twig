@@ -651,15 +651,15 @@
                     {% if activePromo %}
                       {% set percentage = activePromo.getPercentage + 0 %}
                       {% set promoPrice = (lastPrice * (100 - percentage) / 100) %}
-                      <span class="price-current">{{ promoPrice|number_format(2, '.', ',') }} $</span>
-                      <span class="price-base"><s>{{ lastPrice|number_format(2, '.', ',') }} $</s></span>
+                      <span class="price-current">{{ promoPrice|number_format(0, ' ', ' ') }} Ar</span>
+                      <span class="price-base"><s>{{ lastPrice|number_format(0, ' ', ' ') }} Ar</s></span>
                       <span class="promo-badge">-{{ percentage|round(0, 'common') }}%</span>
                     {% elseif isPriceReduced %}
-                      <span class="price-current">{{ lastPrice|number_format(2, '.', ',') }} $</span>
-                      <span class="price-base"><s>{{ previousPrice|number_format(2, '.', ',') }} $</s></span>
+                      <span class="price-current">{{ lastPrice|number_format(0, ' ', ' ') }} Ar</span>
+                      <span class="price-base"><s>{{ previousPrice|number_format(0, ' ', ' ') }} Ar</s></span>
                       <span class="promo-badge">-{{ percentage|round(0, 'common') }}%</span>
                     {% else %}
-                      <span class="price-regular">{{ lastPrice|number_format(2, '.', ',') }} $</span>
+                      <span class="price-regular">{{ lastPrice|number_format(0, ' ', ' ') }} Ar</span>
                     {% endif %}
                   </div>
 
@@ -950,23 +950,23 @@
           if (originalPrice && originalPrice !== price) {
             // Cas d'une réduction automatique : afficher le prix actuel et le prix barré
             modalPrice.innerHTML = `
-              <span style="color: #e74c3c; font-weight: 900; font-size: 1.1rem;">${parseFloat(price).toFixed(2)} $</span>
-              <span style="color: #95a5a6; font-weight: 600; font-size: 0.9rem; text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #e74c3c;">${parseFloat(originalPrice).toFixed(2)} $</span>
-              <span style="background: linear-gradient(135deg, #ff4757, #ff3742); color: #fff; font-weight: 900; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid #fff;">-${promoPercentage}%</span>
+              <span style="color: #e74c3c; font-weight: 900; font-size: 1.1rem;">${Math.round(parseFloat(price)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar</span>
+              <span style="color: #95a5a6; font-weight: 600; font-size: 0.9rem; text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #e74c3c;">${Math.round(parseFloat(originalPrice)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar</span>
+              <span style=\"background: linear-gradient(135deg, #ff4757, #ff3742); color: #fff; font-weight: 900; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid #fff;\">-${promoPercentage}%</span>
             `;
           } else {
             // Cas d'une vraie promotion : calculer le prix promo
             const promoPrice = (parseFloat(price) * (100 - promoPercentage) / 100).toFixed(2);
             modalPrice.innerHTML = `
-              <span style="color: #e74c3c; font-weight: 900; font-size: 1.1rem;">${promoPrice} $</span>
-              <span style="color: #95a5a6; font-weight: 600; font-size: 0.9rem; text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #e74c3c;">${price} $</span>
-              <span style="background: linear-gradient(135deg, #ff4757, #ff3742); color: #fff; font-weight: 900; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid #fff;">-${promoPercentage}%</span>
+              <span style="color: #e74c3c; font-weight: 900; font-size: 1.1rem;">${Math.round(parseFloat(promoPrice)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar</span>
+              <span style="color: #95a5a6; font-weight: 600; font-size: 0.9rem; text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #e74c3c;">${Math.round(parseFloat(price)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar</span>
+              <span style=\"background: linear-gradient(135deg, #ff4757, #ff3742); color: #fff; font-weight: 900; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid #fff;\">-${promoPercentage}%</span>
             `;
           }
           modalPromoBadge.textContent = `-${promoPercentage}%`;
           modalPromoBadge.style.display = 'block';
         } else {
-          modalPrice.textContent = price + ' $';
+          modalPrice.textContent = Math.round(parseFloat(price)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Ar';
           modalPromoBadge.style.display = 'none';
         }
         

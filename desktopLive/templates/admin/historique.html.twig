@@ -100,7 +100,7 @@
                                 <td>{{ sale.commande.client ? sale.commande.client.getUsername() : '-' }}</td>
                                 <td>{{ sale.commande.seller ? sale.commande.seller.getUsername() : '-' }}</td>
                                 <td>{{ sale.commande.state.nameState }}</td>
-                                <td class="historique-amount">{{ total|number_format(2, ',', ' ') }} €</td>
+                                <td class="historique-amount">{{ total|number_format(0, ' ', ' ') }} Ar</td>
                                 <td>
                                     {% if sale.isPaid %}
                                         <span class="historique-badge historique-badge-success">Payé</span>
@@ -379,18 +379,18 @@
                         // Afficher les détails des totaux
                         doc.setFont('helvetica', 'normal');
                         doc.setFontSize(10);
-                        doc.text(`Sous-total HT: ${totalHT.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                        doc.text(`Sous-total HT: ${Math.round(totalHT).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar`, 120, yPos);
                         yPos += 8;
 
                         const tva = totalHT * 0.2;
-                        doc.text(`TVA (20%): ${tva.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                        doc.text(`TVA (20%): ${Math.round(tva).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar`, 120, yPos);
                         yPos += 8;
 
                         // Total TTC en gras et plus grand
                         const totalTTC = totalHT * 1.2;
                         doc.setFont('helvetica', 'bold');
                         doc.setFontSize(12);
-                        doc.text(`TOTAL TTC: ${totalTTC.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                        doc.text(`TOTAL TTC: ${Math.round(totalTTC).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar`, 120, yPos);
                     }
 
                     // === PIED DE PAGE PROFESSIONNEL ===

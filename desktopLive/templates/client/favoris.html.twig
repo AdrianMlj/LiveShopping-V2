@@ -64,7 +64,7 @@
                         
                         <div class="product-meta">
                             <div class="price-section">
-                                <span class="product-price">${{ fav.price }}</span>
+                                <span class="product-price">{{ fav.price|number_format(0, ' ', ' ') }} Ar</span>
                             </div>
                             
                             <div class="size-section">
@@ -73,13 +73,41 @@
                                 {% for s in fav.sizes %}
                                     {% set selectedIds = selectedIds|merge([s.sizeId]) %}
                                 {% endfor %}
-                                <select class="size-select">
+                                <select class="size-select" data-product-id="{{ fav.item.id }}">
                                     {% for size in fav.item.itemSizes %}
                                         <option value="{{ size.id }}" {% if size.id in selectedIds %}selected{% endif %}>
                                             {{ size.valueSize }}{% if size.size %} ({{ size.size.nameSize }}){% endif %}
                                         </option>
                                     {% endfor %}
                                 </select>
+                            </div>
+
+                            <div class="colors-section">
+                                <label class="size-label">Couleur :</label>
+                                <div class="colors-list" data-product-id="{{ fav.item.id }}"></div>
+                                {# Build colors map by size for this item #}
+                                <script type="application/json" class="colors-json" data-product-id="{{ fav.item.id }}">
+                                {%- set colors_by_size = [] -%}
+                                {%- for size in fav.item.itemSizes -%}
+                                  {%- set entry = {
+                                      'sizeId': size.id,
+                                      'colors': []
+                                  } -%}
+                                  {%- for isc in size.itemSizeColors -%}
+                                    {%- if isc.color -%}
+                                      {%- set entry = entry|merge({
+                                        'colors': entry.colors|merge([{
+                                          'id': isc.color.id,
+                                          'name': isc.color.nameColor|default('#' ~ isc.color.id),
+                                        'image': isc.images ? ('/uploads/' ~ isc.images)|replace({'//':'/'}) : null
+                                        }])
+                                      }) -%}
+                                    {%- endif -%}
+                                  {%- endfor -%}
+                                  {%- set colors_by_size = colors_by_size|merge([entry]) -%}
+                                {%- endfor -%}
+                                {{- colors_by_size|json_encode|raw -}}
+                                </script>
                             </div>
                         </div>
 
@@ -90,6 +118,9 @@
                                 <input type="hidden" name="price" value="{{ fav.price }}">
                                 <input type="hidden" name="images" value="{{ fav.item.images }}">
                                 <input type="hidden" name="quantity" value="1">
+                                <input type="hidden" name="itemSizeId" value="{{ fav.sizes|first ? fav.sizes|first.sizeId : (fav.item.itemSizes|first ? fav.item.itemSizes|first.id : '') }}">
+                                <input type="hidden" name="colorId" value="">
+                                <input type="hidden" name="colorImage" value="">
                                 <button type="submit" class="add-to-cart-btn">
                                     <i class="fas fa-shopping-basket"></i>
                                     Ajouter au panier
@@ -167,12 +198,130 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Size selection
-    document.querySelectorAll('.size-select').forEach(select => {
-        select.addEventListener('change', function() {
-            const card = this.closest('.favorite-card');
-            const productName = card.querySelector('.product-name').textContent;
-            showNotification('Taille modifiée pour ' + productName, 'info');
+    document.addEventListener('change', function(e){
+        if (e.target && e.target.classList && e.target.classList.contains('size-select')){
+            const pid = e.target.dataset.productId;
+            renderColorsForProduct(pid);
+        }
+    });
+
+    // Initial rendering of colors (align with home/live)
+    document.querySelectorAll('.colors-json').forEach(scriptEl => {
+        renderColorsForProduct(scriptEl.dataset.productId);
+    });
+
+    function renderColorsForProduct(productId) {
+        const card = document.getElementById('fav-item-' + productId);
+        if (!card) return;
+        const jsonEl = card.querySelector(`.colors-json[data-product-id="${productId}"]`);
+        const list = card.querySelector(`.colors-list[data-product-id="${productId}"]`);
+        const sizeSelect = card.querySelector('.size-select');
+        if (!jsonEl || !list || !sizeSelect) return;
+        let data = [];
+        try { data = JSON.parse(jsonEl.textContent || '[]'); } catch(e) { data = []; }
+        const sizeId = parseInt(sizeSelect.value, 10);
+        const entry = data.find(e => e.sizeId === sizeId);
+        list.innerHTML = '';
+        list.dataset.selectedColor = '';
+        list.dataset.selectedColorImage = '';
+        if (!entry || !entry.colors || entry.colors.length === 0) {
+            list.innerHTML = '<div class="no-color">Aucune couleur</div>';
+            // Clear hidden color inputs
+            card.querySelector('input[name="colorId"]').value = '';
+            card.querySelector('input[name="colorImage"]').value = '';
+            return;
+        }
+        entry.colors.forEach((c, idx) => {
+            const el = document.createElement('div');
+            el.className = 'color-item';
+            el.dataset.colorId = c.id;
+            el.dataset.colorImage = c.image || '';
+            el.title = c.name || 'Couleur';
+            if (c.image) {
+                const img = document.createElement('img');
+                img.src = c.image; img.alt = c.name || 'color';
+                el.appendChild(img);
+            } else {
+                const sw = document.createElement('span'); sw.className = 'color-swatch';
+                el.appendChild(sw);
+            }
+            el.addEventListener('click', () => {
+                list.querySelectorAll('.color-item').forEach(x => x.classList.remove('active'));
+                el.classList.add('active');
+                list.dataset.selectedColor = String(c.id);
+                list.dataset.selectedColorImage = c.image || '';
+                card.querySelector('input[name="colorId"]').value = c.id;
+                card.querySelector('input[name="colorImage"]').value = c.image || '';
+                // Swap card image when color image exists
+                const imgEl = card.querySelector('.product-image img');
+                if (imgEl) {
+                    if (c.image) { imgEl.src = c.image; }
+                }
+            });
+            list.appendChild(el);
+            if (idx === 0) {
+                el.classList.add('active');
+                list.dataset.selectedColor = String(c.id);
+                list.dataset.selectedColorImage = c.image || '';
+                card.querySelector('input[name="colorId"]').value = c.id;
+                card.querySelector('input[name="colorImage"]').value = c.image || '';
+                const imgEl = card.querySelector('.product-image img');
+                if (imgEl && c.image) { imgEl.src = c.image; }
+            }
         });
+    }
+
+    // Intercept add-to-cart to avoid redirect
+    document.querySelectorAll('.add-to-cart-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const card = this.closest('.favorite-card');
+            const itemId = card ? card.id.replace('fav-item-', '') : '';
+            // Sync selected size to hidden field
+            const sizeSelect = card.querySelector('.size-select');
+            if (sizeSelect) {
+                this.querySelector('input[name="itemSizeId"]').value = sizeSelect.value;
+            }
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success) {
+                    showNotification('Ajouté au panier', 'success');
+                } else {
+                    throw new Error((data && data.message) || 'Erreur serveur');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Impossible d\'ajouter au panier', 'error');
+            });
+        });
+    });
+
+    // Safety: delegated click to ensure one active color at a time per card
+    document.addEventListener('click', function(e){
+        const el = e.target.closest('.color-item');
+        if (!el) return;
+        const list = el.closest('.colors-list');
+        const card = el.closest('.favorite-card');
+        if (!list || !card) return;
+        list.querySelectorAll('.color-item').forEach(x => x.classList.remove('active'));
+        el.classList.add('active');
+        const colorId = el.dataset.colorId || '';
+        const colorImage = el.dataset.colorImage || '';
+        list.dataset.selectedColor = colorId;
+        list.dataset.selectedColorImage = colorImage;
+        const hiddenColorId = card.querySelector('input[name="colorId"]');
+        const hiddenColorImage = card.querySelector('input[name="colorImage"]');
+        if (hiddenColorId) hiddenColorId.value = colorId;
+        if (hiddenColorImage) hiddenColorImage.value = colorImage;
+        const imgEl = card.querySelector('.product-image img');
+        if (imgEl && colorImage) { imgEl.src = colorImage; }
     });
 
     function showEmptyState() {
@@ -333,6 +482,14 @@ body {
     gap: 25px;
     margin-bottom: 40px;
 }
+
+.colors-section { margin-top: 10px; }
+.colors-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.color-item { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--gray-light); background: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); padding: 0; }
+.color-item.active { outline: 2px solid var(--primary); border-color: var(--primary); transform: scale(1.05); }
+.color-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.color-item .swatch { width: 18px; height: 18px; border-radius: 50%; background: #bbb; display: inline-block; }
+.no-color { color: var(--gray); font-size: 0.85rem; }
 
 .favorite-card {
     background: white;

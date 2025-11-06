@@ -75,7 +75,7 @@
                     <div class="product-details">
                         <div class="product-info">
                             <h3 class="product-name">{{ item.name }}</h3>
-                            <p class="product-price-unit">{{ item.price|number_format(2, '.', ' ') }} $/unité</p>
+                            <p class="product-price-unit">{{ item.price|number_format(0, ' ', ' ') }} Ar/unité</p>
                             
                             <div class="product-variants">
                                 {% set sizes = sizesByItem[item.id]|default([]) %}
@@ -146,7 +146,7 @@
                                 
                                 <div class="item-total">
                                     <span class="total-label">Sous-total :</span>
-                                    <strong class="total-price">{{ (item.price * item.quantity)|number_format(2, '.', ' ') }} $</strong>
+                                    <strong class="total-price">{{ (item.price * item.quantity)|number_format(0, ' ', ' ') }} Ar</strong>
                                 </div>
                             </div>
                             
@@ -170,12 +170,12 @@
                     <div class="summary-details">
                         <div class="summary-row">
                             <span>Sous-total ({{ cart|length }} article{{ cart|length > 1 ? 's' : '' }})</span>
-                            <span>{{ cartTotal|number_format(2, '.', ' ') }} $</span>
+                            <span>{{ cartTotal|number_format(0, ' ', ' ') }} Ar</span>
                         </div>
                         <div class="summary-divider"></div>
                         <div class="summary-total">
                             <span>Total TTC</span>
-                            <strong>{{ cartTotal|number_format(2, '.', ' ') }} $</strong>
+                            <strong>{{ cartTotal|number_format(0, ' ', ' ') }} Ar</strong>
                         </div>
                     </div>
                 </div>
@@ -195,12 +195,12 @@
                 <div class="summary-details">
                     <div class="summary-row">
                         <span>Sous-total ({{ cart|length }} article{{ cart|length > 1 ? 's' : '' }})</span>
-                        <span id="summary-subtotal">{{ cartTotal|number_format(2, '.', ' ') }} $</span>
+                        <span id="summary-subtotal">{{ cartTotal|number_format(0, ' ', ' ') }} Ar</span>
                     </div>
                     <div class="summary-divider"></div>
                     <div class="summary-total">
                         <span>Total TTC</span>
-                        <strong id="summary-total-amount">{{ cartTotal|number_format(2, '.', ' ') }} $</strong>
+                        <strong id="summary-total-amount">{{ cartTotal|number_format(0, ' ', ' ') }} Ar</strong>
                     </div>
                     <div class="checkout-actions">
                         <button type="button" id="btn-next-shipping" class="btn-checkout">
@@ -306,7 +306,7 @@
                                 </label>
                             </div>
 
-                            <div class="payment-method-card">
+                            {# <div class="payment-method-card">
                                 <input type="radio" id="cod" name="payment" value="cod" class="payment-radio">
                                 <label for="cod" class="method-label">
                                     <div class="method-icon cod">
@@ -318,7 +318,7 @@
                                     </div>
                                     <div class="radio-indicator"></div>
                                 </label>
-                            </div>
+                            </div> #}
                         </div>
                     </div>
 
@@ -565,9 +565,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // État initial selon la sélection (aucune par défaut)
     const initiallyChecked = document.querySelector('.payment-radio:checked');
     applyPaymentUIState(initiallyChecked ? initiallyChecked.value : '');
-    // Fonction pour formater les nombres avec 2 décimales
+    // Format Ariary: entier, séparateur d'espace
     function formatPrice(price) {
-        return parseFloat(price).toFixed(2).replace('.', ' ');
+        const n = Math.round(parseFloat(price) || 0);
+        return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     }
 
     // Mettre à jour l'affichage du sous-total et du total global
@@ -578,7 +579,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const subTotal = price * quantity;
 
         // Mettre à jour le sous-total de l'article
-        subTotalElement.textContent = `${formatPrice(subTotal)} $`;
+        subTotalElement.textContent = `${formatPrice(subTotal)} Ar`;
         subTotalElement.classList.add('updated');
         setTimeout(() => subTotalElement.classList.remove('updated'), 500);
 
@@ -598,13 +599,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mettre à jour le récapitulatif (étape 1)
         const summaryTotal = document.getElementById('summary-total-amount');
         if (summaryTotal) {
-            summaryTotal.textContent = `${formatPrice(total)} $`;
+            summaryTotal.textContent = `${formatPrice(total)} Ar`;
             summaryTotal.classList.add('updated');
             setTimeout(() => summaryTotal.classList.remove('updated'), 500);
         }
         const summarySubTotal = document.getElementById('summary-subtotal');
         if (summarySubTotal) {
-            summarySubTotal.textContent = `${formatPrice(total)} $`;
+            summarySubTotal.textContent = `${formatPrice(total)} Ar`;
         }
 
         // Si QR est sélectionné, régénérer un QR correspondant au nouveau montant
@@ -849,8 +850,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const orderTotal = document.getElementById('order-total');
         if (orderNumber) orderNumber.textContent = orderData.orderNumber || `CMD-${Date.now()}`;
         if (orderTotal) {
-            const total = parseFloat(document.getElementById('summary-total-amount')?.textContent.replace(/\s/g, '').replace('$', '') || '0');
-            orderTotal.textContent = `${total.toFixed(2).replace('.', ' ')} $`;
+            const text = document.getElementById('summary-total-amount')?.textContent || '0';
+            const numeric = text.replace(/[^\d]/g, '');
+            const total = parseInt(numeric || '0', 10);
+            orderTotal.textContent = `${formatPrice(total)} Ar`;
         }
         showStep('confirmation');
     }

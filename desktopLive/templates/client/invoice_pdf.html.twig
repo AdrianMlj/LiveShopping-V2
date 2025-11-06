@@ -129,8 +129,8 @@
                     <td><strong>{{ item.nameItem }}</strong></td>
                     <td class="center">{{ detail.itemSize.valueSize }}</td>
                     <td class="center">{{ detail.quantity }}</td>
-                    <td class="right">{{ detail.price|number_format(2, ',', ' ') }} $</td>
-                    <td class="right"><strong>{{ lineTotal|number_format(2, ',', ' ') }} $</strong></td>
+                    <td class="right">{{ detail.price|number_format(0, ' ', ' ') }} Ar</td>
+                    <td class="right"><strong>{{ lineTotal|number_format(0, ' ', ' ') }} Ar</strong></td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -139,12 +139,12 @@
     <!-- Summary -->
     <div class="summary">
         <table class="summary-row">
-            <tr><td class="muted">Sous-total HT:</td><td class="right">{{ totalHT|number_format(2, ',', ' ') }} $</td></tr>
-            <tr><td class="muted">TVA (20%):</td><td class="right">{{ tva|number_format(2, ',', ' ') }} $</td></tr>
+            <tr><td class="muted">Sous-total HT:</td><td class="right">{{ totalHT|number_format(0, ' ', ' ') }} Ar</td></tr>
+            <tr><td class="muted">TVA (20%):</td><td class="right">{{ tva|number_format(0, ' ', ' ') }} Ar</td></tr>
         </table>
         <div class="summary-line"></div>
         <table class="summary-row">
-            <tr><td class="grand">Total TTC:</td><td class="right grand">{{ totalTTC|number_format(2, ',', ' ') }} $</td></tr>
+            <tr><td class="grand">Total TTC:</td><td class="right grand">{{ totalTTC|number_format(0, ' ', ' ') }} Ar</td></tr>
         </table>
     </div>
 

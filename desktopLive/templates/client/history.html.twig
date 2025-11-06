@@ -150,12 +150,16 @@
               <span class="order-date">{{ sale.saleDate|date('d M Y') }}</span>
               {# <span class="order-time">{{ sale.saleDate|date('H:i') }}</span> #}
             </div>
+            <div class="order-code" title="Numéro de commande">
+              <i class="fas fa-hashtag"></i>
+              <span>Commande #{{ sale.id }}</span>
+            </div>
             <div class="order-vendor">
               <i class="fas fa-store" title="Vendeur"></i>
               <span>{{ sale.commande.seller ? sale.commande.seller.getUsername() : 'Vendeur' }}</span>
             </div>
             <div class="order-amount-status">
-              <span class="amount">{{ total|number_format(2, ',', ' ') }} $</span>
+              <span class="amount">{{ total|number_format(0, ' ', ' ') }} Ar</span>
               <span class="payment-status {{ sale.isPaid ? 'paid' : 'pending' }}" title="{{ sale.isPaid ? 'Payé' : 'En attente' }}">
                 <i class="fas {{ sale.isPaid ? 'fa-check-circle' : 'fa-clock' }}"></i>
                 {{ sale.isPaid ? 'Payé' : 'En attente' }}
@@ -808,6 +812,14 @@ body {
   gap: 8px;
   color: var(--gray);
   min-width: 150px;
+}
+
+.order-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gray);
+  min-width: 160px;
 }
 
 .order-amount-status {

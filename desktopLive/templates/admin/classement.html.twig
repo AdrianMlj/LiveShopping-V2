@@ -16,7 +16,7 @@
         </div>
         <div class="performance-stats">
             <div class="performance-stat">
-                <div class="performance-value">{{ globalStats.totalRevenue|number_format(0, ',', ' ') }} €</div>
+                <div class="performance-value">{{ globalStats.totalRevenue|number_format(0, ' ', ' ') }} Ar</div>
                 <div class="performance-label">Total turnover</div>
                 <div class="performance-sublabel">{{ globalStats.totalArticlesCount }} active products</div>
             </div>
@@ -38,7 +38,7 @@
                         Top Items
                     </h2>
                     <p class="section-description">
-                        Revenu moyen : {{ globalStats.avgRevenuePerArticle|number_format(0, ',', ' ') }} €
+                        Revenu moyen : {{ globalStats.avgRevenuePerArticle|number_format(0, ' ', ' ') }} Ar
                     </p>
                 </div>
                 <div class="section-actions">

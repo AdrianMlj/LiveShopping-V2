@@ -67,8 +67,8 @@
             </td>
             <td>{{ detail.itemSize.valueSize }}</td>
             <td class="quantity-cell">{{ detail.quantity }}</td>
-            <td>{{ detail.price|number_format(2, ',', ' ') }} $</td>
-            <td class="total-cell"><strong>{{ lineTotal|number_format(2, ',', ' ') }} $</strong></td>
+            <td>{{ detail.price|number_format(0, ' ', ' ') }} Ar</td>
+            <td class="total-cell"><strong>{{ lineTotal|number_format(0, ' ', ' ') }} Ar</strong></td>
           </tr>
         {% endfor %}
       </tbody>
@@ -76,8 +76,8 @@
   </div>
 
   <div class="invoice-footer">
-    <div class="total-amount">
-      <h4>Total TTC : {{ (total * 1.2)|number_format(2, ',', ' ') }} $</h4>
+  <div class="total-amount">
+      <h4>Total TTC : {{ (total * 1.2)|number_format(0, ' ', ' ') }} Ar</h4>
     </div>
   </div>
 </div>

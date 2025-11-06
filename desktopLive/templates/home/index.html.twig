@@ -1139,15 +1139,15 @@
                                 {% if activePromo %}
                                     {% set percentage = activePromo.getPercentage + 0 %}
                                     {% set promoPrice = (lastPrice * (100 - percentage) / 100) %}
-                                    <span class="price-current">${{ promoPrice|number_format(2, '.', ' ') }}</span>
-                                    <span class="price-base"><s>${{ lastPrice|number_format(2, '.', ' ') }}</s></span>
+                                    <span class="price-current">{{ promoPrice|number_format(0, ' ', ' ') }} Ar</span>
+                                    <span class="price-base"><s>{{ lastPrice|number_format(0, ' ', ' ') }} Ar</s></span>
                                     <span class="promo-badge">-{{ percentage|round(0, 'common') }}%</span>
                                 {% elseif isPriceReduced %}
-                                    <span class="price-current">${{ lastPrice|number_format(2, '.', ' ') }}</span>
-                                    <span class="price-base"><s>${{ previousPrice|number_format(2, '.', ' ') }}</s></span>
+                                    <span class="price-current">{{ lastPrice|number_format(0, ' ', ' ') }} Ar</span>
+                                    <span class="price-base"><s>{{ previousPrice|number_format(0, ' ', ' ') }} Ar</s></span>
                                     <span class="promo-badge">-{{ percentage|round(0, 'common') }}%</span>
                                 {% else %}
-                                    <div class="product-price">${{ lastPrice|number_format(2, '.', ' ') }}</div>
+                                    <div class="product-price">{{ lastPrice|number_format(0, ' ', ' ') }} Ar</div>
                                 {% endif %}
                             </div>
 
@@ -1233,7 +1233,7 @@
                     <div class="product-info">
                         <h3 class="product-title">Pack Économique Premium</h3>
                         <p class="product-desc">18 unités - Qualité garantie</p>
-                        <div class="product-price">$199.99</div>
+                        <div class="product-price">199.99 Ar</div>
                         <div class="product-actions">
                             <button class="cart-btn">
                                 <i class="fas fa-shopping-basket"></i>
@@ -1250,7 +1250,7 @@
                     <div class="product-info">
                         <h3 class="product-title">Édition Limitée</h3>
                         <p class="product-desc">10 unités exclusives</p>
-                        <div class="product-price">$249.99</div>
+                        <div class="product-price">249.99 Ar</div>
                         <div class="product-actions">
                             <button class="cart-btn">
                                 <i class="fas fa-shopping-basket"></i>
@@ -1299,7 +1299,7 @@
                         </div>
                         <div class="product-info">
                             <h3 class="product-title">Clavier Mécanique</h3>
-                            <div class="product-price">$89.99</div>
+                            <div class="product-price">89.99 Ar</div>
                             <div class="product-actions">
                                 <button class="cart-btn">
                                     <i class="fas fa-shopping-basket"></i>
@@ -1315,7 +1315,7 @@
                         </div>
                         <div class="product-info">
                             <h3 class="product-title">Casque Gaming</h3>
-                            <div class="product-price">$129.99</div>
+                            <div class="product-price">129.99 Ar</div>
                             <div class="product-actions">
                                 <button class="cart-btn">
                                     <i class="fas fa-shopping-basket"></i>
@@ -1667,14 +1667,14 @@
             if (promoPercentage && promoPercentage > 0) {
               // price est déjà le prix réduit, originalPrice est le prix de base
               modalPrice.innerHTML = `
-                <span style="color: #e74c3c; font-weight: 900; font-size: 1.1rem;">${parseFloat(price).toFixed(2)} $</span>
-                <span style="color: #95a5a6; font-weight: 600; font-size: 0.9rem; text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #e74c3c;">${parseFloat(originalPrice).toFixed(2)} $</span>
-                <span style="background: linear-gradient(135deg, #ff4757, #ff3742); color: #fff; font-weight: 900; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid #fff;">-${promoPercentage}%</span>
+                <span style="color: #e74c3c; font-weight: 900; font-size: 1.1rem;">${Math.round(parseFloat(price)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar</span>
+                <span style="color: #95a5a6; font-weight: 600; font-size: 0.9rem; text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #e74c3c;">${Math.round(parseFloat(originalPrice)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Ar</span>
+                <span style=\"background: linear-gradient(135deg, #ff4757, #ff3742); color: #fff; font-weight: 900; padding: 4px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid #fff;\">-${promoPercentage}%</span>
               `;
               modalPromoBadge.textContent = `-${promoPercentage}%`;
               modalPromoBadge.style.display = 'block';
             } else {
-              modalPrice.textContent = parseFloat(price).toFixed(2) + ' $';
+              modalPrice.textContent = Math.round(parseFloat(price)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Ar';
               modalPromoBadge.style.display = 'none';
             }
             
@@ -1727,7 +1727,8 @@
                 if (c.image) { const img = document.createElement('img'); img.src = c.image; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; img.style.display='block'; el.appendChild(img); }
                 else { const sw = document.createElement('span'); sw.style.background = c.name || '#ccc'; sw.style.width='18px'; sw.style.height='18px'; sw.style.borderRadius='50%'; sw.style.display='block'; el.appendChild(sw); }
                 el.onclick = () => { 
-                  modalColors.querySelectorAll('[data-colorId]').forEach(x=>x.style.borderColor='transparent');
+                  modalColors.querySelectorAll('.color-item').forEach(x=>{ x.style.borderColor='transparent'; x.classList.remove('active'); });
+                  el.classList.add('active');
                   el.style.borderColor = '#7c3aed';
                   modalColors.dataset.selectedColor = c.id;
                   modalColors.dataset.selectedColorImage = c.image || '';
@@ -1737,6 +1738,7 @@
                 modalColors.appendChild(el);
 
                 if (idx === 0) {
+                  el.classList.add('active');
                   el.style.borderColor = '#7c3aed';
                   modalColors.dataset.selectedColor = c.id;
                   modalColors.dataset.selectedColorImage = c.image || '';
