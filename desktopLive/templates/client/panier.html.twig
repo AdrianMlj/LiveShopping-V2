@@ -535,21 +535,14 @@ document.addEventListener('DOMContentLoaded', function() {
             stopQrPolling();
             resetQrUI();
         } else if (methodValue) {
+            // Pour mvola/orange et autres méthodes en ligne: code SMS obligatoire, pas de QR
             paymentFields.style.opacity = '1';
             paymentFields.style.pointerEvents = 'all';
-            if (isWallet) {
-                if (qrSection) qrSection.classList.remove('hidden');
-                codeGroup.classList.add('hidden');
-                if (codeInput) codeInput.required = false;
-                // Génération automatique du QR (portefeuille sélectionné)
-                initiateQrPayment(methodValue);
-            } else {
-                if (qrSection) qrSection.classList.add('hidden');
-                codeGroup.classList.remove('hidden');
-                if (codeInput) codeInput.required = true;
-                stopQrPolling();
-                resetQrUI();
-            }
+            if (qrSection) qrSection.classList.add('hidden');
+            codeGroup.classList.remove('hidden');
+            if (codeInput) codeInput.required = true;
+            stopQrPolling();
+            resetQrUI();
         } else {
             // Aucun moyen sélectionné
             paymentFields.style.opacity = '1';
@@ -608,14 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
             summarySubTotal.textContent = `${formatPrice(total)} Ar`;
         }
 
-        // Si QR est sélectionné, régénérer un QR correspondant au nouveau montant
-        const selectedPayment = document.querySelector('.payment-radio:checked');
-        if (selectedPayment && (selectedPayment.value === 'mvola' || selectedPayment.value === 'orange') && qrSection && !qrSection.classList.contains('hidden')) {
-            // On réinitialise et régénère pour refléter le nouveau total
-            stopQrPolling();
-            resetQrUI();
-            initiateQrPayment(selectedPayment.value);
-        }
+        // QR désactivé: pas de régénération de QR lors des changements de montant
     }
 
     // Gestion des quantités
@@ -864,15 +850,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const phone = document.getElementById('phone')?.value.trim();
         const code = document.getElementById('code')?.value.trim();
 
-        if (paymentMethod === 'mvola' || paymentMethod === 'orange') {
-            if (!currentQrTxId) {
-                showNotification('Scannez le QR affiché pour payer', 'warning');
+        if (paymentMethod !== 'cod') {
+            if (!phone || !code) {
+                showNotification('Téléphone et code requis', 'warning');
                 return;
-            }
-        } else if (paymentMethod !== 'cod') {
-            if (!phone || !code) { 
-                showNotification('Téléphone et code requis', 'warning'); 
-                return; 
             }
         }
 

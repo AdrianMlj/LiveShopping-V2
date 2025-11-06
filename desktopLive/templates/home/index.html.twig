@@ -1426,7 +1426,7 @@
                 });
             }
 
-            // Gestion des favoris et panier (votre code original conservé)
+                    // Gestion des favoris et panier (votre code original conservé)
             if (productList) {
                 productList.addEventListener('click', function(e) {
                     // Gestion des favoris
@@ -1436,8 +1436,8 @@
                         const itemId = btn.dataset.id;
                         const isFavorite = btn.classList.contains('active');
                         const url = isFavorite ? `/client/favorite/remove-all-sizes/${itemId}` : `/client/favorite/toggle-all-sizes/${itemId}`;
-                        const favBadge = document.querySelector('.stat-favorites .stat-value');
-                        let favCount = parseInt(favBadge.textContent) || 0;
+                                const favBadge = document.querySelector('.stat-favorites .stat-value');
+                                let favCount = favBadge ? (parseInt(favBadge.textContent) || 0) : 0;
 
                         fetch(url, {
                             method: 'POST',
@@ -1447,30 +1447,31 @@
                             if (!res.ok) throw new Error(`Erreur serveur: ${res.status}`);
                             return res.json();
                         })
-                        .then(data => {
-                            if (!data.success) return;
+                                .then(data => {
+                                    if (!data.success) return;
 
-                            const card = btn.closest('.product-card');
-                            const icon = btn.querySelector('i');
-                            const badge = card.querySelector('.badge-favorite');
+                                    const card = btn.closest('.product-card');
+                                    const icon = btn.querySelector('i');
+                                    const badge = card.querySelector('.badge-favorite');
 
-                            // Mise à jour visuelle
-                            btn.classList.toggle('active');
-                            icon.classList.toggle('fas');
-                            icon.classList.toggle('far');
-                            favBadge.textContent = isFavorite ? favCount - 1 : favCount + 1;
+                                    // Mise à jour visuelle
+                                    btn.classList.toggle('active');
+                                    icon.classList.toggle('fas');
+                                    icon.classList.toggle('far');
+                                    if (favBadge) favBadge.textContent = isFavorite ? (favCount - 1) : (favCount + 1);
 
-                            if (isFavorite) {
-                                if (badge) badge.remove();
-                                btn.setAttribute('title', 'Ajouter aux favoris');
-                            } else {
-                                const newBadge = document.createElement('div');
-                                newBadge.className = 'badge badge-favorite';
-                                newBadge.textContent = 'Favori';
-                                card.querySelector('.product-badges').appendChild(newBadge);
-                                btn.setAttribute('title', 'Retirer des favoris');
-                            }
-                        })
+                                    if (isFavorite) {
+                                        if (badge) badge.remove();
+                                        btn.setAttribute('title', 'Ajouter aux favoris');
+                                    } else {
+                                        const newBadge = document.createElement('div');
+                                        newBadge.className = 'badge badge-favorite';
+                                        newBadge.textContent = 'Favori';
+                                        const badgesWrap = card.querySelector('.product-badges');
+                                        if (badgesWrap) badgesWrap.appendChild(newBadge);
+                                        btn.setAttribute('title', 'Retirer des favoris');
+                                    }
+                                })
                         .catch(err => {
                             console.error('Erreur:', err);
                             alert('Une erreur est survenue');
