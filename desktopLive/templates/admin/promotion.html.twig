@@ -19,7 +19,7 @@
                 <select id="categoryFilter" name="category_id" class="promotion-select">
                     <option value=""><span data-i18n="all">Toutes</span></option>
                     {% for cat in categories %}
-                        <option value="{{ cat.id }}" {{ category_id == cat.id ? 'selected' }}>{{ cat.nameCategory }}</option>
+                        <option value="{{ cat.id }}" {{ category_id == cat.id ? 'selected' }} data-i18n="category_{{ cat.id }}_name">{{ cat.nameCategory }}</option>
                     {% endfor %}
                 </select>
                 <script>
@@ -67,7 +67,8 @@
                     <div class="product-image">
                         <img src="{{ defaultImage }}" alt="{{ item.item_name }}" class="main-product-image clickable-image"
                              data-product-name="{{ item.item_name }}" />
-                        <div class="product-badge">{{ item.category.name }}</div>
+                        <div class="product-badge"
+                             data-i18n="category_{{ item.category.id }}_name">{{ item.category.name }}</div>
                         <div class="promotion-badge promo-btn"
                              data-item-id="{{ item.item_id }}"
                              data-item-name="{{ item.item_name }}"
@@ -104,14 +105,14 @@
                             <div class="pricing-info">
                                 {% if item.promotion %}
                                     <div class="price-row">
-                                        <span class="original-price">{{ item.original_price|number_format(2, ',', ' ') }} €</span>
-                                        <span class="promo-price">{{ item.promotion.promo_price|number_format(2, ',', ' ') }} €</span>
+                                        <span class="original-price">{{ item.original_price|number_format(0, ',', ' ') }} Ar</span>
+                                        <span class="promo-price">{{ item.promotion.promo_price|number_format(0, ',', ' ') }} Ar</span>
                                     </div>
                                     <div class="promo-end-date">
                                         <span data-i18n="until">Jusqu'au</span> {{ item.promotion.end_date|date('d/m/Y') }}
                                     </div>
                                 {% else %}
-                                    <div class="normal-price">{{ item.original_price|number_format(2, ',', ' ') }} €</div>
+                                    <div class="normal-price">{{ item.original_price|number_format(0, ',', ' ') }} Ar</div>
                                 {% endif %}
                             </div>
 
@@ -149,8 +150,10 @@
                                              {% set img = defaultImage %}
                                          {% endif %}
                                          <div class="color-item {{ loop.first ? 'active' : '' }}"
-                                              title="{{ c.color_name }} - Qté: {{ c.qty_total|number_format(0, ',', ' ') }}"
+                                              title="{{ c.color_name }}"
                                               data-color-image="{{ img }}"
+                                              data-color-id="{{ c.color_id }}"
+                                              data-color-qty="{{ c.qty_total }}"
                                               data-color-name="{{ c.color_name }}">
                                              <img src="{{ img }}" alt="{{ c.color_name }}" />
                                          </div>
@@ -238,11 +241,11 @@
                 <div class="price-preview">
                     <div class="current-price">
                         <span class="price-label" data-i18n="current_price">Prix actuel:</span>
-                        <span id="currentPriceDisplay">0,00 €</span>
+                        <span id="currentPriceDisplay">0 Ar</span>
                     </div>
                     <div class="new-price">
                         <span class="price-label" data-i18n="new_price">Nouveau prix:</span>
-                        <span id="newPriceDisplay">0,00 €</span>
+                        <span id="newPriceDisplay">0 Ar</span>
                     </div>
                 </div>
 
@@ -271,21 +274,45 @@
                 </div>
                 <div class="form-group">
                     <label for="editItemPrice" data-i18n="price">Price</label>
-                    <input type="number" step="0.01" min="0" id="editItemPrice" name="price" placeholder="0.00" required />
+                    <input type="number" step="1" min="0" id="editItemPrice" name="price" placeholder="0" required />
                 </div>
                 <div class="form-group">
                     <label for="editItemDescription" data-i18n="description">Description</label>
                     <textarea id="editItemDescription" name="description" rows="3" placeholder="Item description (optional)" data-i18n-placeholder="item_description_optional"></textarea>
                 </div>
 
-                <!-- Section Images des variantes de couleur -->
+                <!-- Section Images des variantes de couleur existantes -->
                 <div class="form-group">
-                    <label>Images des couleurs</label>
-                    <p style="color: #666; font-size: 13px; margin-bottom: 10px;">
+                    <label data-i18n="existing_color_images">Images des couleurs existantes</label>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 10px;" data-i18n="existing_color_hint">
                         💡 L'image principale affichée est celle de la première couleur
                     </p>
                     <div id="colorVariantsContainer" class="color-variants-grid">
                         <!-- Les variantes de couleur seront chargées ici -->
+                    </div>
+                </div>
+
+                <!-- Section Ajouter de nouvelles couleurs -->
+                <div class="form-group">
+                    <label data-i18n="add_new_colors_section">Ajouter de nouvelles couleurs</label>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 10px;" data-i18n="add_new_colors_hint">
+                        Sélectionnez de nouvelles couleurs à ajouter à cet article
+                    </p>
+                    {# Palette rapide de couleurs (clic = sélection) #}
+                    <div class="suggested-palette" style="margin-bottom:10px;">
+                        <div class="palette-swatch" title="Rouge" data-color-label="Rouge" style="background:#e74c3c"></div>
+                        <div class="palette-swatch" title="Bleu" data-color-label="Bleu" style="background:#3498db"></div>
+                        <div class="palette-swatch" title="Jaune" data-color-label="Jaune" style="background:#f1c40f"></div>
+                        <div class="palette-swatch" title="Vert" data-color-label="Vert" style="background:#2ecc71"></div>
+                        <div class="palette-swatch" title="Orange" data-color-label="Orange" style="background:#e67e22"></div>
+                        <div class="palette-swatch" title="Violet" data-color-label="Violet" style="background:#8e44ad"></div>
+                        <div class="palette-swatch" title="Blanc" data-color-label="Blanc" style="background:repeating-linear-gradient(45deg,#f1f1f1 0 6px,#e5e5e5 6px 12px)"></div>
+                        <div class="palette-swatch" title="Marron" data-color-label="Marron" style="background:#8B4513"></div>
+                        <div class="palette-swatch" title="Corail" data-color-label="Corail" style="background:#FF7F50"></div>
+                    </div>
+                    <div id="newColorsSelector" class="chips-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+                    <div id="newColorsImagesContainer" class="color-variants-grid">
+                        <!-- Les nouvelles couleurs avec upload d'images apparaîtront ici -->
                     </div>
                 </div>
 
@@ -324,43 +351,88 @@
         </div>
     </div>
 
-    <!-- Modal pour créer un nouvel article -->
+    <!-- Modal pour créer un nouvel article (assistant multi-étapes) -->
     <div id="itemModal" class="promotion-modal" style="display:none;">
-        <div class="promotion-modal-content">
+        <div class="promotion-modal-content" style="max-width: 980px;">
             <div class="modal-header">
-                <h3>Ajouter un nouvel article</h3>
+                <h3 data-i18n="add_new_item">Ajouter un nouvel article</h3>
                 <span class="modal-close" aria-label="Fermer">&times;</span>
             </div>
 
+            <div class="wizard-steps" style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+                <div class="wizard-step" data-step="1" data-i18n="wizard_step_infos" style="padding:6px 10px; border-radius:6px; background:#eef; font-weight:600;">1. Infos</div>
+                <div class="wizard-step" data-step="2" data-i18n="wizard_step_variants" style="padding:6px 10px; border-radius:6px; background:#f3f4f6;">2. Variantes</div>
+                <div class="wizard-step" data-step="3" data-i18n="wizard_step_stock" style="padding:6px 10px; border-radius:6px; background:#f3f4f6;">3. Stock</div>
+                <div class="wizard-step" data-step="4" data-i18n="wizard_step_recap" style="padding:6px 10px; border-radius:6px; background:#f3f4f6;">4. Récap</div>
+            </div>
+
             <form id="itemForm" class="promotion-form">
-                <div class="form-group">
-                    <label for="itemName">Nom de l'article</label>
-                    <input type="text" id="itemName" name="name" placeholder="Ex: T-shirt en coton" required />
-                </div>
+                <!-- Étape 1: Infos de base -->
+                <section class="wizard-pane" data-pane="1">
+                    <div class="form-group">
+                        <label for="itemName" data-i18n="item_name">Nom de l'article</label>
+                        <input type="text" id="itemName" name="name" placeholder="Ex: T-shirt en coton" data-i18n-placeholder="item_name_placeholder" required />
+                    </div>
 
-                <div class="form-group">
-                    <label for="itemCategory">Catégorie</label>
-                    <select id="itemCategory" name="category_id" required>
-                        <option value="">Sélectionnez une catégorie</option>
-                        {% for cat in categories %}
-                            <option value="{{ cat.id }}">{{ cat.nameCategory }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="itemCategory" data-i18n="category">Catégorie</label>
+                        <select id="itemCategory" name="category_id" required>
+                            <option value="" data-i18n="select_category">Sélectionnez une catégorie</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" data-i18n="category_{{ cat.id }}_name">{{ cat.nameCategory }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label for="itemPrice">Prix (€)</label>
-                    <input type="number" step="0.01" min="0" id="itemPrice" name="price" placeholder="0.00" required />
-                </div>
+                    <div class="form-group">
+                        <label for="itemPrice" data-i18n="price_ar">Prix (Ar)</label>
+                        <input type="number" step="1" min="0" id="itemPrice" name="price" placeholder="0" required />
+                    </div>
 
-                <div class="form-group">
-                    <label for="itemDescription">Description (optionnel)</label>
-                    <textarea id="itemDescription" name="description" placeholder="Description de l'article..." rows="3"></textarea>
-                </div>
+                    <div class="form-group">
+                        <label for="itemDescription" data-i18n="description_optional">Description (optionnel)</label>
+                        <textarea id="itemDescription" name="description" placeholder="Description de l'article..." data-i18n-placeholder="item_description_placeholder" rows="3"></textarea>
+                    </div>
+                </section>
+
+                <!-- Étape 2: Variantes (tailles, couleurs, images) -->
+                <section class="wizard-pane" data-pane="2" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label data-i18n="available_sizes">Tailles disponibles</label>
+                            <div id="sizesSelector" class="chips-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label data-i18n="available_colors">Couleurs disponibles</label>
+                            <div id="colorsSelector" class="chips-container" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="images_per_color">Images par couleur</label>
+                        <div id="colorImagesContainer" class="color-variants-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:12px;"></div>
+                    </div>
+                </section>
+
+                <!-- Étape 3: Stock par combinaison -->
+                <section class="wizard-pane" data-pane="3" style="display:none;">
+                    <div class="form-group">
+                        <label data-i18n="stocks_by_size_color">Stocks par taille × couleur</label>
+                        <div id="stockMatrixContainer" style="overflow:auto; border:1px solid #eee; border-radius:8px;"></div>
+                    </div>
+                </section>
+
+                <!-- Étape 4: Récap -->
+                <section class="wizard-pane" data-pane="4" style="display:none;">
+                    <div id="itemRecap" class="recap" style="line-height:1.7;"></div>
+                </section>
 
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel" aria-label="Annuler">Annuler</button>
-                    <button type="submit" class="btn-save" aria-label="Créer">Créer</button>
+                    <button type="button" class="btn-cancel" aria-label="Annuler" data-i18n="cancel" data-i18n-aria-label="cancel">Annuler</button>
+                    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                        <button type="button" class="btn-secondary" id="wizardPrevBtn" disabled data-i18n="previous">Précédent</button>
+                        <button type="button" class="btn-save" id="wizardNextBtn" data-i18n="next">Suivant</button>
+                        <button type="submit" class="btn-save" id="wizardSaveBtn" style="display:none;" data-i18n="save">Enregistrer</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -527,13 +599,157 @@
             // ===== Modal Item =====
             const itemModal = document.getElementById('itemModal');
             const itemForm = document.getElementById('itemForm');
+            let wizardCurrentStep = 1;
+            let createdItemId = null;
+            let selectedSizeIds = [];
+            let selectedColorIds = [];
+            let availableSizes = [];
+            let availableColors = [];
+
+            function getColorId(color) {
+                if (!color) return null;
+                return color.id ?? color.color_id ?? color.colorId ?? null;
+            }
+
+            function getColorName(color) {
+                if (!color) return '';
+                return color.name ?? color.label ?? color.color_name ?? color.colorName ?? '';
+            }
+
+            function normalizeColorKey(name) {
+                if (!name) return '';
+                let value = name.toString();
+                try {
+                    if (typeof value.normalize === 'function') {
+                        value = value.normalize('NFD');
+                    }
+                } catch (err) {
+                    // ignore normalize errors (older browsers)
+                }
+                return value
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_|_$/g, '');
+            }
+
+            function getColorFallback(colorId) {
+                const base = window.t ? window.t('color_default', 'Color') : 'Color';
+                return colorId ? `${base} #${colorId}` : base;
+            }
+
+            function translateColorLabel(name, colorId = null) {
+                const fallback = name || (colorId ? getColorFallback(colorId) : '');
+                const keys = [];
+                if (colorId) keys.push(`color_${colorId}_name`);
+                const normalized = normalizeColorKey(name);
+                if (normalized) keys.push(`color_${normalized}`);
+                if (window.t) {
+                    for (const key of keys) {
+                        const translated = window.t(key, '');
+                        if (translated && translated !== key) return translated;
+                    }
+                }
+                return fallback;
+            }
+
+            function translateColor(color) {
+                if (!color) return '';
+                const colorId = getColorId(color);
+                if (window.t && color.translation_key) {
+                    const translatedKey = window.t(color.translation_key, '');
+                    if (translatedKey && translatedKey !== color.translation_key) return translatedKey;
+                }
+                const baseName = getColorName(color);
+                const translatedLabel = translateColorLabel(baseName, colorId);
+                return translatedLabel || getColorFallback(colorId);
+            }
+
+            function getSizeName(size) {
+                if (!size) return '';
+                return size.value ?? size.name ?? size.label ?? '';
+            }
+
+            function translateSizeLabel(name) {
+                const fallback = name || (window.t ? window.t('size_default', 'Size') : 'Size');
+                const normalized = normalizeColorKey(name);
+                if (normalized && window.t) {
+                    const translated = window.t(`size_${normalized}`, '');
+                    if (translated && translated !== `size_${normalized}`) return translated;
+                }
+                return fallback;
+            }
+
+            function translateSize(size) {
+                if (!size) return window.t ? window.t('size_default', 'Size') : 'Size';
+                const baseName = getSizeName(size);
+                return translateSizeLabel(baseName);
+            }
+
+            function applySizeTranslations() {
+                document.querySelectorAll('#sizesSelector .chip').forEach(chip => {
+                    const rawName = chip.getAttribute('data-raw-name');
+                    if (!rawName) return;
+                    const translated = translateSizeLabel(rawName);
+                    chip.textContent = translated;
+                });
+            }
+            function applyColorTranslations() {
+                const qtyLabel = window.t ? window.t('color_quantity_label', 'Qty') : 'Qty';
+                document.querySelectorAll('.color-item').forEach(item => {
+                    const rawName = item.getAttribute('data-color-name');
+                    const colorIdAttr = item.getAttribute('data-color-id');
+                    const colorId = colorIdAttr ? parseInt(colorIdAttr, 10) : null;
+                    const translated = translateColorLabel(rawName, colorId);
+                    if (translated) {
+                        item.setAttribute('data-color-name', translated);
+                        const qty = item.getAttribute('data-color-qty');
+                        item.title = qty !== null ? `${translated} - ${qtyLabel}: ${qty}` : translated;
+                        const img = item.querySelector('img');
+                        if (img) img.alt = translated;
+                    }
+                });
+
+                document.querySelectorAll('.palette-swatch').forEach(swatch => {
+                    const baseLabel = swatch.getAttribute('data-color-label');
+                    if (!swatch.getAttribute('data-color-base-label')) {
+                        swatch.setAttribute('data-color-base-label', baseLabel || '');
+                    }
+                    const translated = translateColorLabel(baseLabel);
+                    if (translated) {
+                        swatch.setAttribute('title', translated);
+                    }
+                });
+            }
+
+            window.applyColorTranslations = applyColorTranslations;
+            applyColorTranslations();
+            window.applySizeTranslations = applySizeTranslations;
+            applySizeTranslations();
             const addItemBtn = document.querySelector('.add-item-trigger');
             const itemCloseBtn = itemModal ? itemModal.querySelector('.modal-close') : null;
             const itemCancelBtn = itemModal ? itemModal.querySelector('.btn-cancel') : null;
+            const wizardPrevBtn = itemModal ? itemModal.querySelector('#wizardPrevBtn') : null;
+            const wizardNextBtn = itemModal ? itemModal.querySelector('#wizardNextBtn') : null;
+            const wizardSaveBtn = itemModal ? itemModal.querySelector('#wizardSaveBtn') : null;
+            const sizesSelector = itemModal ? itemModal.querySelector('#sizesSelector') : null;
+            const colorsSelector = itemModal ? itemModal.querySelector('#colorsSelector') : null;
+            const colorImagesContainer = itemModal ? itemModal.querySelector('#colorImagesContainer') : null;
+            const stockMatrixContainer = itemModal ? itemModal.querySelector('#stockMatrixContainer') : null;
+            const itemRecap = itemModal ? itemModal.querySelector('#itemRecap') : null;
 
             function openItemModal() {
                 if (!itemModal) return;
                 itemForm.reset();
+                wizardCurrentStep = 1;
+                createdItemId = null;
+                selectedSizeIds = [];
+                selectedColorIds = [];
+                updateWizardUI();
+                clearWizardPanes();
+                // Précharger tailles et couleurs
+                preloadSizesAndColors();
                 const existingMessage = itemModal.querySelector('.form-message');
                 if (existingMessage) existingMessage.remove();
                 itemModal.style.display = 'flex';
@@ -560,6 +776,360 @@
                 });
             }
 
+            function setWizardStep(step) {
+                wizardCurrentStep = step;
+                // Supprimer tous les messages existants lors du changement d'étape
+                const existingMsgs = itemModal.querySelectorAll('.form-message');
+                existingMsgs.forEach(msg => msg.remove());
+                updateWizardUI();
+
+                // Charger les tailles et couleurs quand on arrive à l'étape 2
+                if (step === 2 && sizesSelector && sizesSelector.innerHTML.trim() === '') {
+                    preloadSizesAndColors();
+                }
+            }
+
+            function updateWizardUI() {
+                itemModal.querySelectorAll('.wizard-step').forEach(stepEl => {
+                    const stepNum = parseInt(stepEl.getAttribute('data-step'));
+                    stepEl.style.background = stepNum === wizardCurrentStep ? '#eef' : '#f3f4f6';
+                    stepEl.style.fontWeight = stepNum === wizardCurrentStep ? '600' : '500';
+                });
+                itemModal.querySelectorAll('.wizard-pane').forEach(pane => {
+                    const paneNum = parseInt(pane.getAttribute('data-pane'));
+                    pane.style.display = paneNum === wizardCurrentStep ? '' : 'none';
+                });
+                wizardPrevBtn.disabled = wizardCurrentStep === 1;
+                wizardNextBtn.style.display = wizardCurrentStep < 4 ? '' : 'none';
+                wizardSaveBtn.style.display = wizardCurrentStep === 4 ? '' : 'none';
+            }
+
+            function clearWizardPanes() {
+                if (sizesSelector) sizesSelector.innerHTML = '';
+                if (colorsSelector) colorsSelector.innerHTML = '';
+                if (colorImagesContainer) colorImagesContainer.innerHTML = '';
+                if (stockMatrixContainer) stockMatrixContainer.innerHTML = '';
+                if (itemRecap) itemRecap.innerHTML = '';
+            }
+
+            async function preloadSizesAndColors() {
+                try {
+                    const [sizesRes, colorsRes] = await Promise.all([
+                        fetch('/promotion/sizes'),
+                        fetch('/promotion/colors')
+                    ]);
+
+                    if (!sizesRes.ok || !colorsRes.ok) {
+                        throw new Error('Erreur HTTP: ' + (sizesRes.status || colorsRes.status));
+                    }
+
+                    const [sizesJson, colorsJson] = await Promise.all([sizesRes.json(), colorsRes.json()]);
+
+                    if (sizesJson.success && Array.isArray(sizesJson.sizes)) {
+                        availableSizes = sizesJson.sizes;
+            renderSizeChips(sizesJson.sizes);
+            applySizeTranslations();
+                    } else {
+                        if (sizesSelector) sizesSelector.innerHTML = '<div style="color:#666; padding:8px;">Aucune taille disponible</div>';
+                        console.error('Erreur tailles:', sizesJson.message);
+                    }
+
+                    if (colorsJson.success && Array.isArray(colorsJson.colors)) {
+                        availableColors = colorsJson.colors;
+            renderColorChips(colorsJson.colors);
+            applyColorTranslations();
+                    } else {
+                        if (colorsSelector) colorsSelector.innerHTML = '<div style="color:#666; padding:8px;">Aucune couleur disponible</div>';
+                        console.error('Erreur couleurs:', colorsJson.message);
+                    }
+                } catch (err) {
+                    console.error('Préchargement tailles/couleurs échoué:', err);
+                    if (sizesSelector) sizesSelector.innerHTML = '<div style="color:#ef4444; padding:8px;">Erreur de chargement des tailles</div>';
+                    if (colorsSelector) colorsSelector.innerHTML = '<div style="color:#ef4444; padding:8px;">Erreur de chargement des couleurs</div>';
+                }
+            }
+
+            function renderSizeChips(sizes) {
+                if (!sizesSelector) return;
+                sizesSelector.innerHTML = '';
+                sizes.forEach(sz => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'chip';
+                    const displayName = translateSize(sz);
+                    chip.textContent = displayName;
+                    chip.setAttribute('data-id', sz.id);
+                    chip.setAttribute('data-raw-name', getSizeName(sz) || '');
+                    chip.style.padding = '6px 10px';
+                    chip.style.borderRadius = '16px';
+                    chip.style.border = '1px solid #ddd';
+                    chip.style.background = '#fff';
+                    chip.addEventListener('click', ()=>{
+                        const id = parseInt(chip.getAttribute('data-id'));
+                        const idx = selectedSizeIds.indexOf(id);
+                        if (idx >= 0) { selectedSizeIds.splice(idx,1); chip.style.background = '#fff'; }
+                        else { selectedSizeIds.push(id); chip.style.background = '#e6f0ff'; }
+                        // Mettre à jour la matrice si nécessaire
+                        if (wizardCurrentStep === 3) buildStockMatrix();
+                    });
+                    sizesSelector.appendChild(chip);
+                });
+                applySizeTranslations();
+            }
+
+            function renderColorChips(colors) {
+                if (!colorsSelector) return;
+                colorsSelector.innerHTML = '';
+                colors.forEach(c => {
+                    const colorIdRaw = getColorId(c);
+                    const colorId = parseInt(colorIdRaw, 10);
+                    if (Number.isNaN(colorId)) return;
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'chip';
+                    const displayName = translateColor(c);
+                    chip.textContent = displayName;
+                    chip.setAttribute('data-id', colorId);
+                    chip.setAttribute('data-raw-name', getColorName(c) || '');
+                    chip.style.padding = '6px 10px';
+                    chip.style.borderRadius = '16px';
+                    chip.style.border = '1px solid #ddd';
+                    chip.style.background = '#fff';
+                    chip.addEventListener('click', ()=>{
+                        const id = parseInt(chip.getAttribute('data-id'));
+                        const idx = selectedColorIds.indexOf(id);
+                        if (idx >= 0) { selectedColorIds.splice(idx,1); chip.style.background = '#fff'; }
+                        else { selectedColorIds.push(id); chip.style.background = '#e6f0ff'; }
+                        renderColorImageInputs();
+                        applyColorTranslations();
+                        if (wizardCurrentStep === 3) buildStockMatrix();
+                    });
+                    colorsSelector.appendChild(chip);
+                });
+                applyColorTranslations();
+            }
+
+            function renderColorImageInputs() {
+                if (!colorImagesContainer) return;
+                colorImagesContainer.innerHTML = '';
+                selectedColorIds.forEach(colorId => {
+                    const color = availableColors.find(c => parseInt(getColorId(c), 10) === colorId);
+                    const colorName = color ? translateColor(color) : getColorFallback(colorId);
+                    const card = document.createElement('div');
+                    card.className = 'color-variant-card';
+                    card.style.border = '1px solid #eee';
+                    card.style.borderRadius = '8px';
+                    card.style.padding = '10px';
+                    const previewId = `color-preview-${colorId}`;
+                    const inputId = `color-image-${colorId}`;
+                    const uploadLabel = window.t ? window.t('upload_image_label', 'Image') : 'Image';
+                    const noFileText = window.t ? window.t('no_file_selected', 'Aucun fichier') : 'Aucun fichier';
+                    card.innerHTML = `
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img id="${previewId}" src="/uploads/default-product.jpg" alt="${colorName}" style="width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid #ddd;" />
+                            <div style="flex:1;">
+                                <div style="font-weight:600; margin-bottom:8px;">${colorName}</div>
+                                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                    <input type="file" accept="image/*" data-color-id="${colorId}" id="${inputId}" class="color-image-input" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;" />
+                                    <label for="${inputId}" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 14px; background:#1d4ed8; color:#fff; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px;">${uploadLabel}</label>
+                                    <span class="color-upload-filename" data-default-text="${noFileText}" style="font-size:12px; color:#666;">${noFileText}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    colorImagesContainer.appendChild(card);
+
+                    // Prévisualisation de l'image
+                    const fileInput = card.querySelector('.color-image-input');
+                    const previewImg = card.querySelector(`#${previewId}`);
+                     const fileNameDisplay = card.querySelector('.color-upload-filename');
+                    fileInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (fileNameDisplay) {
+                            const defaultText = fileNameDisplay.getAttribute('data-default-text') || noFileText;
+                            fileNameDisplay.textContent = file
+                                ? (file.name.length > 24 ? file.name.slice(0, 21) + '…' : file.name)
+                                : defaultText;
+                        }
+                        if (file && previewImg) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                previewImg.src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                });
+            }
+
+            function buildStockMatrix() {
+                if (!stockMatrixContainer) return;
+                const has = selectedSizeIds.length > 0 && selectedColorIds.length > 0;
+                if (!has) { stockMatrixContainer.innerHTML = '<div style="padding:16px; color:#666;">Sélectionnez au moins une taille et une couleur.</div>'; return; }
+                const sizeColorHeader = window.t ? window.t('size_color_header', 'Taille \\ Couleur') : 'Taille \\ Couleur';
+                let html = '<table style="width:100%; border-collapse:collapse;">';
+                html += `<thead><tr><th style="border-bottom:1px solid #eee; padding:8px; text-align:left;">${sizeColorHeader}</th>`;
+                selectedColorIds.forEach(cid => {
+                    const color = availableColors.find(c => parseInt(getColorId(c), 10) === cid);
+                    const colorName = color ? translateColor(color) : getColorFallback(cid);
+                    html += `<th style="border-bottom:1px solid #eee; padding:8px; text-align:center;">${colorName}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+                selectedSizeIds.forEach(sid => {
+                    const size = availableSizes.find(s => s.id === sid);
+                    const sizeName = size ? translateSize(size) : `#${sid}`;
+                    html += `<tr><td style="border-bottom:1px solid #f3f4f6; padding:8px; font-weight:600;">${sizeName}</td>`;
+                    selectedColorIds.forEach(cid => {
+                        html += `<td style="border-bottom:1px solid #f3f4f6; padding:8px; text-align:center;"><input type="number" min="0" step="1" class="stock-input" data-size-id="${sid}" data-color-id="${cid}" style="width:90px; text-align:center;" value="0"/></td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+                stockMatrixContainer.innerHTML = html;
+            }
+
+            function buildRecap() {
+                if (!itemRecap) return;
+                const name = itemForm.querySelector('#itemName').value;
+                const categorySelect = itemForm.querySelector('#itemCategory');
+                const categoryName = categorySelect.options[categorySelect.selectedIndex]?.text || categorySelect.value || '-';
+                const price = itemForm.querySelector('#itemPrice').value;
+                const desc = itemForm.querySelector('#itemDescription').value || '';
+
+                // Récupérer les noms des tailles
+                const sizeNames = selectedSizeIds.map(sid => {
+                    const size = availableSizes.find(s => s.id === sid);
+                    return size ? translateSize(size) : `#${sid}`;
+                });
+
+                // Récupérer les noms des couleurs
+                const colorNames = selectedColorIds.map(cid => {
+                    const color = availableColors.find(c => parseInt(getColorId(c), 10) === cid);
+                    return color ? translateColor(color) : getColorFallback(cid);
+                });
+
+                const itemLabel = window.t ? window.t('recap_item_label', 'Article') : 'Article';
+                const categoryLabel = window.t ? window.t('recap_category_label', 'Catégorie') : 'Catégorie';
+                const priceLabel = window.t ? window.t('recap_price_label', 'Prix (Ar)') : 'Prix (Ar)';
+                const descriptionLabel = window.t ? window.t('recap_description_label', 'Description') : 'Description';
+                const sizesLabel = window.t ? window.t('recap_sizes_label', 'Tailles') : 'Tailles';
+                const colorsLabel = window.t ? window.t('recap_colors_label', 'Couleurs') : 'Couleurs';
+                const noDescriptionText = window.t ? window.t('recap_no_description', 'Aucune') : 'Aucune';
+
+                itemRecap.innerHTML = `
+                    <div><strong>${itemLabel}:</strong> ${name}</div>
+                    <div><strong>${categoryLabel}:</strong> ${categoryName}</div>
+                    <div><strong>${priceLabel}:</strong> ${price}</div>
+                    <div><strong>${descriptionLabel}:</strong> ${desc ? desc : `<i>${noDescriptionText}</i>`}</div>
+                    <div><strong>${sizesLabel}:</strong> ${sizeNames.length > 0 ? sizeNames.join(', ') : '-'}</div>
+                    <div><strong>${colorsLabel}:</strong> ${colorNames.length > 0 ? colorNames.join(', ') : '-'}</div>
+                `;
+            }
+
+            if (wizardPrevBtn) wizardPrevBtn.addEventListener('click', async function(){
+                if (wizardCurrentStep > 1) setWizardStep(wizardCurrentStep - 1);
+            });
+
+            if (wizardNextBtn) wizardNextBtn.addEventListener('click', async function(){
+                // Étape -> validation & actions
+                if (wizardCurrentStep === 1) {
+                    // Créer l'article si pas encore fait
+                    if (!createdItemId) {
+                        const formData = new FormData(itemForm);
+                        const data = Object.fromEntries(formData.entries());
+                        try {
+                            const r = await fetch('/promotion/item/create', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                                body: JSON.stringify({
+                                    name: data.name,
+                                    category_id: parseInt(data.category_id),
+                                    price: parseFloat(data.price),
+                                    description: data.description || null
+                                })
+                            });
+                            const result = await r.json();
+                            if (result.success && result.item && result.item.id) {
+                                createdItemId = result.item.id;
+                                // Ne pas afficher de message, passer directement à l'étape suivante
+                            } else {
+                                showItemMessage('error', result.message || 'Erreur lors de la création');
+                                return;
+                            }
+                        } catch(err) {
+                            console.error(err);
+                            showItemMessage('error', 'Erreur de connexion.');
+                            return;
+                        }
+                    }
+                    // Supprimer tout message existant avant de passer à l'étape suivante
+                    const existingMsg = itemModal.querySelector('.form-message');
+                    if (existingMsg) existingMsg.remove();
+                    setWizardStep(2);
+                    return;
+                }
+                if (wizardCurrentStep === 2) {
+                    // Charger les tailles et couleurs si pas encore chargées
+                    if (sizesSelector && sizesSelector.innerHTML.trim() === '') {
+                        await preloadSizesAndColors();
+                    }
+                    // Enregistrer tailles et couleurs sélectionnées
+                    if (!createdItemId) { showItemMessage('error', 'Article non créé'); return; }
+                    try {
+                        if (selectedSizeIds.length > 0) {
+                            const sizesRes = await fetch(`/promotion/item/${createdItemId}/sizes`, {
+                                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                                body: JSON.stringify({ sizes: selectedSizeIds })
+                            });
+                            const sizesResult = await sizesRes.json();
+                            if (!sizesResult.success) {
+                                throw new Error(sizesResult.message || 'Erreur lors de l\'enregistrement des tailles');
+                            }
+                        }
+                        if (selectedColorIds.length > 0) {
+                            const colorsRes = await fetch(`/promotion/item/${createdItemId}/colors`, {
+                                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                                body: JSON.stringify({ colors: selectedColorIds })
+                            });
+                            const colorsResult = await colorsRes.json();
+                            if (!colorsResult.success) {
+                                throw new Error(colorsResult.message || 'Erreur lors de l\'enregistrement des couleurs');
+                            }
+                        }
+                        // Upload images par couleur si choisies
+                        const fileInputs = colorImagesContainer ? colorImagesContainer.querySelectorAll('.color-image-input') : [];
+                        for (const input of fileInputs) {
+                            const file = input.files && input.files[0];
+                            if (!file) continue;
+                            const colorId = parseInt(input.getAttribute('data-color-id'));
+                            const fd = new FormData();
+                            fd.append('image', file);
+                            const imageRes = await fetch(`/promotion/item/${createdItemId}/color/${colorId}/image`, {
+                                method: 'POST', body: fd
+                            });
+                            const imageResult = await imageRes.json();
+                            if (!imageResult.success) {
+                                console.warn(`Erreur upload image couleur ${colorId}:`, imageResult.message);
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Erreur enregistrement variantes:', err);
+                        showItemMessage('error', err.message || 'Erreur lors de l\'enregistrement des variantes');
+                        return;
+                    }
+                    // Construire matrice stock
+                    buildStockMatrix();
+                    setWizardStep(3);
+                    return;
+                }
+                if (wizardCurrentStep === 3) {
+                    // Passer à récap (les stocks seront enregistrés au Submit)
+                    buildRecap();
+                    setWizardStep(4);
+                    return;
+                }
+            });
+
             function showItemMessage(type, message) {
                 if (!itemModal) return;
                 const existing = itemModal.querySelector('.form-message');
@@ -574,43 +1144,44 @@
             }
 
             if (itemForm) {
-                itemForm.addEventListener('submit', function(e){
+                itemForm.addEventListener('submit', async function(e){
                     e.preventDefault();
-                    const formData = new FormData(itemForm);
-                    const data = Object.fromEntries(formData.entries());
-
-                    const submitBtn = itemForm.querySelector('.btn-save');
+                    const submitBtn = itemForm.querySelector('#wizardSaveBtn');
                     const originalText = submitBtn.textContent;
                     submitBtn.disabled = true;
-                    submitBtn.textContent = 'Création...';
+                    submitBtn.textContent = 'Enregistrement...';
 
-                    fetch('/promotion/item/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                        body: JSON.stringify({
-                            name: data.name,
-                            category_id: parseInt(data.category_id),
-                            price: parseFloat(data.price),
-                            description: data.description || null
-                        })
-                    })
-                    .then(r => r.json())
-                    .then(result => {
-                        if (result.success) {
-                            showItemMessage('success', result.message);
-                            setTimeout(()=>{ window.location.reload(); }, 1200);
-                        } else {
-                            showItemMessage('error', result.message || 'Erreur lors de la création');
+                    try {
+                        // Enregistrer stocks si présents
+                        if (createdItemId) {
+                            const stockInputs = stockMatrixContainer ? stockMatrixContainer.querySelectorAll('.stock-input') : [];
+                            const stocks = [];
+                            stockInputs.forEach(input => {
+                                const sizeId = parseInt(input.getAttribute('data-size-id'));
+                                const colorId = parseInt(input.getAttribute('data-color-id'));
+                                const qty = parseInt(input.value || '0');
+                                stocks.push({ size_id: sizeId, color_id: colorId, qty_available: isNaN(qty) ? 0 : qty });
+                            });
+                            if (stocks.length > 0) {
+                                const stocksRes = await fetch(`/promotion/item/${createdItemId}/stocks`, {
+                                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                                    body: JSON.stringify({ stocks })
+                                });
+                                const stocksResult = await stocksRes.json();
+                                if (!stocksResult.success) {
+                                    throw new Error(stocksResult.message || 'Erreur lors de l\'enregistrement des stocks');
+                                }
+                            }
                         }
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        showItemMessage('error', 'Erreur de connexion.');
-                    })
-                    .finally(()=>{
+                        showItemMessage('success', 'Article enregistré avec variantes et stocks');
+                        setTimeout(()=>{ window.location.reload(); }, 1200);
+                    } catch (err) {
+                        console.error('Erreur enregistrement:', err);
+                        showItemMessage('error', 'Erreur lors de l\'enregistrement');
+                    } finally {
                         submitBtn.disabled = false;
                         submitBtn.textContent = originalText;
-                    });
+                    }
                 });
             }
 
@@ -620,6 +1191,9 @@
             const editItemTitle = document.getElementById('editItemModalTitle');
             const editItemClose = editItemModal ? editItemModal.querySelector('.modal-close') : null;
             const editItemCancel = editItemModal ? editItemModal.querySelector('.btn-cancel') : null;
+
+            let newColorsSelected = [];
+            let availableColorsForEdit = [];
 
             async function openEditItemModal(itemId, itemName, itemPrice, itemDescription) {
                 if (!editItemModal) return;
@@ -634,13 +1208,145 @@
                 editItemForm.querySelector('#editItemPrice').value = (typeof itemPrice !== 'undefined' && itemPrice !== null) ? itemPrice : '';
                 const descField = editItemForm.querySelector('#editItemDescription');
                 if (descField) descField.value = translatedDesc;
-                editItemTitle.textContent = 'Edit item – ' + (translatedName || ('#' + itemId));
+                const editItemBaseTitle = window.t ? window.t('edit_item', 'Edit item') : 'Edit item';
+                editItemTitle.textContent = `${editItemBaseTitle} – ${translatedName || ('#' + itemId)}`;
 
-                // Charger les variantes de couleur
-                await loadColorVariants(itemId);
+                // Réinitialiser les nouvelles couleurs
+                newColorsSelected = [];
+                const newColorsContainer = document.getElementById('newColorsImagesContainer');
+                if (newColorsContainer) newColorsContainer.innerHTML = '';
+                const newColorsSelector = document.getElementById('newColorsSelector');
+                if (newColorsSelector) newColorsSelector.innerHTML = '';
+
+                // Charger les variantes de couleur existantes
+                const existingColors = await loadColorVariants(itemId);
+                const existingColorIds = existingColors
+                    .map(c => parseInt(getColorId(c), 10))
+                    .filter(id => !Number.isNaN(id));
+
+                // Charger toutes les couleurs disponibles
+                await loadAvailableColorsForEdit(existingColorIds);
 
                 editItemModal.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
+            }
+
+            async function loadAvailableColorsForEdit(excludeIds = []) {
+                try {
+                    const response = await fetch('/promotion/colors');
+                    const result = await response.json();
+
+                    if (result.success && Array.isArray(result.colors)) {
+                        availableColorsForEdit = result.colors;
+                        const newColorsSelector = document.getElementById('newColorsSelector');
+                        if (!newColorsSelector) return;
+
+                        newColorsSelector.innerHTML = '';
+                        result.colors.forEach(c => {
+                            const colorIdRaw = getColorId(c);
+                            const colorId = parseInt(colorIdRaw, 10);
+                            if (Number.isNaN(colorId)) return;
+                            // Exclure les couleurs déjà présentes
+                            if (excludeIds.includes(colorId)) return;
+
+                            const chip = document.createElement('button');
+                            chip.type = 'button';
+                            chip.className = 'chip';
+                            chip.textContent = translateColor(c);
+                            chip.setAttribute('data-color-id', colorId);
+                            chip.setAttribute('data-raw-name', getColorName(c) || '');
+                            chip.style.padding = '8px 14px';
+                            chip.style.borderRadius = '16px';
+                            chip.style.border = '1px solid #ddd';
+                            // chip.style.background = '#fff';
+                            chip.style.cursor = 'pointer';
+                            chip.addEventListener('click', () => {
+                                const id = parseInt(chip.getAttribute('data-color-id'));
+                                const idx = newColorsSelected.indexOf(id);
+                                if (idx >= 0) {
+                                    newColorsSelected.splice(idx, 1);
+                                    // chip.style.background = '#fff';
+                                    chip.style.borderColor = '#ddd';
+                                    renderNewColorImages();
+                                } else {
+                                    newColorsSelected.push(id);
+                                    chip.style.background = '#e6f0ff';
+                                    chip.style.borderColor = '#4361ee';
+                                    renderNewColorImages();
+                                }
+                            });
+                            newColorsSelector.appendChild(chip);
+                        });
+
+                        // Activer la palette rapide (si l'utilisateur clique sur un rond, on sélectionne la puce correspondante)
+                        document.querySelectorAll('.palette-swatch').forEach(swatch => {
+                            swatch.addEventListener('click', () => {
+                                const label = swatch.getAttribute('data-color-label');
+                                const chip = Array.from(newColorsSelector.querySelectorAll('.chip'))
+                                    .find(b => {
+                                        const rawName = (b.getAttribute('data-raw-name') || '').trim().toLowerCase();
+                                        return rawName === label.toLowerCase();
+                                    });
+                                if (chip) chip.click();
+                            });
+                        });
+                    }
+                } catch (err) {
+                    console.error('Erreur chargement couleurs disponibles:', err);
+                }
+            }
+
+            function renderNewColorImages() {
+                const container = document.getElementById('newColorsImagesContainer');
+                if (!container) return;
+
+                container.innerHTML = '';
+                newColorsSelected.forEach(colorId => {
+                    const color = availableColorsForEdit.find(c => parseInt(getColorId(c), 10) === colorId);
+                    if (!color) return;
+
+                    const card = document.createElement('div');
+                    card.className = 'color-variant-card';
+                    card.style.border = '2px solid #e6f0ff';
+                    const previewId = `new-color-preview-${colorId}`;
+                    const inputId = `new-color-image-${colorId}`;
+                    const colorDisplayName = translateColor(color);
+                    const newBadgeLabel = window.t ? window.t('new_color_badge', '(new)') : '(new)';
+                    card.innerHTML = `
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img id="${previewId}" src="/uploads/default-product.jpg" alt="${colorDisplayName}" style="width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid #ddd;" />
+                            <div style="flex:1;">
+                                <div style="font-weight:600; margin-bottom:8px;">${colorDisplayName} <span style="color:#666; font-size:12px;">${newBadgeLabel}</span></div>
+                                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                    <input type="file" accept="image/*" data-color-id="${colorId}" id="${inputId}" class="new-color-image-input" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;" />
+                                    <label for="${inputId}" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 14px; background:#1d4ed8; color:#fff; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px;">Image</label>
+                                    <span class="new-color-upload-filename" style="font-size:12px; color:#666;">Aucun fichier</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+
+                    // Prévisualisation de l'image
+                    const fileInput = card.querySelector('.new-color-image-input');
+                    const previewImg = card.querySelector(`#${previewId}`);
+                    const fileNameDisplay = card.querySelector('.new-color-upload-filename');
+                    fileInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (fileNameDisplay) {
+                            fileNameDisplay.textContent = file
+                                ? (file.name.length > 24 ? file.name.slice(0, 21) + '…' : file.name)
+                                : 'Aucun fichier';
+                        }
+                        if (file && previewImg) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                previewImg.src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                });
             }
 
             function closeEditItemModal() {
@@ -682,15 +1388,17 @@
                         result.colors.forEach((color, index) => {
                             const colorCard = document.createElement('div');
                             colorCard.className = 'color-variant-card';
+                            const colorDisplayName = translateColor(color);
+                            const changeImageLabel = window.t ? window.t('change_image', "Changer l'image") : "Changer l'image";
                             colorCard.innerHTML = `
                                 <div class="color-variant-preview">
-                                    <img src="${color.image || '/uploads/default-product.jpg'}" alt="${color.name}">
+                                    <img src="${color.image || '/uploads/default-product.jpg'}" alt="${colorDisplayName}">
                                 </div>
                                 <div class="color-variant-info">
-                                    <strong>${color.name}</strong>
+                                    <strong>${colorDisplayName}</strong>
                                     <input type="file" id="colorInput${color.item_size_color_id}" accept="image/*" style="display:none;">
                                     <button type="button" class="btn-upload-small" onclick="document.getElementById('colorInput${color.item_size_color_id}').click()">
-                                        Changer l'image
+                                        ${changeImageLabel}
                                     </button>
                                 </div>
                             `;
@@ -721,9 +1429,12 @@
 
                                     const result = await response.json();
                                     if (result.success) {
-                                        showMessage('success', `Image de ${color.name} uploadée avec succès !`);
+                                        const uploadMessage = window.t
+                                            ? window.t('color_image_upload_success', 'Image of %color% uploaded successfully!').replace('%color%', colorDisplayName)
+                                            : `Image of ${colorDisplayName} uploaded successfully!`;
+                                        showEditMessage('success', uploadMessage);
                                         // Mettre à jour toutes les images de cette couleur dans la page
-                                        updateColorImages(itemId, color.id, result.image_url);
+                                        updateColorImages(itemId, getColorId(color), result.image_url);
 
                                         // Si c'est la première couleur, mettre à jour l'image principale dans la grille
                                         if (index === 0) {
@@ -736,11 +1447,11 @@
                                             }
                                         }
                                     } else {
-                                        showMessage('error', result.message || 'Erreur lors de l\'upload');
+                                        showEditMessage('error', result.message || 'Erreur lors de l\'upload');
                                     }
                                 } catch (error) {
                                     console.error('Erreur upload couleur:', error);
-                                    showMessage('error', 'Erreur lors de l\'upload');
+                                    showEditMessage('error', 'Erreur lors de l\'upload');
                                 }
                             });
                         });
@@ -758,52 +1469,120 @@
             function updateColorImages(itemId, colorId, imageUrl) {
                 const productCard = document.querySelector(`[data-item-id="${itemId}"]`).closest('.product-card');
                 if (productCard) {
-                    const colorItems = productCard.querySelectorAll('.color-item img');
-                    colorItems.forEach(img => {
-                        // On met à jour toutes les images qui correspondent
-                        img.src = imageUrl;
+                    const colorIdStr = colorId != null ? String(colorId) : null;
+                    const colorItems = productCard.querySelectorAll('.color-item');
+                    colorItems.forEach(item => {
+                        const itemColorId = item.getAttribute('data-color-id');
+                        if (colorIdStr === null || itemColorId === colorIdStr) {
+                            item.setAttribute('data-color-image', imageUrl);
+                            const img = item.querySelector('img');
+                            if (img) img.src = imageUrl;
+                        }
                     });
                 }
             }
 
+            // Fonction pour afficher les messages dans la modale d'édition
+            function showEditMessage(type, message) {
+                if (!editItemModal) return;
+                const existing = editItemModal.querySelector('.form-message');
+                if (existing) existing.remove();
+                const msg = document.createElement('div');
+                msg.className = `form-message ${type}`;
+                msg.textContent = message;
+                msg.style.display = 'block';
+                const actions = editItemModal.querySelector('.modal-actions');
+                if (actions) {
+                    actions.parentNode.insertBefore(msg, actions);
+                    setTimeout(()=>{ if (msg.parentNode) msg.remove(); }, 5000);
+                }
+            }
+
             if (editItemForm) {
-                editItemForm.addEventListener('submit', function(e){
+                editItemForm.addEventListener('submit', async function(e){
                     e.preventDefault();
                     const formData = new FormData(editItemForm);
                     const data = Object.fromEntries(formData.entries());
+                    const itemId = parseInt(data.item_id);
 
                     const submitBtn = editItemForm.querySelector('.btn-save');
                     const originalText = submitBtn.textContent;
                     submitBtn.disabled = true;
                     submitBtn.textContent = 'Saving...';
 
-                    fetch('/promotion/item/update', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                        body: JSON.stringify({
-                            item_id: parseInt(data.item_id),
-                            name: data.name,
-                            price: parseFloat(data.price),
-                            description: (data.description && data.description.trim().length > 0) ? data.description.trim() : null
-                        })
-                    })
-                    .then(r => r.json())
-                    .then(result => {
-                        if (result.success) {
-                            showMessage('success', result.message || 'Saved');
+                    try {
+                        // 1. Ajouter les nouvelles couleurs si sélectionnées
+                        if (newColorsSelected.length > 0) {
+                            const colorsRes = await fetch(`/promotion/item/${itemId}/colors`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                                body: JSON.stringify({ colors: newColorsSelected })
+                            });
+                            const colorsResult = await colorsRes.json();
+                            if (!colorsResult.success) {
+                                throw new Error(colorsResult.message || 'Erreur lors de l\'ajout des couleurs');
+                            }
+
+                            // 2. Uploader les images pour les nouvelles couleurs
+                            const newColorInputs = document.querySelectorAll('.new-color-image-input');
+                            for (const input of newColorInputs) {
+                                const file = input.files && input.files[0];
+                                if (!file) continue;
+                                const colorId = parseInt(input.getAttribute('data-color-id'));
+                                const fd = new FormData();
+                                fd.append('image', file);
+                                const imageRes = await fetch(`/promotion/item/${itemId}/color/${colorId}/image`, {
+                                    method: 'POST',
+                                    body: fd
+                                });
+                                const imageResult = await imageRes.json();
+                                if (!imageResult.success) {
+                                    console.warn(`Erreur upload image couleur ${colorId}:`, imageResult.message);
+                                }
+                            }
+                        }
+
+                        // 3. Mettre à jour les informations de l'article
+                        const updateRes = await fetch('/promotion/item/update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                            body: JSON.stringify({
+                                item_id: itemId,
+                                name: data.name,
+                                price: parseFloat(data.price),
+                                description: (data.description && data.description.trim().length > 0) ? data.description.trim() : null
+                            })
+                        });
+                        const updateResult = await updateRes.json();
+
+                        if (updateResult.success) {
+                            const successMessageWithColors = window.t
+                                ? window.t('item_update_success_with_colors', 'Item updated with %count% new color(s)!').replace('%count%', newColorsSelected.length)
+                                : `Item updated with ${newColorsSelected.length} new color(s)!`;
+                            const successMessage = window.t
+                                ? window.t('item_update_success', 'Item updated successfully!')
+                                : 'Item updated successfully!';
+                            const message = newColorsSelected.length > 0
+                                ? successMessageWithColors
+                                : (updateResult.message || successMessage);
+                            showEditMessage('success', message);
                             setTimeout(()=>{ closeEditItemModal(); window.location.reload(); }, 1200);
                         } else {
-                            showMessage('error', result.message || 'Error while saving');
+                            const errorSavingMessage = window.t
+                                ? window.t('error_while_saving', 'Error while saving')
+                                : 'Error while saving';
+                            showEditMessage('error', updateResult.message || errorSavingMessage);
                         }
-                    })
-                    .catch(err => {
+                    } catch (err) {
                         console.error(err);
-                        showMessage('error', 'Network error');
-                    })
-                    .finally(() => {
+                        const networkErrorMessage = window.t
+                            ? window.t('network_error', 'Network error')
+                            : 'Network error';
+                        showEditMessage('error', err.message || networkErrorMessage);
+                    } finally {
                         submitBtn.disabled = false;
                         submitBtn.textContent = originalText;
-                    });
+                    }
                 });
             }
 
@@ -852,8 +1631,16 @@
 
                     // Mettre à jour l'affichage
                     promotionModalTitle.textContent = 'Ajouter une promotion - ' + translatedName;
-                    currentPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' €';
-                    newPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' €';
+                    // currentPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' Ar';
+                    // newPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' Ar';
+
+
+                    // Mettre à jour l'affichage
+                    const numericPrice = parseFloat(originalPrice.toString().replace(',', '.')) || 0;
+                    const roundedPrice = Math.round(numericPrice);
+
+                    currentPriceDisplay.textContent = roundedPrice + ' Ar';
+                    newPriceDisplay.textContent = roundedPrice + ' Ar';
 
                     // Afficher la modal
                     promotionModal.style.display = 'flex';
@@ -865,14 +1652,16 @@
             percentageInput.addEventListener('input', function() {
                 const percentage = parseFloat(this.value) || 0;
                 const currentPriceText = currentPriceDisplay.textContent;
-                const currentPrice = parseFloat(currentPriceText.replace(',', '.').replace(' €', '')) || 0;
+                const currentPrice = parseFloat(currentPriceText.replace(',', '.').replace(' Ar', '')) || 0;
 
                 if (percentage > 0 && currentPrice > 0) {
                     const discountAmount = currentPrice * (percentage / 100);
                     const newPrice = currentPrice - discountAmount;
-                    newPriceDisplay.textContent = newPrice.toFixed(2).replace('.', ',') + ' €';
+                    //newPriceDisplay.textContent = newPrice.toFixed(2).replace('.', ',') + ' Ar';
+                    newPriceDisplay.textContent = Math.round(newPrice) + ' Ar';
                 } else {
-                    newPriceDisplay.textContent = currentPrice.toFixed(2).replace('.', ',') + ' €';
+                    //newPriceDisplay.textContent = currentPrice.toFixed(2).replace('.', ',') + ' Ar';
+                    newPriceDisplay.textContent = Math.round(newPrice) + ' Ar';
                 }
             });
 
@@ -992,8 +1781,10 @@
                             const percentage = parseFloat(promo.percentage);
                             const newPrice = originalPrice * (1 - percentage / 100);
 
-                            currentPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' €';
-                            newPriceDisplay.textContent = newPrice.toFixed(2).replace('.', ',') + ' €';
+                            // currentPriceDisplay.textContent = originalPrice.toFixed(2).replace('.', ',') + ' Ar';
+                            currentPriceDisplay.textContent = Math.round(originalPrice) + ' Ar';
+                            // newPriceDisplay.textContent = newPrice.toFixed(2).replace('.', ',') + ' Ar';
+                            newPriceDisplay.textContent = Math.round(newPrice) + ' Ar';
 
                             // Mettre à jour le titre avec traduction
                             const itemName = document.querySelector(`[data-item-id="${itemId}"]`).getAttribute('data-item-name');

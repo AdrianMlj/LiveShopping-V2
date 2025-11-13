@@ -95,6 +95,10 @@ class ClassementController extends AbstractController
             ? new \DateTime($request->request->get('dateF'))
             : new \DateTime('last day of this month');
 
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
+
         // Récupérer la capacité de stock
         $stockCapacity = $this->itemsStockRepository->getSellerStockCapacity($sellerId);
 

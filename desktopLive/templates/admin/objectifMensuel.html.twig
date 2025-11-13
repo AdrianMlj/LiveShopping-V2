@@ -38,17 +38,17 @@
             <div class="card-header">
                 <h3 class="card-title" data-i18n="revenue">Chiffre d'affaires</h3>
                 <div class="card-icon">
-                    <i class="fas fa-euro-sign"></i>
+                    <span style="font-weight: bold; font-size: 18px;">Ar</span>
                 </div>
             </div>
             <div class="summary-content">
                 <div class="summary-item">
                     <span class="summary-label" data-i18n="average_target">Objectif moyen:</span>
-                    <span class="summary-value">{{ (monthlyGoals|map(g => g.target_ca)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} €</span>
+                    <span class="summary-value">{{ (monthlyGoals|map(g => g.target_ca)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} Ar</span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label" data-i18n="average_achievement">Réalisation moyenne:</span>
-                    <span class="summary-value">{{ (monthlyGoals|map(g => g.ca_realise)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} €</span>
+                    <span class="summary-value">{{ (monthlyGoals|map(g => g.ca_realise)|reduce((sum, ca) => sum + ca) / monthlyGoals|length)|number_format(2, ',', ' ') }} Ar</span>
                 </div>
             </div>
         </div>
@@ -103,10 +103,10 @@
                 <thead>
                     <tr>
                         <th data-i18n="month_year">Mois/Année</th>
-                        <th data-i18n="target_revenue">Objectif CA (€)</th>
-                        <th data-i18n="achieved_revenue">CA Réalisé (€)</th>
-                        <th data-i18n="projected_revenue">Projection CA (€)</th>
-                        <th data-i18n="revenue_gap">Écart CA (€)</th>
+                        <th data-i18n="target_revenue">Objectif CA (Ar)</th>
+                        <th data-i18n="achieved_revenue">CA Réalisé (Ar)</th>
+                        <th data-i18n="projected_revenue">Projection CA (Ar)</th>
+                        <th data-i18n="revenue_gap">Écart CA (Ar)</th>
                         <th data-i18n="revenue_achievement">Réalisation CA</th>
                     </tr>
                 </thead>
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     { label: 'CA Réalisé', data: realizedCA, borderColor: '#36a2eb', backgroundColor: 'rgba(54, 162, 235, 0.2)', fill: true, tension: 0.3 }
                 ]
             },
-            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('fr-FR') + ' €' } } } }
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('fr-FR') + ' Ar' } } } }
         });
 
         // Graphique Ventes

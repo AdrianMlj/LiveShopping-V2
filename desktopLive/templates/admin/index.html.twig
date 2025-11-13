@@ -29,7 +29,7 @@
                     <label for="category" data-i18n="category">Catégorie</label>
                     <select name="category" id="category" required class="modern-select">
                         {% for category in categories %}
-                            <option value="{{ category.id }}">{{ category.nameCategory }}</option>
+                            <option value="{{ category.id }}" data-i18n="category_{{ category.id }}_name">{{ category.nameCategory }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -98,7 +98,7 @@
                     <i class="fas fa-chart-pie"></i> <span data-i18n="total_turnover">Total turnover</span>
                 </h4>
                 <p style="font-size: 1.3rem; font-weight: bold;">
-                    {{ stats.ca_total|number_format(0, ',', ' ') }} €
+                    {{ stats.ca_total|number_format(0, ',', ' ') }} Ar
                 </p>
             </div>
 
@@ -155,9 +155,9 @@
                 </h4>
                 <p>
                     {% if stats.ventes_total > 0 %}
-                        {{ (stats.ca_total / stats.ventes_total)|number_format(2, ',', ' ') }} €
+                        {{ (stats.ca_total / stats.ventes_total)|number_format(2, ',', ' ') }} Ar
                     {% else %}
-                        0 €
+                        0 Ar
                     {% endif %}
                 </p>
             </div>
@@ -186,7 +186,13 @@
             <h4 style="margin-bottom: 10px; font-size: 1.2rem;">
                 <i class="fas fa-trophy"></i> <span data-i18n="best_category">Best category</span>
             </h4>
-            <p>{{ stats.meilleure_categorie ?? 'N/A' }}</p>
+            <p>
+                {% if stats.meilleure_categorie_id %}
+                    <span data-i18n="category_{{ stats.meilleure_categorie_id }}_name">{{ stats.meilleure_categorie }}</span>
+                {% else %}
+                    {{ stats.meilleure_categorie }}
+                {% endif %}
+            </p>
             </div>
         </div>
     </div>
@@ -197,6 +203,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        window.translateCategoryLegend = window.translateCategoryLegend || function() {};
+
         document.addEventListener('DOMContentLoaded', function() {
             // Couleurs modernes
             const colors = {
@@ -211,14 +219,61 @@
             const statsMensuelles = {{ stats|json_encode|raw }};
             const ventesParCategorieParMois = {{ ventesParCategorieParMois|json_encode|raw }};
             const ventesParArticle = {{ ventesParArticle|json_encode|raw }};
+            const categoriesDictionary = [
+                {% for cat in categories %}
+                { id: {{ cat.id }}, name: {{ cat.nameCategory|json_encode|raw }} }{{ not loop.last ? ',' : '' }}
+                {% endfor %}
+            ];
+
+            function normalizeKey(value) {
+                if (!value) return '';
+                let normalized = value.toString();
+                try {
+                    normalized = normalized.normalize('NFD');
+                } catch (err) {
+                    // ignore browsers without normalize
+                }
+                return normalized
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_|_$/g, '');
+            }
+
+            function getCategoryTranslation(rawLabel) {
+                if (!rawLabel) return '';
+                const match = categoriesDictionary.find(cat =>
+                    String(cat.id) === String(rawLabel) || cat.name === rawLabel
+                );
+                const keysToTry = [];
+                if (match) {
+                    keysToTry.push(`category_${match.id}_name`);
+                }
+                const normalized = normalizeKey(rawLabel);
+                if (normalized) {
+                    keysToTry.push(`category_${normalized}_name`);
+                    keysToTry.push(`category_${normalized}`);
+                }
+                if (window.t) {
+                    for (const key of keysToTry) {
+                        const translated = window.t(key, '');
+                        if (translated && translated !== key) {
+                            return translated;
+                        }
+                    }
+                }
+                return rawLabel;
+            }
 
             // Graphique CA mensuel
+            const salesChartTitle = window.t ? window.t('monthly_revenue_chart', "Chiffre d'affaires mensuel") : "Chiffre d'affaires mensuel";
             new Chart(document.getElementById('salesChart'), {
                 type: 'bar',
                 data: {
                     labels: statsMensuelles.labels.length > 0 ? statsMensuelles.labels : ['Aucune donnée'],
                     datasets: [{
-                        label: 'CA (€)',
+                        label: 'CA (Ar)',
                         data: statsMensuelles.chiffre_affaires.length > 0 ? statsMensuelles.chiffre_affaires : [0],
                         backgroundColor: colors.primary,
                         borderColor: colors.secondary,
@@ -226,7 +281,7 @@
                         borderRadius: 6
                     }]
                 },
-                options: getChartOptions('Chiffre d\'affaires mensuel')
+                options: getChartOptions(salesChartTitle)
             });
 
             // Graphique tendances
@@ -238,24 +293,86 @@
                 colors.gray
             ];
 
-            new Chart(document.getElementById('trendsChart'), {
+            const rawCategoryDatasets = Object.entries(ventesParCategorieParMois.datasets || {}).map(([cat, data], index) => ({
+                rawLabel: cat,
+                data: Array.isArray(data) ? data : [],
+                color: categoryColors[index % categoryColors.length],
+                hidden: false
+            }));
+
+            const translatedCategoryDatasets = rawCategoryDatasets.map(dataset => ({
+                ...dataset,
+                label: getCategoryTranslation(dataset.rawLabel)
+            }));
+
+            const trendsChartTitle = window.t ? window.t('sales_by_category', 'Ventes par catégorie') : 'Ventes par catégorie';
+            const trendsChart = new Chart(document.getElementById('trendsChart'), {
                 type: 'line',
                 data: {
                     labels: ventesParCategorieParMois.labels.length > 0 ? ventesParCategorieParMois.labels : ['Aucune donnée'],
-                    datasets: Object.entries(ventesParCategorieParMois.datasets || {}).map(([cat, data], index) => ({
-                        label: cat,
-                        data: data,
-                        borderColor: categoryColors[index % categoryColors.length],
-                        backgroundColor: 'transparent',
+                    datasets: translatedCategoryDatasets.map(dataset => ({
+                        label: dataset.label,
+                        data: dataset.data,
+                        borderColor: dataset.color,
+                        backgroundColor: dataset.color,
                         borderWidth: 2,
                         tension: 0.3,
                         pointBackgroundColor: '#fff',
                         pointBorderWidth: 2,
-                        pointRadius: 4
+                        pointRadius: 4,
+                        hidden: dataset.hidden,
+                        fill: false
                     }))
                 },
-                options: getChartOptions('Ventes par catégorie')
+                options: {
+                    ...getChartOptions(trendsChartTitle),
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    plugins: {
+                        ...getChartOptions(trendsChartTitle).plugins,
+                        tooltip: {
+                            ...getChartOptions(trendsChartTitle).plugins?.tooltip,
+                            enabled: true,
+                            callbacks: {
+                                title: (items) => {
+                                    if (!items.length) return '';
+                                    return items[0].label;
+                                },
+                                label: (context) => {
+                                    const datasetLabel = context.dataset?.label || '';
+                                    const value = context.parsed?.y ?? context.parsed;
+                                    const formattedValue = typeof value === 'number'
+                                        ? value.toLocaleString(undefined, { minimumFractionDigits: 0 })
+                                        : value;
+                                    return `${datasetLabel}: ${formattedValue}`;
+                                }
+                            }
+                        }
+                    }
+                }
             });
+
+            function translateCategoryLegend() {
+                translatedCategoryDatasets.forEach((dataset, index) => {
+                    dataset.label = getCategoryTranslation(dataset.rawLabel);
+                    const chartDataset = trendsChart.data.datasets[index];
+                    if (chartDataset) {
+                        chartDataset.label = dataset.label;
+                        // preserve hidden state managed by Chart legend
+                        const meta = trendsChart.getDatasetMeta(index);
+                        if (meta && typeof meta.hidden !== 'undefined') {
+                            dataset.hidden = meta.hidden === null ? false : !!meta.hidden;
+                            chartDataset.hidden = dataset.hidden;
+                        }
+                    }
+                });
+                trendsChart.update();
+            }
+
+            window.translateCategoryLegend = translateCategoryLegend;
+            translateCategoryLegend();
 
             // Graphique répartition
             const cheeseData = ventesParArticle && ventesParArticle.datasets
@@ -265,6 +382,7 @@
                 }))
                 : [{ label: 'Aucune donnée', data: 1 }];
 
+            const salesDistributionTitle = window.t ? window.t('sales_distribution_chart', 'Répartition des ventes') : 'Répartition des ventes';
             new Chart(document.getElementById('cheeseChart'), {
                 type: 'doughnut',
                 data: {
@@ -282,7 +400,7 @@
                     }]
                 },
                 options: {
-                    ...getChartOptions('Répartition des ventes'),
+                    ...getChartOptions(salesDistributionTitle),
                     cutout: '70%',
                     plugins: {
                         legend: {

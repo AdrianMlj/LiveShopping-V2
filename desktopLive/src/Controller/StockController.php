@@ -12,6 +12,8 @@ use App\Entity\ItemSize;
 use App\Repository\ExportTempRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Entity\ItemsStock;
+use App\Entity\ItemSizeColor;
 
 class StockController extends AbstractController
 {
@@ -65,7 +67,7 @@ class StockController extends AbstractController
         $stockMovements = $this->paginator->paginate(
             $movementsQuery,
             $movementsPage,
-            5,
+            3,
             [
                 'pageParameterName' => 'movements_page',
                 'sortFieldParameterName' => 'movements_sort',
@@ -243,6 +245,50 @@ class StockController extends AbstractController
             return $this->json([
                 'status'  => 'error',
                 'message' => 'Erreur lors de la génération des CSV : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/stock/in', name: 'app_stock_in', methods: ['POST'])]
+    public function stockIn(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent(), true) ?? [];
+            $idItemSizeColor = (int)($data['idItemSize'] ?? 0);
+            $qty = (int)($data['qty'] ?? 0);
+
+            if ($idItemSizeColor <= 0 || $qty <= 0) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Paramètres invalides'
+                ], 400);
+            }
+
+            $itemSizeColor = $em->getRepository(ItemSizeColor::class)->find($idItemSizeColor);
+            if (!$itemSizeColor) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Variation introuvable'
+                ], 404);
+            }
+
+            $movement = new ItemsStock();
+            $movement->setItemSizeColor($itemSizeColor);
+            $movement->setInItem($qty);
+            $movement->setOutItem(0);
+            $movement->setDateMove(new \DateTime());
+
+            $em->persist($movement);
+            $em->flush();
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Stock ajouté'
+            ]);
+        } catch (\Throwable $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erreur serveur',
             ], 500);
         }
     }

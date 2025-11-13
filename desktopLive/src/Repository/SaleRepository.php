@@ -139,7 +139,7 @@ class SaleRepository extends ServiceEntityRepository
 
         // ---- Meilleure catégorie ----
         $sqlBestCat = "
-            SELECT c.name_category, SUM(cd.price * cd.quantity) AS total_cat
+            SELECT c.id_category, c.name_category, SUM(cd.price * cd.quantity) AS total_cat
             FROM sale s
             INNER JOIN commande c2 ON s.id_commande = c2.id_commande
             INNER JOIN commande_details cd ON cd.id_commande = c2.id_commande
@@ -185,6 +185,7 @@ class SaleRepository extends ServiceEntityRepository
                 ? $resultGlobal['ca_total'] / $resultGlobal['ventes_total']
                 : 0,
             'meilleure_categorie' => $bestCategory['name_category'] ?? 'N/A',
+            'meilleure_categorie_id' => $bestCategory['id_category'] ?? null,
 
             // Données mensuelles (pour les graphiques)
             'labels' => $labels,
@@ -412,26 +413,41 @@ class SaleRepository extends ServiceEntityRepository
     {
         $conn = $this->getEntityManager()->getConnection();
 
+        // $sql = "
+        //     SELECT
+        //         i.name_item AS name,
+        //         i.images AS image_id,
+        //         cat.name_category AS category,
+        //         SUM(cd.quantity) AS sales,
+        //         SUM(cd.quantity * cd.price) AS total_revenue,
+        //         ROUND(SUM(cd.quantity * cd.price) / NULLIF(SUM(cd.quantity), 0), 2) AS average_price
+        //     FROM sale s
+        //     INNER JOIN commande c ON s.id_commande = c.id_commande
+        //     INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+        //     INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
+        //     INNER JOIN item i ON i.id_item = isz.id_item
+        //     INNER JOIN category cat ON i.id_category = cat.id_category
+        //     INNER JOIN users seller ON i.id_seller = seller.id_user
+        //     WHERE s.is_paid = true
+        //     AND seller.id_user = :sellerId
+        //     GROUP BY i.id_item, i.name_item, i.images, cat.name_category
+        //     ORDER BY sales DESC
+        //     LIMIT :limit
+        // ";
+
         $sql = "
             SELECT
-                i.name_item AS name,
-                i.images AS image_id,
-                cat.name_category AS category,
-                SUM(cd.quantity) AS sales,
-                SUM(cd.quantity * cd.price) AS total_revenue,
-                ROUND(SUM(cd.quantity * cd.price) / NULLIF(SUM(cd.quantity), 0), 2) AS average_price
-            FROM sale s
-            INNER JOIN commande c ON s.id_commande = c.id_commande
-            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
-            INNER JOIN item_size isz ON cd.id_item_size = isz.id_item_size
-            INNER JOIN item i ON i.id_item = isz.id_item
-            INNER JOIN category cat ON i.id_category = cat.id_category
-            INNER JOIN users seller ON i.id_seller = seller.id_user
-            WHERE s.is_paid = true
-            AND seller.id_user = :sellerId
-            GROUP BY i.id_item, i.name_item, i.images, cat.name_category
+                item_name   AS name,
+                image_id,
+                category_name AS category,
+                SUM(quantity)                      AS sales,
+                SUM(quantity * unit_price)         AS total_revenue,
+                ROUND(SUM(quantity * unit_price) / NULLIF(SUM(quantity), 0), 2) AS average_price
+            FROM v_paid_sales_details
+            WHERE seller_id = :sellerId
+            GROUP BY item_id, item_name, image_id, category_name
             ORDER BY sales DESC
-            LIMIT :limit
+            LIMIT :limit;
         ";
 
         $stmt = $conn->prepare($sql);
@@ -454,24 +470,40 @@ class SaleRepository extends ServiceEntityRepository
     {
         $conn = $this->getEntityManager()->getConnection();
 
+        // $sql = "
+        //     SELECT
+        //         u.id_user AS client_id,
+        //         u.username AS client_name,
+        //         u.email,
+        //         u.contact,
+        //         u.address,
+        //         COUNT(cd.id_commande_detail) AS total_purchases,
+        //         SUM(cd.price * cd.quantity) AS total_spent
+        //     FROM commande c
+        //     INNER JOIN sale s ON s.id_commande = c.id_commande
+        //     INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
+        //     INNER JOIN users u ON c.id_client = u.id_user
+        //     WHERE c.id_seller = :sellerId
+        //     AND s.is_paid = true
+        //     GROUP BY u.id_user, u.username, u.email, u.contact, u.address
+        //     ORDER BY total_spent DESC
+        //     LIMIT :limit
+        // ";
+
         $sql = "
             SELECT
-                u.id_user AS client_id,
-                u.username AS client_name,
-                u.email,
-                u.contact,
-                u.address,
-                COUNT(cd.id_commande_detail) AS total_purchases,
-                SUM(cd.price * cd.quantity) AS total_spent
-            FROM commande c
-            INNER JOIN sale s ON s.id_commande = c.id_commande
-            INNER JOIN commande_details cd ON cd.id_commande = c.id_commande
-            INNER JOIN users u ON c.id_client = u.id_user
-            WHERE c.id_seller = :sellerId
-            AND s.is_paid = true
-            GROUP BY u.id_user, u.username, u.email, u.contact, u.address
+                client_id,
+                client_name,
+                email,
+                contact,
+                address,
+                COUNT(detail_id)                  AS total_purchases,
+                SUM(line_total)                   AS total_spent
+            FROM v_paid_sales_per_client
+            WHERE seller_id = :sellerId
+            GROUP BY client_id, client_name, email, contact, address
             ORDER BY total_spent DESC
-            LIMIT :limit
+            LIMIT :limit;
         ";
 
         $stmt = $conn->prepare($sql);

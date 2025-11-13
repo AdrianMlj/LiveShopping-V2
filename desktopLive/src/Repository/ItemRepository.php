@@ -72,7 +72,7 @@ class ItemRepository extends ServiceEntityRepository
      */
     public function findItemsWithAvailableSizes(int $sellerId, ?int $categoryId = null): array
     {
-        $availableExpr = 'SUM(s.inItem - COALESCE(s.outItem, 0))';
+        $availableExpr = 'COALESCE(SUM(s.inItem - COALESCE(s.outItem, 0)), 0)';
 
         $qb = $this->createQueryBuilder('i')
             ->select(
@@ -99,7 +99,7 @@ class ItemRepository extends ServiceEntityRepository
             ->join('i.category', 'c')
             ->join('i.itemSizes', 'isize')
             ->join('isize.itemSizeColors', 'isc')
-            ->join('isc.stocks', 's')
+            ->leftJoin('isc.stocks', 's')
             ->join('isc.color', 'color')
             ->leftJoin('i.priceItems', 'price', 'WITH',
                 'price.datePrice = (SELECT MAX(p2.datePrice) FROM App\Entity\PriceItems p2 WHERE p2.item = i.id)')
@@ -108,7 +108,7 @@ class ItemRepository extends ServiceEntityRepository
             ->andWhere('IDENTITY(i.seller) = :sellerId')
             ->setParameter('sellerId', $sellerId)
             ->groupBy('i.id, i.nameItem, i.images, c.id, c.nameCategory, isize.id, isize.valueSize, color.id, color.nameColor, promo.id, promo.namePromotion, promo.percentage, promo.description, promo.startDate, promo.endDate, price.price')
-            ->having($availableExpr . ' > 0')
+            // ->having($availableExpr . ' > 0')
             ->orderBy('c.nameCategory', 'ASC')
             ->addOrderBy('i.nameItem', 'ASC')
             ->addOrderBy('isize.valueSize', 'ASC')
@@ -151,12 +151,12 @@ class ItemRepository extends ServiceEntityRepository
                 ];
 
                 // Ajouter les informations de prix
-                $grouped[$itemId]['original_price'] = (float)$row['original_price'];
+                $grouped[$itemId]['original_price'] = (int)$row['original_price'];
 
                 // Ajouter la promotion si elle existe
                 if (!empty($row['promotion_id'])) {
-                    $originalPrice = (float)$row['original_price'];
-                    $percentage = (float)$row['promotion_percentage'];
+                    $originalPrice = (int)$row['original_price'];
+                    $percentage = (int)$row['promotion_percentage'];
                     $discountAmount = $originalPrice * ($percentage / 100);
                     $promoPrice = $originalPrice - $discountAmount;
 

@@ -6,6 +6,82 @@
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('css/stock.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Disposer les champs d'import en 2 colonnes (2 lignes au total) */
+        .import-form {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px 20px;
+            align-items: start;
+            grid-auto-rows: auto;
+        }
+
+        .import-form .form-group {
+            width: 100%;
+            min-width: 0; /* éviter débordements en grid */
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .import-form .form-group label {
+            display: block;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .import-form .form-group .modern-input,
+        .import-form .form-group input[type="file"],
+        .import-form .form-group input[type="text"],
+        .import-form .form-group input[type="date"] {
+            width: 100%;
+            box-sizing: border-box;
+            min-width: 0; /* pour empêcher l'élargissement dans la grid */
+        }
+
+        /* Le bouton prend toute la ligne sous les 2 colonnes */
+        .import-form .modern-button {
+            grid-column: 1 / -1;
+            justify-self: center;
+            margin-top: 4px;
+        }
+
+        /* Responsive: 1 colonne sur petits écrans */
+        @media (max-width: 768px) {
+            .import-form {
+                grid-template-columns: 1fr;
+            }
+            .import-form .modern-button {
+                grid-column: auto;
+                justify-self: center;
+            }
+        }
+
+        /* Actions inline pour le stock courant */
+        .stock-inline-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .add-stock-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .add-stock-btn:hover {
+            background: #eef2ff;
+            border-color: #93c5fd;
+            color: #1d4ed8;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -199,9 +275,21 @@
                                                          box-shadow: 0 0 0 2px rgba(0,0,0,0.04);"></span>
                                         </td>
                                         <td>
-                                            <strong class="{% if row.currentstock > 5 %}in-stock{% else %}out-of-stock{% endif %}">
-                                                {{ row.currentstock }}
-                                            </strong>
+                                            <div class="stock-inline-actions">
+                                                <strong class="{% if row.currentstock > 10 %}in-stock{% else %}out-of-stock{% endif %} current-stock-value">
+                                                    {{ row.currentstock }}
+                                                </strong>
+                                                <button
+                                                    type="button"
+                                                    class="add-stock-btn"
+                                                    title="Ajouter du stock"
+                                                    aria-label="Ajouter du stock"
+                                                    data-i18n-title="add_stock"
+                                                    data-i18n-aria-label="add_stock"
+                                                    data-id="{{ row.itemsizecolorid }}">
+                                                    +
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 {% else %}
@@ -454,13 +542,12 @@
             function updateURL(section) {
                 const url = new URL(window.location);
                 url.searchParams.set('section', section);
-                if (section === 'movements') {
-                    url.searchParams.delete('stock_page');
-                } else if (section === 'current') {
-                    url.searchParams.delete('movements_page');
-                } else if (section !== 'export') {
-                    url.searchParams.delete('export_page');
-                }
+
+                // Nettoyer TOUS les paramètres de pagination
+                url.searchParams.delete('movements_page');
+                url.searchParams.delete('stock_page');
+                url.searchParams.delete('export_page');
+
                 window.history.replaceState({}, '', url);
             }
 
@@ -490,6 +577,76 @@
             // Charger la bonne section selon l'URL
             const activeSection = detectActiveSection();
             showSection(activeSection);
+        });
+
+        // Gestion du bouton "+" pour ajouter du stock
+        document.addEventListener('DOMContentLoaded', function () {
+            function attachAddStockHandlers() {
+                document.querySelectorAll('.add-stock-btn').forEach(btn => {
+                    btn.addEventListener('click', async function () {
+                        const id = this.getAttribute('data-id');
+                        const row = this.closest('tr');
+                        const valueEl = row.querySelector('.current-stock-value');
+
+                        const { value: qty } = await Swal.fire({
+                            title: window.t ? window.t('add_stock', 'Ajouter du stock') : 'Ajouter du stock',
+                            input: 'number',
+                            inputLabel: window.t ? window.t('quantity_to_add', 'Quantité à ajouter') : 'Quantité à ajouter',
+                            inputAttributes: { min: 1 },
+                            inputValue: 1,
+                            showCancelButton: true,
+                            confirmButtonText: window.t ? window.t('confirm', 'Confirmer') : 'Confirmer',
+                            cancelButtonText: window.t ? window.t('cancel', 'Annuler') : 'Annuler'
+                        });
+
+                        if (!qty || parseInt(qty, 10) <= 0) return;
+
+                        try {
+                            Swal.showLoading();
+                            const resp = await fetch('{{ path('app_stock_in') }}', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ idItemSize: id, qty: parseInt(qty, 10) })
+                            });
+                            Swal.close();
+
+                            if (resp.ok) {
+                                const current = parseInt(valueEl.textContent.trim(), 10) || 0;
+                                const next = current + parseInt(qty, 10);
+                                valueEl.textContent = next;
+                                valueEl.classList.toggle('in-stock', next > 10);
+                                valueEl.classList.toggle('out-of-stock', !(next > 10));
+
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: window.t ? window.t('stock_updated', 'Stock mis à jour') : 'Stock mis à jour',
+                                    timer: 1200,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                const text = await resp.text();
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: window.t ? window.t('error', 'Erreur') : 'Erreur',
+                                    text: text || (window.t ? window.t('unable_to_update', 'Impossible de mettre à jour le stock.') : 'Impossible de mettre à jour le stock.')
+                                });
+                            }
+                        } catch (e) {
+                            Swal.close();
+                            Swal.fire({
+                                icon: 'error',
+                                title: window.t ? window.t('network_error', 'Erreur réseau') : 'Erreur réseau',
+                                text: window.t ? window.t('connection_problem', 'Problème de connexion avec le serveur.') : 'Problème de connexion avec le serveur.'
+                            });
+                        }
+                    });
+                });
+            }
+
+            attachAddStockHandlers();
+
+            // Si du contenu est rechargé dynamiquement, ré-attacher au besoin:
+            document.addEventListener('knp:pagination:updated', attachAddStockHandlers);
         });
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -553,9 +710,9 @@
                     if (demandes.length === 0) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'Sélection requise',
-                            text: 'Veuillez sélectionner au moins un article !',
-                            confirmButtonText: 'Compris',
+                            title: window.t('selection_required', 'Sélection requise'),
+                            text: window.t('select_at_least_one_item', 'Veuillez sélectionner au moins un article !'),
+                            confirmButtonText: window.t('understood', 'Compris'),
                             background: '#ffffff',
                             color: '#333333',
                             confirmButtonColor: '#4361ee',
@@ -567,8 +724,8 @@
                     try {
                         // Afficher un loader pendant le traitement
                         Swal.fire({
-                            title: 'Traitement en cours',
-                            text: 'Enregistrement de votre demande...',
+                            title: window.t('processing_in_progress', 'Traitement en cours'),
+                            text: window.t('saving_request', 'Enregistrement de votre demande...'),
                             allowOutsideClick: false,
                             didOpen: () => {
                                 Swal.showLoading();
@@ -594,18 +751,17 @@
                             // ✅ Pop-up succès améliorée
                             Swal.fire({
                                 icon: 'success',
-                                title: '✅ Demande enregistrée',
+                                title: '✅ ' + window.t('request_saved', 'Demande enregistrée'),
                                 html: `
                                     <div style="text-align: center;">
-                                        <p style="font-size: 16px; margin-bottom: 16px; color: #059669;">${text}</p>
                                         <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; margin: 16px 0;">
                                             <p style="margin: 0; color: #0369a1; font-size: 14px;">
-                                                <strong>${demandes.length}</strong> article(s) demandé(s)
+                                                <strong>${demandes.length}</strong> ${window.t('articles_requested', 'article(s) demandé(s)')}
                                             </p>
                                         </div>
                                     </div>
                                 `,
-                                confirmButtonText: 'Fermer',
+                                confirmButtonText: window.t('close', 'Fermer'),
                                 confirmButtonColor: '#059669',
                                 background: '#ffffff',
                                 color: '#333333',
@@ -637,9 +793,9 @@
                         } else {
                             Swal.fire({
                                 icon: 'error',
-                                title: '❌ Erreur',
-                                text: "Impossible d'enregistrer la demande. Veuillez réessayer.",
-                                confirmButtonText: 'Compris',
+                                title: '❌ ' + window.t('error', 'Erreur'),
+                                text: window.t('cannot_save_request', 'Impossible d\'enregistrer la demande. Veuillez réessayer.'),
+                                confirmButtonText: window.t('understood', 'Compris'),
                                 confirmButtonColor: '#dc2626',
                                 background: '#ffffff',
                                 color: '#333333',
@@ -650,9 +806,9 @@
                         Swal.close();
                         Swal.fire({
                             icon: 'error',
-                            title: '🌐 Erreur réseau',
-                            text: "Problème de connexion avec le serveur. Vérifiez votre connexion internet.",
-                            confirmButtonText: 'Réessayer',
+                            title: '🌐 ' + window.t('network_error', 'Erreur réseau'),
+                            text: window.t('connection_problem', 'Problème de connexion avec le serveur. Vérifiez votre connexion internet.'),
+                            confirmButtonText: window.t('retry', 'Réessayer'),
                             confirmButtonColor: '#dc2626',
                             background: '#ffffff',
                             color: '#333333',
@@ -700,7 +856,7 @@
                     const row = this.closest('tr');
                     const id = this.dataset.id;
 
-                    if (confirm("Voulez-vous vraiment supprimer cet article ?")) {
+                    if (confirm(window.t('confirm_delete', 'Voulez-vous vraiment supprimer cet article ?'))) {
                         fetch('/delete_stock/' + id, {
                             method: 'DELETE',
                             headers: {
@@ -768,8 +924,8 @@
                 if (demandes.length === 0) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Aucune donnée',
-                        text: 'Veuillez entrer au moins une quantité !',
+                        title: window.t('no_data', 'Aucune donnée'),
+                        text: window.t('enter_at_least_one_quantity', 'Veuillez entrer au moins une quantité !'),
                         confirmButtonColor: '#f59e0b',
                         background: '#ffffff',
                         color: '#333333',
@@ -780,8 +936,8 @@
 
                 try {
                     Swal.fire({
-                        title: 'Export en cours...',
-                        text: 'Génération des fichiers CSV',
+                        title: window.t('export_in_progress', 'Export en cours...'),
+                        text: window.t('generating_csv_files', 'Génération des fichiers CSV'),
                         allowOutsideClick: false,
                         didOpen: () => Swal.showLoading(),
                         background: '#ffffff',
@@ -813,7 +969,7 @@
                         // Afficher un message de succès
                         Swal.fire({
                             icon: 'success',
-                            title: '✅ Export réussi',
+                            title: '✅ ' + window.t('export_successful', 'Export réussi'),
                             html: `
                                 <div style="text-align:center;">
                                     <p style="font-size:16px; color:#059669; margin-bottom:12px;">
@@ -821,13 +977,13 @@
                                     </p>
                                     <div style="background:#f0f9ff; padding:10px; border-radius:6px;">
                                         <p style="margin:0; color:#0369a1; font-size:14px;">
-                                            Dossier : <strong>${result.folder}</strong><br>
-                                            Fichiers générés : <strong>${result.files.length}</strong>
+                                            ${window.t('folder', 'Dossier')} : <strong>${result.folder}</strong><br>
+                                            ${window.t('files_generated', 'Fichiers générés')} : <strong>${result.files.length}</strong>
                                         </p>
                                     </div>
                                 </div>
                             `,
-                            confirmButtonText: 'Fermer',
+                            confirmButtonText: window.t('close', 'Fermer'),
                             confirmButtonColor: '#059669',
                             background: '#ffffff',
                             color: '#333333',

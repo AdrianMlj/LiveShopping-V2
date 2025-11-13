@@ -740,6 +740,7 @@
                 cancel: 'Annuler',
                 save: 'Enregistrer',
                 profil_picture: 'Photo de profil',
+                supply : 'Approvisionnement',
                 // Dashboard translations
                 dashboard_title: 'Tableau de bord',
                 dashboard_description: 'Visualisez vos performances, statistiques de ventes, chiffre d\'affaires et tendances par période',
@@ -905,6 +906,74 @@
                 name: 'Nom',
                 item_name: 'Nom de l\'article',
                 item_description_optional: 'Description de l\'article (optionnel)',
+                existing_color_images: 'Images des couleurs existantes',
+                existing_color_hint: '💡 L\'image principale affichée est celle de la première couleur',
+                add_new_colors_section: 'Ajouter de nouvelles couleurs',
+                add_new_colors_hint: 'Sélectionnez de nouvelles couleurs à ajouter à cet article',
+                add_new_item: 'Ajouter un nouvel article',
+                wizard_step_infos: '1. Infos',
+                wizard_step_variants: '2. Variantes',
+                wizard_step_stock: '3. Stock',
+                wizard_step_recap: '4. Récap',
+                item_name_placeholder: 'Ex: T-shirt en coton',
+                item_description_placeholder: 'Description de l\'article...',
+                promotion_details_title: 'Détails de la promotion',
+                promotion_details_helper: 'Présentez l’offre en quelques mots inspirants.',
+                promotion_setup_title: 'Paramètres de l’offre',
+                promotion_setup_helper: 'Choisissez la remise et la période de validité.',
+                promotion_percentage_helper: 'La remise s’applique sur le prix standard de l’article.',
+                promotion_price_preview_title: 'Prévisualisation du prix',
+                available_sizes: 'Tailles disponibles',
+                available_colors: 'Couleurs disponibles',
+                images_per_color: 'Images par couleur',
+                stocks_by_size_color: 'Stocks par taille × couleur',
+                select_category: 'Sélectionnez une catégorie',
+                price_ar: 'Prix (Ar)',
+                previous: 'Précédent',
+                next: 'Suivant',
+                monthly_revenue_chart: 'Chiffre d\'affaires mensuel',
+                sales_by_category: 'Ventes par catégorie',
+                sales_distribution_chart: 'Répartition des ventes',
+                size_color_header: 'Taille \\ Couleur',
+                recap_item_label: 'Article',
+                recap_category_label: 'Catégorie',
+                recap_price_label: 'Prix (Ar)',
+                recap_description_label: 'Description',
+                recap_sizes_label: 'Tailles',
+                recap_colors_label: 'Couleurs',
+                recap_no_description: 'Aucune',
+                item_update_success_with_colors: 'Article mis à jour avec %count% nouvelle(s) couleur(s) ajoutée(s) !',
+                item_update_success: 'Article mis à jour avec succès !',
+                error_while_saving: 'Erreur lors de l\'enregistrement',
+                change_image: 'Changer l\'image',
+                color_image_upload_success: 'Image de %color% uploadée avec succès !',
+                color_default: 'Couleur',
+                new_color_badge: '(nouvelle)',
+                color_quantity_label: 'Qté',
+                size_default: 'Taille',
+                size_taille_unique: 'Taille unique',
+                size_standard: 'Standard',
+                upload_image_label: 'Image',
+                no_file_selected: 'Aucun fichier',
+                color_rouge: 'Rouge',
+                color_bleu: 'Bleu',
+                color_jaune: 'Jaune',
+                color_vert: 'Vert',
+                color_orange: 'Orange',
+                color_violet: 'Violet',
+                color_blanc: 'Blanc',
+                color_marron: 'Marron',
+                color_corail: 'Corail',
+                color_noir: 'Noir',
+                color_gris: 'Gris',
+                color_rose: 'Rose',
+                color_beige: 'Beige',
+                color_turquoise: 'Turquoise',
+                color_bordeaux: 'Bordeaux',
+                color_argent: 'Argent',
+                color_or: 'Or',
+                color_brun: 'Brun',
+                color_kaki: 'Kaki',
                 category_name: 'Nom de la catégorie',
                 category_name_example: 'Ex: Vêtements, Chaussures, Accessoires',
                 category_description: 'Description de la catégorie...',
@@ -923,7 +992,6 @@
                 selection: 'Sélection',
                 available_stock: 'Stock disponible',
                 no_stock_available: 'Aucun stock disponible',
-                supply: 'Supply',
                 import_stock_bulk: 'Importer des stocks en masse',
                 categories_file: 'Fichier des Catégorie',
                 articles_file: 'Fichier des Articles',
@@ -933,24 +1001,84 @@
                 export_stocks: 'Export des stocks',
                 quantity: 'Quantité',
 
-                // 🔥 Traductions des produits de la base de données
+                // 🔥 Traductions des popups et messages
+                selection_required: 'Sélection requise',
+                select_at_least_one_item: 'Veuillez sélectionner au moins un article !',
+                understood: 'Compris',
+                confirm: 'Confirmer',
+                processing_in_progress: 'Traitement en cours',
+                saving_request: 'Enregistrement de votre demande...',
+                request_saved: 'Demande enregistrée',
+                articles_requested: 'article(s) demandé(s)',
+                close: 'Fermer',
+                error: 'Erreur',
+                cannot_save_request: 'Impossible d\'enregistrer la demande. Veuillez réessayer.',
+                add_stock: 'Ajouter du stock',
+                quantity_to_add: 'Quantité à ajouter',
+                stock_updated: 'Stock mis à jour',
+                unable_to_update: 'Impossible de mettre à jour le stock.',
+                network_error: 'Erreur réseau',
+                connection_problem: 'Problème de connexion avec le serveur. Vérifiez votre connexion internet.',
+                retry: 'Réessayer',
+                confirm_delete: 'Voulez-vous vraiment supprimer cet article ?',
+                no_data: 'Aucune donnée',
+                enter_at_least_one_quantity: 'Veuillez entrer au moins une quantité !',
+                export_in_progress: 'Export en cours...',
+                generating_csv_files: 'Génération des fichiers CSV',
+                export_successful: 'Export réussi',
+                folder: 'Dossier',
+                files_generated: 'Fichiers générés',
+
+                // 🔥 Traductions des produits (depuis la base)
                 // Format: item_ID_name et item_ID_desc
-                item_1_name: 'T-shirt Coton Bio',
-                item_1_desc: 'Respirez. Portez du coton.',
-                item_2_name: 'Jean Slim Femme',
-                item_2_desc: 'La seconde peau qui vous met en valeur.',
-                item_3_name: 'Baskets Sport',
-                item_3_desc: 'Votre nouvelle paire préférée.',
-                item_4_name: 'Coussin Décoratif',
-                item_4_desc: 'Votre canapé mérite son âme sœur.',
-                item_5_name: 'Smartphone Android',
-                item_5_desc: 'Déverrouillez un nouveau niveau de productivité et de divertissement. Propulsé par le dernier processeur et une mémoire RAM généreuse, ce smartphone Android exécute toutes vos applications et jeux les plus exigeants sans aucun ralentissement. Couplé à la dernière version d\'Android, sans interface inutile, il vous offre une expérience fluide, sécurisée et toujours à jour.',
-                item_6_name: 'Sac à Main Cuir',
-                item_6_desc: 'L\'élégance à porter de main. Pour tous les jours.',
-                item_7_name: 'Body Enfant',
-                item_7_desc: 'Confort et douceur pour les petits.',
-                item_8_name: 'Robe Malagasy Traditionnelle',
-                item_8_desc: 'Robe traditionnelle Malagasy authentique et élégante.',
+                item_1_name: 'Baskets unisexe',
+                item_1_desc: 'Baskets unisexe, confortables pour un usage quotidien.',
+                item_2_name: 'Escarpins',
+                item_2_desc: 'Escarpins élégants pour tenues habillées.',
+                item_3_name: 'Chemise homme coton',
+                item_3_desc: 'Chemise en coton respirant, coupe classique.',
+                item_4_name: 'Chemisier en soie',
+                item_4_desc: 'Chemisier élégant en soie, toucher doux.',
+                item_5_name: 'Jean skinny',
+                item_5_desc: 'Jean skinny stretch, coupe près du corps.',
+                item_6_name: 'Pantalon chino',
+                item_6_desc: 'Chino polyvalent, confortable au quotidien.',
+                item_7_name: 'Robe malagasy traditionnelle',
+                item_7_desc: 'Robe traditionnelle malagasy, motifs authentiques.',
+                item_8_name: 'Sac à main cuir',
+                item_8_desc: 'Sac à main en cuir véritable, finitions soignées.',
+                item_9_name: 'Portefeuille',
+                item_9_desc: 'Portefeuille compact, multiple rangements.',
+                item_10_name: 'Montre',
+                item_10_desc: 'Montre intemporelle, bracelet confortable.',
+                item_11_name: 'Collier',
+                item_11_desc: 'Collier raffiné, idéal pour sublimer une tenue.',
+                item_12_name: 'Parfum',
+                item_12_desc: 'Parfum aux notes subtiles et élégantes.',
+                item_13_name: 'Rouge à lèvres',
+                item_13_desc: 'Rouge à lèvres longue tenue, couleur intense.',
+
+                // 🔥 Traductions des catégories
+                // Format: category_ID_name et category_ID_desc
+                category_1_name: 'Chaussures',
+                category_1_desc: 'Tous types de chaussures : baskets, escarpins, sandales, bottes et sneakers.',
+                category_2_name: 'Vêtements',
+                category_2_desc: 'Habillement pour homme et femme : chemises, chemisiers, jeans, pantalons, robes.',
+                category_3_name: 'Accessoires',
+                category_3_desc: 'Articles complémentaires : sacs à main, portefeuilles, ceintures, montres et autres accessoires.',
+                category_4_name: 'Bijoux',
+                category_4_desc: 'Bijouterie et fantaisie : colliers, bracelets, boucles d’oreilles et bagues.',
+                category_5_name: 'Beauté',
+                category_5_desc: 'Produits de beauté et cosmétiques : parfums, maquillage et soins.',
+
+                // 🔥 Traductions des états de commande
+                // Format: state_ID_name
+                state_1_name: 'En attente',
+                state_2_name: 'Confirmée',
+                state_3_name: 'En préparation',
+                state_4_name: 'Expédiée',
+                state_5_name: 'Livrée',
+                state_6_name: 'Annulée',
 
                 // 🔥 Traductions des lives
                 // Format: live_ID_title et live_ID_desc
@@ -1142,6 +1270,74 @@
                 name: 'Name',
                 item_name: 'Item name',
                 item_description_optional: 'Item description (optional)',
+                existing_color_images: 'Existing color images',
+                existing_color_hint: '💡 The main product image uses the first color',
+                add_new_colors_section: 'Add new colors',
+                add_new_colors_hint: 'Select new colors to add to this item',
+                add_new_item: 'Add a new item',
+                wizard_step_infos: '1. Info',
+                wizard_step_variants: '2. Variants',
+                wizard_step_stock: '3. Stock',
+                wizard_step_recap: '4. Recap',
+                item_name_placeholder: 'E.g. Cotton T-shirt',
+                item_description_placeholder: 'Item description...',
+                promotion_details_title: 'Promotion details',
+                promotion_details_helper: 'Craft an inspiring message for your audience.',
+                promotion_setup_title: 'Offer parameters',
+                promotion_setup_helper: 'Choose the discount and the valid period.',
+                promotion_percentage_helper: 'The discount applies to the item’s standard price.',
+                promotion_price_preview_title: 'Price preview',
+                available_sizes: 'Available sizes',
+                available_colors: 'Available colors',
+                images_per_color: 'Images per color',
+                stocks_by_size_color: 'Stock by size × color',
+                select_category: 'Select a category',
+                price_ar: 'Price (Ar)',
+                previous: 'Previous',
+                next: 'Next',
+                monthly_revenue_chart: 'Monthly revenue',
+                sales_by_category: 'Sales by category',
+                sales_distribution_chart: 'Sales distribution',
+                size_color_header: 'Size \\ Color',
+                recap_item_label: 'Item',
+                recap_category_label: 'Category',
+                recap_price_label: 'Price (Ar)',
+                recap_description_label: 'Description',
+                recap_sizes_label: 'Sizes',
+                recap_colors_label: 'Colors',
+                recap_no_description: 'None',
+                item_update_success_with_colors: 'Item updated with %count% new color(s)!',
+                item_update_success: 'Item updated successfully!',
+                error_while_saving: 'Error while saving',
+                change_image: 'Change image',
+                color_image_upload_success: 'Image of %color% uploaded successfully!',
+                color_default: 'Color',
+                new_color_badge: '(new)',
+                color_quantity_label: 'Qty',
+                size_default: 'Size',
+                size_taille_unique: 'One size',
+                size_standard: 'Standard',
+                upload_image_label: 'Image',
+                no_file_selected: 'No file',
+                color_rouge: 'Red',
+                color_bleu: 'Blue',
+                color_jaune: 'Yellow',
+                color_vert: 'Green',
+                color_orange: 'Orange',
+                color_violet: 'Purple',
+                color_blanc: 'White',
+                color_marron: 'Brown',
+                color_corail: 'Coral',
+                color_noir: 'Black',
+                color_gris: 'Gray',
+                color_rose: 'Pink',
+                color_beige: 'Beige',
+                color_turquoise: 'Turquoise',
+                color_bordeaux: 'Burgundy',
+                color_argent: 'Silver',
+                color_or: 'Gold',
+                color_brun: 'Brown',
+                color_kaki: 'Khaki',
                 category_name: 'Category name',
                 category_name_example: 'Ex: Clothing, Shoes, Accessories',
                 category_description: 'Category description...',
@@ -1170,24 +1366,84 @@
                 export_stocks: 'Export stocks',
                 quantity: 'Quantity',
 
-                // 🔥 Product translations from database
+                // 🔥 Popup and message translations
+                selection_required: 'Selection required',
+                select_at_least_one_item: 'Please select at least one item!',
+                understood: 'Understood',
+                confirm: 'Confirm',
+                processing_in_progress: 'Processing in progress',
+                saving_request: 'Saving your request...',
+                request_saved: 'Request saved',
+                articles_requested: 'item(s) requested',
+                close: 'Close',
+                error: 'Error',
+                cannot_save_request: 'Unable to save the request. Please try again.',
+                add_stock: 'Add stock',
+                quantity_to_add: 'Quantity to add',
+                stock_updated: 'Stock updated',
+                unable_to_update: 'Unable to update stock.',
+                network_error: 'Network error',
+                connection_problem: 'Connection problem with the server. Check your internet connection.',
+                retry: 'Retry',
+                confirm_delete: 'Do you really want to delete this item?',
+                no_data: 'No data',
+                enter_at_least_one_quantity: 'Please enter at least one quantity!',
+                export_in_progress: 'Export in progress...',
+                generating_csv_files: 'Generating CSV files',
+                export_successful: 'Export successful',
+                folder: 'Folder',
+                files_generated: 'Files generated',
+
+                // 🔥 Product translations (from database)
                 // Format: item_ID_name and item_ID_desc
-                item_1_name: 'Organic Cotton T-shirt',
-                item_1_desc: 'Breathe. Wear cotton.',
-                item_2_name: 'Women\'s Slim Jeans',
-                item_2_desc: 'The second skin that enhances you.',
-                item_3_name: 'Sport Sneakers',
-                item_3_desc: 'Your new favorite pair.',
-                item_4_name: 'Decorative Cushion',
-                item_4_desc: 'Your sofa deserves its soulmate.',
-                item_5_name: 'Android Smartphone',
-                item_5_desc: 'Unlock a new level of productivity and entertainment. Powered by the latest processor and generous RAM, this Android smartphone runs all your most demanding apps and games without any lag. Paired with the latest Android version, without unnecessary interface, it offers you a smooth, secure and always up-to-date experience.',
-                item_6_name: 'Leather Handbag',
-                item_6_desc: 'Elegance within reach. For everyday use.',
-                item_7_name: 'Baby Bodysuit',
-                item_7_desc: 'Comfort and softness for little ones.',
-                item_8_name: 'Traditional Malagasy Dress',
-                item_8_desc: 'Authentic and elegant traditional Malagasy dress.',
+                item_1_name: 'Unisex Sneakers',
+                item_1_desc: 'Unisex sneakers, comfortable for everyday use.',
+                item_2_name: 'Pumps',
+                item_2_desc: 'Elegant pumps for formal outfits.',
+                item_3_name: 'Men\'s Cotton Shirt',
+                item_3_desc: 'Breathable cotton shirt, classic fit.',
+                item_4_name: 'Silk Blouse',
+                item_4_desc: 'Elegant silk blouse, soft touch.',
+                item_5_name: 'Skinny Jeans',
+                item_5_desc: 'Stretch skinny jeans, close-fitting cut.',
+                item_6_name: 'Chino Pants',
+                item_6_desc: 'Versatile chinos, comfortable for everyday wear.',
+                item_7_name: 'Traditional Malagasy Dress',
+                item_7_desc: 'Traditional Malagasy dress with authentic patterns.',
+                item_8_name: 'Leather Handbag',
+                item_8_desc: 'Genuine leather handbag, refined finishes.',
+                item_9_name: 'Wallet',
+                item_9_desc: 'Compact wallet with multiple compartments.',
+                item_10_name: 'Watch',
+                item_10_desc: 'Timeless watch with comfortable strap.',
+                item_11_name: 'Necklace',
+                item_11_desc: 'Refined necklace to elevate your outfit.',
+                item_12_name: 'Perfume',
+                item_12_desc: 'Perfume with subtle and elegant notes.',
+                item_13_name: 'Lipstick',
+                item_13_desc: 'Long-lasting lipstick with intense color.',
+
+                // 🔥 Category translations
+                // Format: category_ID_name and category_ID_desc
+                category_1_name: 'Shoes',
+                category_1_desc: 'All types of footwear: sneakers, pumps, sandals, boots and trainers.',
+                category_2_name: 'Clothing',
+                category_2_desc: 'Apparel for men and women: shirts, blouses, jeans, trousers and dresses.',
+                category_3_name: 'Accessories',
+                category_3_desc: 'Complementary items: handbags, wallets, belts, watches and other accessories.',
+                category_4_name: 'Jewelry',
+                category_4_desc: 'Jewelry and fashion pieces: necklaces, bracelets, earrings and rings.',
+                category_5_name: 'Beauty',
+                category_5_desc: 'Beauty and cosmetic products: perfumes, makeup and skincare.',
+
+                // 🔥 Order state translations
+                // Format: state_ID_name
+                state_1_name: 'Pending',
+                state_2_name: 'Confirmed',
+                state_3_name: 'In preparation',
+                state_4_name: 'Shipped',
+                state_5_name: 'Delivered',
+                state_6_name: 'Cancelled',
 
                 // 🔥 Live translations
                 // Format: live_ID_title and live_ID_desc
@@ -1198,8 +1454,36 @@
             }
         };
 
+        function buildReverseTranslations() {
+            if (!window.translationReverse) {
+                window.translationReverse = {};
+            }
+            Object.entries(translations).forEach(([lang, dict]) => {
+                const reverse = {};
+                Object.entries(dict).forEach(([key, value]) => {
+                    if (typeof value === 'string') {
+                        reverse[value] = key;
+                    }
+                });
+                window.translationReverse[lang] = reverse;
+            });
+        }
+
+        buildReverseTranslations();
+
+        function getTranslationKeyByValue(value, lang) {
+            if (!value) return null;
+            const language = lang || (window.currentLanguage || 'fr');
+            const reverse = window.translationReverse ? window.translationReverse[language] : null;
+            if (!reverse) return null;
+            return reverse[value] || null;
+        }
+
+        window.getTranslationKeyByValue = getTranslationKeyByValue;
+
         function setLanguage(lang) {
             localStorage.setItem('site_language', lang);
+            window.currentLanguage = lang;
             const dict = translations[lang];
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
@@ -1209,6 +1493,18 @@
                 const key = el.getAttribute('data-i18n-placeholder');
                 if (dict[key]) el.setAttribute('placeholder', dict[key]);
             });
+            if (typeof window.applyColorTranslations === 'function') {
+                window.applyColorTranslations();
+            }
+            if (typeof window.applySizeTranslations === 'function') {
+                window.applySizeTranslations();
+            }
+            if (typeof window.translateCategoryLegend === 'function') {
+                window.translateCategoryLegend();
+            }
+            if (typeof window.translateRankingArticles === 'function') {
+                window.translateRankingArticles();
+            }
         }
 
         // Global translation function for alerts and popups
@@ -1218,14 +1514,18 @@
         };
 
         // Set language from localStorage or default to English
-        const savedLang = localStorage.getItem('site_language') || 'en';
-        setLanguage(savedLang);
+        const savedLang = localStorage.getItem('site_language');
+        const userSetLang = localStorage.getItem('site_language_user_set') === '1';
+        const domLang = (document.documentElement && document.documentElement.getAttribute('lang')) || 'fr';
+        const initialLang = (userSetLang && savedLang) ? savedLang : domLang || 'fr';
+        setLanguage(initialLang);
 
         // Flag click event
         document.querySelectorAll('.lang-flag').forEach(flag => {
             flag.addEventListener('click', () => {
                 const lang = flag.getAttribute('data-lang');
                 setLanguage(lang);
+                localStorage.setItem('site_language_user_set', '1');
             });
         });
     });

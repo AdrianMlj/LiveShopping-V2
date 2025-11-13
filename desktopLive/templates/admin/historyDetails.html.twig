@@ -23,7 +23,7 @@
 
     <!-- Statut -->
     <div class="invoice-status">
-        <span class="badge info">{{ sale.commande.state.nameState }}</span>
+        <span class="badge info"><span data-i18n="state_{{ sale.commande.state.id }}_name">{{ sale.commande.state.nameState }}</span></span>
         {% if sale.isPaid %}
             <span class="badge success" data-i18n="paid">Payé</span>
         {% else %}
@@ -52,8 +52,8 @@
                         <td>{{ detail.itemSize.item.nameItem }}</td>
                         <td>{{ detail.itemSize.valueSize }}</td>
                         <td>{{ detail.quantity }}</td>
-                        <td>{{ detail.price|number_format(2, ',', ' ') }} €</td>
-                        <td>{{ lineTotal|number_format(2, ',', ' ') }} €</td>
+                        <td>{{ detail.price|number_format(2, ',', ' ') }} Ar</td>
+                        <td>{{ lineTotal|number_format(2, ',', ' ') }} Ar</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -66,8 +66,8 @@
     {% set totalHT = totalTTC / (1 + tvaRate) %}
     {% set tva = totalTTC - totalHT %}
     <div class="invoice-totals">
-        <p style="margin: 0; color: #6b7280; font-size: 0.9rem;"><span data-i18n="total_ht">Total HT</span> : {{ totalHT|number_format(2, ',', ' ') }} €</p>
-        <p style="margin: 4px 0 0; color: #6b7280; font-size: 0.9rem;"><span data-i18n="vat">TVA</span> ({{ (tvaRate * 100)|number_format(0, ',', ' ') }}%) : {{ tva|number_format(2, ',', ' ') }} €</p>
-        <h4 style="margin-top: 8px;"><span data-i18n="total_ttc">Total TTC</span> : {{ totalTTC|number_format(2, ',', ' ') }} €</h4>
+        <p style="margin: 0; color: #6b7280; font-size: 0.9rem;"><span data-i18n="total_ht">Total HT</span> : {{ totalHT|number_format(2, ',', ' ') }} Ar</p>
+        <p style="margin: 4px 0 0; color: #6b7280; font-size: 0.9rem;"><span data-i18n="vat">TVA</span> ({{ (tvaRate * 100)|number_format(0, ',', ' ') }}%) : {{ tva|number_format(2, ',', ' ') }} Ar</p>
+        <h4 style="margin-top: 8px;"><span data-i18n="total_ttc">Total TTC</span> : {{ totalTTC|number_format(2, ',', ' ') }} Ar</h4>
     </div>
 </div>

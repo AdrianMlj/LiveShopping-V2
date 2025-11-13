@@ -113,10 +113,10 @@
                                     </div>
                                     <div class="product-pricing">
                                         {% if item.promotion %}
-                                            <span class="product-price-original">{{ item.original_price|number_format(2, ',', ' ') }} €</span>
-                                            <span class="product-price-discounted">{{ item.promotion.promo_price|number_format(2, ',', ' ') }} €</span>
+                                            <span class="product-price-original">{{ item.original_price|number_format(0, ',', ' ') }} Ar</span>
+                                            <span class="product-price-discounted">{{ item.promotion.promo_price|number_format(0, ',', ' ') }} Ar</span>
                                         {% else %}
-                                            <span class="product-price">{{ item.original_price|number_format(2, ',', ' ') }} €</span>
+                                            <span class="product-price">{{ item.original_price|number_format(0, ',', ' ') }} Ar</span>
                                         {% endif %}
                                     </div>
 

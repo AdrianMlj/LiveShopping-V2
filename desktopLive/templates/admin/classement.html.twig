@@ -20,7 +20,7 @@
         </div>
         <div class="performance-stats">
             <div class="performance-stat">
-                <div class="performance-value">{{ globalStats.totalRevenue|number_format(0, ',', ' ') }} €</div>
+                <div class="performance-value">{{ globalStats.totalRevenue|number_format(0, ',', ' ') }} Ar</div>
                 <div class="performance-label" data-i18n="total_turnover">Total turnover</div>
                 <div class="performance-sublabel">{{ globalStats.totalArticlesCount }} <span data-i18n="active_products">active products</span></div>
             </div>
@@ -42,17 +42,17 @@
                         <span data-i18n="top_items">Top Items</span>
                     </h2>
                     <p class="section-description">
-                        <span data-i18n="average_revenue">Revenu moyen</span> : {{ globalStats.avgRevenuePerArticle|number_format(0, ',', ' ') }} €
+                        <span data-i18n="average_revenue">Revenu moyen</span> : {{ globalStats.avgRevenuePerArticle|number_format(0, ',', ' ') }} Ar
                     </p>
                 </div>
-                <div class="section-actions">
+                <!-- <div class="section-actions">
                     <button class="filter-btn" title="Filtrer" data-i18n-title="filter">
                         <i class="fas fa-filter"></i>
                     </button>
                     <button class="filter-btn" title="Plus d'options" data-i18n-title="more_options">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
-                </div>
+                </div> -->
             </div>
 
             {% if topArticles|length > 0 %}
@@ -62,6 +62,11 @@
                     {% set performanceLevel = articleMarketShare >= 20 ? 'excellent' : (articleMarketShare >= 10 ? 'good' : 'standard') %}
                     {% set globalRank = (topArticles.getCurrentPageNumber() - 1) * topArticles.getItemNumberPerPage() + loop.index %}
 
+                    {% set articleId = article.id is defined ? article.id : (article.item_id is defined ? article.item_id : (article.article_id is defined ? article.article_id : null)) %}
+                    {% set articleSlug = article.name|lower|replace({' ':'_', '\'':'', '"':'', ',':'', '.':'', '(': '', ')':'', '&':'et', '-':'_', '/':'_'}) %}
+                    {% set articleNameKey = articleId ? 'item_' ~ articleId ~ '_name' : 'item_' ~ articleSlug ~ '_name' %}
+                    {% set articleDescKey = articleId ? 'item_' ~ articleId ~ '_desc' : 'item_' ~ articleSlug ~ '_desc' %}
+
                     <li class="ranking-item top-{{ globalRank }} performance-{{ performanceLevel }}">
                         <div class="rank">
                             #{{ globalRank }}
@@ -70,8 +75,11 @@
                             {% endif %}
                         </div>
                         <div class="item-info">
-                            <div class="item-name">
-                                {{ article.name }}
+                            <div class="item-name" data-article-name="{{ article.name }}" data-article-id="{{ articleId }}">
+                                <span class="item-name-main">{{ article.name }}</span>
+                                {% if article.description is defined and article.description %}
+                                    <small class="item-description" data-article-desc="{{ article.description }}">{{ article.description }}</small>
+                                {% endif %}
                             </div>
                             <div class="item-stats">
                                 <div class="stat">
@@ -81,7 +89,7 @@
                                 </div>
                                 <div class="stat">
                                     <i class="fas fa-euro-sign icon"></i>
-                                    <span class="stat-value">{{ article.total_revenue|number_format(0, ',', ' ') }} €</span>
+                                    <span class="stat-value">{{ article.total_revenue|number_format(0, ',', ' ') }} Ar</span>
                                 </div>
                             </div>
                             <div class="performance-bar">
@@ -128,17 +136,17 @@
                         <span data-i18n="top_clients">Top Clients</span>
                     </h2>
                     <p class="section-description">
-                        <span data-i18n="average_spending">Dépense moyenne</span> : {{ globalStats.avgSpendingPerClient|number_format(0, ',', ' ') }} €
+                        <span data-i18n="average_spending">Dépense moyenne</span> : {{ globalStats.avgSpendingPerClient|number_format(0, ',', ' ') }} Ar
                     </p>
                 </div>
-                <div class="section-actions">
+                <!-- <div class="section-actions">
                     <button class="filter-btn" title="Filtrer" data-i18n-title="filter">
                         <i class="fas fa-filter"></i>
                     </button>
                     <button class="filter-btn" title="Plus d'options" data-i18n-title="more_options">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
-                </div>
+                </div> -->
             </div>
 
             {% if topClients|length > 0 %}
@@ -168,7 +176,7 @@
                                 </div>
                                 <div class="stat">
                                     <i class="fas fa-euro-sign icon"></i>
-                                    <span class="stat-value">{{ client.total_spent|number_format(0, ',', ' ') }} €</span>
+                                    <span class="stat-value">{{ client.total_spent|number_format(0, ',', ' ') }} Ar</span>
                                 </div>
                             </div>
                             <div class="performance-bar">
@@ -207,4 +215,82 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function normalizeKey(value) {
+                if (!value) return '';
+                let normalized = value.toString();
+                try {
+                    normalized = normalized.normalize('NFD');
+                } catch (err) {
+                    // ignore
+                }
+                return normalized
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_|_$/g, '');
+            }
+
+            function translateRankingArticles() {
+                const translator = window.t;
+                document.querySelectorAll('.ranking-item .item-name').forEach(container => {
+                    const nameElement = container.querySelector('.item-name-main');
+                    if (!nameElement) return;
+                    const rawName = container.getAttribute('data-article-name') || nameElement.textContent;
+                    const articleId = container.getAttribute('data-article-id');
+                    const keysToTry = [];
+                    if (articleId) {
+                        keysToTry.push(`item_${articleId}_name`);
+                    }
+                    const normalized = normalizeKey(rawName);
+                    if (normalized) {
+                        keysToTry.push(`item_${normalized}_name`, `item_${normalized}`);
+                    }
+                    let translated = rawName;
+                    if (typeof translator === 'function') {
+                        for (const key of keysToTry) {
+                            const value = translator(key, '');
+                            if (value && value !== key) {
+                                translated = value;
+                                break;
+                            }
+                        }
+                    }
+                    nameElement.textContent = translated;
+
+                    const descElement = container.querySelector('.item-description');
+                    if (descElement) {
+                        const rawDesc = descElement.getAttribute('data-article-desc') || descElement.textContent;
+                        const descKeys = [];
+                        if (articleId) {
+                            descKeys.push(`item_${articleId}_desc`);
+                        }
+                        if (normalized) {
+                            descKeys.push(`item_${normalized}_desc`);
+                        }
+                        let translatedDesc = rawDesc;
+                        if (typeof translator === 'function') {
+                            for (const key of descKeys) {
+                                const value = translator(key, '');
+                                if (value && value !== key) {
+                                    translatedDesc = value;
+                                    break;
+                                }
+                            }
+                        }
+                        descElement.textContent = translatedDesc;
+                    }
+                });
+            }
+
+            translateRankingArticles();
+            window.translateRankingArticles = translateRankingArticles;
+        });
+    </script>
 {% endblock %}

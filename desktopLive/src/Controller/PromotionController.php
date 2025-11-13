@@ -16,6 +16,10 @@ use App\Entity\PriceItems;
 use App\Entity\Item;
 use App\Entity\Users;
 use App\Entity\ItemSizeColor;
+use App\Entity\ItemSize;
+use App\Entity\ItemsStock;
+use App\Entity\Size;
+use App\Entity\Color;
 use App\Service\CloudinaryService;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -326,6 +330,349 @@ class PromotionController extends AbstractController
             return $this->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'upload : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/promotion/sizes', name: 'app_promotion_sizes', methods: ['GET'])]
+    public function getSizes(): JsonResponse
+    {
+        try {
+            $sizes = $this->entityManager->getRepository(Size::class)->findAll();
+            $data = array_map(function (Size $size) {
+                return [
+                    'id' => $size->getId(),
+                    'value' => $size->getNameSize(),
+                    'name' => $size->getNameSize()
+                ];
+            }, $sizes);
+
+            return $this->json([
+                'success' => true,
+                'sizes' => $data
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des tailles : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/promotion/colors', name: 'app_promotion_colors', methods: ['GET'])]
+    public function getColors(): JsonResponse
+    {
+        try {
+            $colors = $this->entityManager->getRepository(Color::class)->findAll();
+            $data = array_map(function (Color $color) {
+                return [
+                    'id' => $color->getId(),
+                    'name' => $color->getNameColor()
+                ];
+            }, $colors);
+
+            return $this->json([
+                'success' => true,
+                'colors' => $data
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des couleurs : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/promotion/item/{id}/sizes', name: 'app_promotion_item_sizes', methods: ['POST'])]
+    public function addItemSizes(int $id, Request $request): JsonResponse
+    {
+        try {
+            $item = $this->entityManager->getRepository(Item::class)->find($id);
+            if (!$item) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Article introuvable.'
+                ], 404);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            $sizeIds = $data['sizes'] ?? [];
+
+            if (empty($sizeIds)) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Aucune taille fournie.'
+                ], 400);
+            }
+
+            $created = 0;
+            foreach ($sizeIds as $sizeId) {
+                // Vérifier si la combinaison existe déjà
+                $existing = $this->entityManager->getRepository(ItemSize::class)->findOneBy([
+                    'item' => $item,
+                    'size' => $this->entityManager->getRepository(Size::class)->find($sizeId)
+                ]);
+
+                if (!$existing) {
+                    $size = $this->entityManager->getRepository(Size::class)->find($sizeId);
+                    if ($size) {
+                        $itemSize = new ItemSize();
+                        $itemSize->setItem($item);
+                        $itemSize->setSize($size);
+                        $itemSize->setValueSize($size->getNameSize());
+                        $this->entityManager->persist($itemSize);
+                        $created++;
+                    }
+                }
+            }
+
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => "$created taille(s) associée(s) à l'article.",
+                'created' => $created
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/promotion/item/{id}/colors', name: 'app_promotion_item_colors_post', methods: ['POST'])]
+    public function addItemColors(int $id, Request $request): JsonResponse
+    {
+        try {
+            $item = $this->entityManager->getRepository(Item::class)->find($id);
+            if (!$item) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Article introuvable.'
+                ], 404);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            $colorIds = $data['colors'] ?? [];
+
+            if (empty($colorIds)) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Aucune couleur fournie.'
+                ], 400);
+            }
+
+            // Récupérer toutes les tailles de l'article
+            $itemSizes = $item->getItemSizes();
+            if ($itemSizes->isEmpty()) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Veuillez d\'abord ajouter des tailles à l\'article.'
+                ], 400);
+            }
+
+            $created = 0;
+            foreach ($itemSizes as $itemSize) {
+                foreach ($colorIds as $colorId) {
+                    // Vérifier si la combinaison existe déjà
+                    $existing = $this->entityManager->getRepository(ItemSizeColor::class)->findOneBy([
+                        'itemSize' => $itemSize,
+                        'color' => $this->entityManager->getRepository(Color::class)->find($colorId)
+                    ]);
+
+                    if (!$existing) {
+                        $color = $this->entityManager->getRepository(Color::class)->find($colorId);
+                        if ($color) {
+                            $itemSizeColor = new ItemSizeColor();
+                            $itemSizeColor->setItemSize($itemSize);
+                            $itemSizeColor->setColor($color);
+                            $this->entityManager->persist($itemSizeColor);
+                            $created++;
+                        }
+                    }
+                }
+            }
+
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => "$created variante(s) couleur créée(s).",
+                'created' => $created
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/promotion/item/{id}/color/{colorId}/image', name: 'app_promotion_item_color_image', methods: ['POST'])]
+    public function uploadItemColorImage(int $id, int $colorId, Request $request, CloudinaryService $cloudinaryService): JsonResponse
+    {
+        try {
+            $item = $this->entityManager->getRepository(Item::class)->find($id);
+            if (!$item) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Article introuvable.'
+                ], 404);
+            }
+
+            $color = $this->entityManager->getRepository(Color::class)->find($colorId);
+            if (!$color) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Couleur introuvable.'
+                ], 404);
+            }
+
+            /** @var UploadedFile|null $imageFile */
+            $imageFile = $request->files->get('image');
+            if (!$imageFile) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Aucune image fournie.'
+                ], 400);
+            }
+
+            // Upload vers Cloudinary
+            $imageUrl = $cloudinaryService->uploadImageResized(
+                $imageFile,
+                'items/variants',
+                800,
+                800
+            );
+
+            // Mettre à jour toutes les variantes de cette couleur pour cet article
+            $updated = 0;
+            foreach ($item->getItemSizes() as $itemSize) {
+                foreach ($itemSize->getItemSizeColors() as $itemSizeColor) {
+                    if ($itemSizeColor->getColor()->getId() === $colorId) {
+                        $itemSizeColor->setImages($imageUrl);
+                        $updated++;
+                    }
+                }
+            }
+
+            if ($updated === 0) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Aucune variante trouvée pour cette couleur. Créez d\'abord les tailles et couleurs.'
+                ], 400);
+            }
+
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Image uploadée avec succès.',
+                'image_url' => $imageUrl,
+                'updated' => $updated
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'upload : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/promotion/item/{id}/stocks', name: 'app_promotion_item_stocks', methods: ['POST'])]
+    public function addItemStocks(int $id, Request $request): JsonResponse
+    {
+        try {
+            $item = $this->entityManager->getRepository(Item::class)->find($id);
+            if (!$item) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Article introuvable.'
+                ], 404);
+            }
+
+            $data = json_decode($request->getContent(), true);
+            $stocks = $data['stocks'] ?? [];
+
+            if (empty($stocks)) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Aucun stock fourni.'
+                ], 400);
+            }
+
+            $created = 0;
+            foreach ($stocks as $stockData) {
+                $sizeId = $stockData['size_id'] ?? null;
+                $colorId = $stockData['color_id'] ?? null;
+                $qty = $stockData['qty_available'] ?? 0;
+
+                if (!$sizeId || !$colorId || $qty <= 0) {
+                    continue;
+                }
+
+                // Trouver la combinaison ItemSizeColor
+                $itemSize = null;
+                foreach ($item->getItemSizes() as $is) {
+                    if ($is->getSize()->getId() === $sizeId) {
+                        $itemSize = $is;
+                        break;
+                    }
+                }
+
+                if (!$itemSize) {
+                    continue;
+                }
+
+                $itemSizeColor = null;
+                foreach ($itemSize->getItemSizeColors() as $isc) {
+                    if ($isc->getColor()->getId() === $colorId) {
+                        $itemSizeColor = $isc;
+                        break;
+                    }
+                }
+
+                if (!$itemSizeColor) {
+                    continue;
+                }
+
+                // Vérifier si un stock existe déjà
+                $existingStock = null;
+                foreach ($itemSizeColor->getStocks() as $stock) {
+                    $existingStock = $stock;
+                    break;
+                }
+
+                if ($existingStock) {
+                    // Mettre à jour le stock existant
+                    $existingStock->setInItem($qty);
+                    $existingStock->setOutItem(0);
+                    $existingStock->setDateMove(new \DateTime());
+                } else {
+                    // Créer un nouveau stock
+                    $itemsStock = new ItemsStock();
+                    $itemsStock->setItemSizeColor($itemSizeColor);
+                    $itemsStock->setInItem($qty);
+                    $itemsStock->setOutItem(0);
+                    $itemsStock->setDateMove(new \DateTime());
+                    $this->entityManager->persist($itemsStock);
+                }
+
+                $created++;
+            }
+
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => "$created stock(s) enregistré(s).",
+                'created' => $created
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Erreur : ' . $e->getMessage()
             ], 500);
         }
     }

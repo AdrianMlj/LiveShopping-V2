@@ -21,7 +21,7 @@
   </div>
 
   <div class="invoice-status-section">
-    <span class="status-badge status-{{ sale.commande.state.nameState|lower|replace({' ': '-'}) }}">{{ sale.commande.state.nameState }}</span>
+    <span class="status-badge status-{{ sale.commande.state.nameState|lower|replace({' ': '-'}) }}"><span data-i18n="state_{{ sale.commande.state.id }}_name">{{ sale.commande.state.nameState }}</span></span>
     {% if sale.isPaid %}
       <span class="status-badge paid">Payé</span>
     {% else %}

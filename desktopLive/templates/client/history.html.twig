@@ -91,7 +91,7 @@
             <select name="state" class="filter-select">
               <option value="">Tous les statuts</option>
               {% for state in states %}
-                <option value="{{ state.id }}">{{ state.nameState }}</option>
+                <option value="{{ state.id }}"><span data-i18n="state_{{ state.id }}_name">{{ state.nameState }}</span></option>
               {% endfor %}
             </select>
           </div>
@@ -142,7 +142,7 @@
         {% for detail in sale.commande.details %}
           {% set total = total + (detail.quantity * detail.price) %}
         {% endfor %}
-        
+
         <div class="order-item clickable-row" data-sale-id="{{ sale.id }}">
           <div class="order-summary">
             <div class="order-date-info">
@@ -162,7 +162,7 @@
             </div>
             <div class="order-status-badge">
               <span class="status-badge status-{{ sale.commande.state.nameState|lower|replace({' ': '-'}) }}">
-                {{ sale.commande.state.nameState }}
+                <span data-i18n="state_{{ sale.commande.state.id }}_name">{{ sale.commande.state.nameState }}</span>
               </span>
             </div>
           </div>
@@ -228,12 +228,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeChart() {
   const ctx = document.getElementById('purchaseChart').getContext('2d');
-  
+
   // Données simulées pour le graphique
   const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
   const completedData = [3, 5, 2, 8, 4, 6];
   const pendingData = [1, 2, 3, 1, 2, 1];
-  
+
   purchaseChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -308,9 +308,9 @@ function initializeEventListeners() {
 function viewOrderDetails(saleId) {
   currentOrderId = saleId;
   const orderItem = document.querySelector(`[data-sale-id="${saleId}"]`);
-  
+
   orderItem.classList.add('loading');
-  
+
   fetch(`/client/history/details?sale_id=${saleId}`)
     .then(response => response.json())
     .then(data => {
@@ -330,7 +330,7 @@ function viewOrderDetails(saleId) {
 
 function downloadInvoice(saleId) {
   showNotification('Préparation du téléchargement...', 'info');
-  
+
   // Simulation du téléchargement
   setTimeout(() => {
     showNotification('Facture téléchargée avec succès', 'success');
@@ -360,7 +360,7 @@ function applyFilters() {
 function sortOrders(criteria) {
   const ordersList = document.querySelector('.orders-list');
   const orders = Array.from(ordersList.querySelectorAll('.order-item'));
-  
+
   orders.sort((a, b) => {
     switch(criteria) {
       case 'newest':
@@ -373,9 +373,9 @@ function sortOrders(criteria) {
         return 0;
     }
   });
-  
+
   orders.forEach(order => ordersList.appendChild(order));
-  
+
   showNotification('Tri appliqué', 'success');
 }
 
@@ -383,7 +383,7 @@ function showNotification(message, type = 'info') {
   const notification = document.getElementById('notification');
   notification.textContent = message;
   notification.className = `notification ${type} show`;
-  
+
   setTimeout(() => {
     notification.classList.remove('show');
   }, 3000);
@@ -1021,7 +1021,7 @@ body {
   .dashboard-section {
     grid-template-columns: 1fr;
   }
-  
+
   .hero-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1031,40 +1031,40 @@ body {
   .purchase-history {
     padding: 15px;
   }
-  
+
   .hero-content {
     padding: 30px 20px;
   }
-  
+
   .hero-title {
     font-size: 2rem;
   }
-  
+
   .hero-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .orders-list {
     gap: 15px;
   }
-  
+
   .order-summary {
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;
   }
-  
+
   .order-amount-status {
     justify-content: space-between;
     width: 100%;
   }
-  
+
   .section-header {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
   }
-  
+
   .filter-actions {
     flex-direction: column;
   }
@@ -1075,13 +1075,13 @@ body {
     width: 95%;
     margin: 20px;
   }
-  
+
   .modal-header {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
   }
-  
+
   .modal-actions {
     justify-content: space-between;
   }

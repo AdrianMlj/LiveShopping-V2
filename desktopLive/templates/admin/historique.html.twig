@@ -44,7 +44,7 @@
                         {% for state in states %}
                             <option value="{{ state.id }}"
                                 {{ app.request.query.get('state') == state.id ? 'selected' }}>
-                                {{ state.nameState }}
+                                <span data-i18n="state_{{ state.id }}_name">{{ state.nameState }}</span>
                             </option>
                         {% endfor %}
                     </select>
@@ -59,6 +59,19 @@
                         <option value=""><span data-i18n="all">-- Tous --</span></option>
                         <option value="1" {{ app.request.query.get('is_paid') == '1' ? 'selected' }}><span data-i18n="paid">Payé</span></option>
                         <option value="0" {{ app.request.query.get('is_paid') == '0' ? 'selected' }}><span data-i18n="unpaid">Non payé</span></option>
+                    </select>
+                </div>
+
+                <div class="historique-filter-group">
+                    <label for="sort" class="historique-filter-label">
+                        <i class="fas fa-sort"></i>
+                        <span data-i18n="sort">Trier</span>
+                    </label>
+                    <select name="sort" id="sort" class="historique-input">
+                        <option value="recent" {{ app.request.query.get('sort') in [null, '', 'recent'] ? 'selected' }} data-i18n="sort_recent">Plus récent</option>
+                        <option value="oldest" {{ app.request.query.get('sort') == 'oldest' ? 'selected' }} data-i18n="sort_oldest">Plus ancien</option>
+                        <option value="amount_asc" {{ app.request.query.get('sort') == 'amount_asc' ? 'selected' }} data-i18n="sort_amount_asc">Montant croissant</option>
+                        <option value="amount_desc" {{ app.request.query.get('sort') == 'amount_desc' ? 'selected' }} data-i18n="sort_amount_desc">Montant décroissant</option>
                     </select>
                 </div>
 
@@ -103,8 +116,8 @@
                                 <td>{{ sale.saleDate|date('d/m/Y H:i') }}</td>
                                 <td>{{ sale.commande.client ? sale.commande.client.getUsername() : '-' }}</td>
                                 <td>{{ sale.commande.seller ? sale.commande.seller.getUsername() : '-' }}</td>
-                                <td>{{ sale.commande.state.nameState }}</td>
-                                <td class="historique-amount">{{ total|number_format(2, ',', ' ') }} €</td>
+                                <td><span data-i18n="state_{{ sale.commande.state.id }}_name">{{ sale.commande.state.nameState }}</span></td>
+                                <td class="historique-amount">{{ total|number_format(0, ',', ' ') }} Ar</td>
                                 <td>
                                     {% if sale.isPaid %}
                                         <span class="historique-badge historique-badge-success" data-i18n="paid">Payé</span>
@@ -120,6 +133,25 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            {# Pagination #}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    <span data-i18n="page">Page</span> {{ sales.getCurrentPageNumber() }} <span data-i18n="of">sur</span> {{ sales.getPageCount() }}
+                    • {{ sales.getTotalItemCount() }} <span data-i18n="items">éléments</span>
+                </div>
+                <div class="pagination">
+                    {{ knp_pagination_render(sales, '@KnpPaginator/Pagination/twitter_bootstrap_v4_pagination.html.twig', {}, {
+                        'pageParameterName': 'history_page',
+                        'sortFieldParameterName': 'history_sort',
+                        'sortDirectionParameterName': 'history_direction',
+                        'viewParams': {
+                            'align': 'center',
+                            'size': 'small',
+                            'style': 'bottom'
+                        }
+                    }) }}
+                </div>
             </div>
         </div>
     </div>
@@ -391,17 +423,17 @@
                         doc.setFont('helvetica', 'normal');
                         doc.setTextColor(120, 120, 120);
                         doc.setFontSize(9);
-                        doc.text(`Sous-total HT: ${totalHT.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                        doc.text(`Sous-total HT: ${totalHT.toFixed(2).replace('.', ',')} Ar`, 120, yPos);
                         yPos += 8;
 
-                        doc.text(`TVA (20%): ${tva.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                        doc.text(`TVA (20%): ${tva.toFixed(2).replace('.', ',')} Ar`, 120, yPos);
                         yPos += 8;
 
                         // Total TTC en gras et plus grand
                         doc.setTextColor(0, 0, 0);
                         doc.setFont('helvetica', 'bold');
                         doc.setFontSize(12);
-                        doc.text(`TOTAL TTC: ${totalTTC.toFixed(2).replace('.', ',')} €`, 120, yPos);
+                        doc.text(`TOTAL TTC: ${totalTTC.toFixed(2).replace('.', ',')} Ar`, 120, yPos);
                     }
 
                     // === PIED DE PAGE PROFESSIONNEL ===

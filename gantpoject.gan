@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><project name="Untitled Gantt Project" company="" webLink="http://" view-date="2025-07-27" view-index="0" gantt-divider-location="351" resource-divider-location="300" version="3.3.3311" locale="fr_FR">
+    <description/>
+    <view zooming-state="default:2" id="gantt-chart">
+        <field id="tpd3" name="Nom" width="200" order="0"/>
+        <field id="tpd4" name="Date de début" width="75" order="1"/>
+        <field id="tpd5" name="Date de fin" width="75" order="2"/>
+        <field id="tpd15" name="Notes" width="20" order="3"/>
+        <option id="filter.completedTasks" value="false"/>
+        <option id="filter.dueTodayTasks" value="false"/>
+        <option id="filter.overdueTasks" value="false"/>
+        <option id="filter.inProgressTodayTasks" value="false"/>
+        <option id="color.recent"><![CDATA[#9999ff]]></option>
+    </view>
+    <view id="resource-table">
+        <field id="0" name="Nom" width="210" order="0"/>
+        <field id="1" name="Rôle par défaut" width="86" order="1"/>
+    </view>
+    <!-- -->
+    <calendars>
+        <day-types>
+            <day-type id="0"/>
+            <day-type id="1"/>
+            <default-week id="1" name="default" sun="1" mon="0" tue="0" wed="0" thu="0" fri="0" sat="1"/>
+            <only-show-weekends value="false"/>
+            <overriden-day-types/>
+            <days/>
+        </day-types>
+    </calendars>
+    <tasks empty-milestones="true">
+        <taskproperties>
+            <taskproperty id="tpd0" name="type" type="default" valuetype="icon"/>
+            <taskproperty id="tpd1" name="priority" type="default" valuetype="icon"/>
+            <taskproperty id="tpd2" name="info" type="default" valuetype="icon"/>
+            <taskproperty id="tpd3" name="name" type="default" valuetype="text"/>
+            <taskproperty id="tpd4" name="begindate" type="default" valuetype="date"/>
+            <taskproperty id="tpd5" name="enddate" type="default" valuetype="date"/>
+            <taskproperty id="tpd6" name="duration" type="default" valuetype="int"/>
+            <taskproperty id="tpd7" name="completion" type="default" valuetype="int"/>
+            <taskproperty id="tpd8" name="coordinator" type="default" valuetype="text"/>
+            <taskproperty id="tpd9" name="predecessorsr" type="default" valuetype="text"/>
+        </taskproperties>
+        <task id="0" uid="3f22640f219d42439dbbe42058015f9b" name="Préparation" color="#9999ff" shape="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0" meeting="false" start="2025-07-28" duration="11" complete="0" expand="true">
+            <task id="5" uid="32a37847a81e40dcac9acde122d34ab5" name="Apprentissage" meeting="false" start="2025-07-28" duration="2" complete="0" expand="true"/>
+            <task id="6" uid="0f0ba68e04444a3f83af4de7adeef146" name="Installation des environnements" meeting="false" start="2025-07-30" duration="1" complete="0" expand="true"/>
+            <task id="7" uid="54e8502dc3fa45e8be0ca6cee2db59b9" name="Planification des fonctionnalités" meeting="false" start="2025-07-31" duration="4" complete="0" expand="true"/>
+            <task id="8" uid="4de40fc8ccbd482baa2a40c25b57bb96" name="IHM et wareframe" meeting="false" start="2025-08-06" duration="2" complete="0" expand="true"/>
+            <task id="9" uid="15c0c7e2822a4ce2aed3c5fd9c62d10a" name="Conception de base de donnée" meeting="false" start="2025-08-08" duration="2" complete="0" expand="true"/>
+        </task>
+    </tasks>
+    <resources/>
+    <allocations/>
+    <vacations/>
+    <previous/>
+    <roles roleset-name="Default"/>
+</project>

@@ -28,16 +28,10 @@ class ItemsStockRepository extends ServiceEntityRepository
         $conn = $this->getEntityManager()->getConnection();
 
         $sql = "
-            SELECT
-                s.*, i.name_item, isz.value_size, c.name_color
-            FROM items_stock s
-            INNER JOIN item_size_color isc ON s.id_item_size_color = isc.id_item_size_color
-            INNER JOIN color c ON isc.id_color = c.id_color
-            INNER JOIN item_size isz ON isc.id_item_size = isz.id_item_size
-            INNER JOIN item i ON isz.id_item = i.id_item
-            WHERE s.date_move BETWEEN :start AND :end
-            AND i.id_seller = :idSeller
-            ORDER BY s.date_move ASC
+            SELECT *
+            FROM v_stock_movement_details
+            WHERE date_move BETWEEN :start AND :end
+            AND id_seller = :idSeller
         ";
 
         $stmt = $conn->prepare($sql);
@@ -55,23 +49,11 @@ class ItemsStockRepository extends ServiceEntityRepository
         $conn = $this->getEntityManager()->getConnection();
 
         $sql = "
-            SELECT
-                i.id_item AS itemId,
-                i.name_item AS itemName,
-                isz.id_item_size AS itemSizeId,
-                isz.value_size AS valueSize,
-                c.name_color AS colorName,
-                isc.id_item_size_color AS itemSizeColorId,
-                COALESCE(SUM(s.in_item),0) - COALESCE(SUM(s.out_item),0) AS currentStock
-            FROM items_stock s
-            INNER JOIN item_size_color isc ON s.id_item_size_color = isc.id_item_size_color
-            INNER JOIN color c ON isc.id_color = c.id_color
-            INNER JOIN item_size isz ON isc.id_item_size = isz.id_item_size
-            INNER JOIN item i ON isz.id_item = i.id_item
-            WHERE i.id_seller = :idSeller
-            GROUP BY i.id_item, i.name_item, isz.id_item_size, isz.value_size, c.name_color, isc.id_item_size_color
-            HAVING COALESCE(SUM(s.in_item),0) - COALESCE(SUM(s.out_item),0) > 0
-            ORDER BY i.name_item ASC, isz.value_size ASC, c.name_color ASC
+            SELECT *
+            FROM v_current_stock_per_variant
+            WHERE sellerid = :idSeller
+            AND currentstock > 0
+            ORDER BY itemname ASC, valuesize ASC, colorname ASC;
         ";
 
         $stmt = $conn->prepare($sql);
@@ -86,32 +68,42 @@ class ItemsStockRepository extends ServiceEntityRepository
     {
         $conn = $this->getEntityManager()->getConnection();
 
+        // $sql = "
+        //     SELECT
+        //         SUM(stockQty) AS capacity_units,
+        //         SUM(stockQty * latestPrice) AS capacity_ca
+        //     FROM (
+        //         SELECT
+        //             i.id_item AS itemId,
+        //             COALESCE(SUM(s.in_item),0) - COALESCE(SUM(s.out_item),0) AS stockQty,
+        //             (
+        //                 SELECT p.price
+        //                 FROM price_items p
+        //                 WHERE p.id_item = i.id_item
+        //                 ORDER BY p.date_price DESC
+        //                 LIMIT 1
+        //             ) AS latestPrice
+        //         FROM items_stock s
+        //         INNER JOIN item_size_color isc ON s.id_item_size_color = isc.id_item_size_color
+        //         INNER JOIN item_size isz ON isc.id_item_size = isz.id_item_size
+        //         INNER JOIN item i ON isz.id_item = i.id_item
+        //         WHERE i.id_seller = :idSeller
+        //         GROUP BY i.id_item
+        //     ) t
+        // ";
+
         $sql = "
             SELECT
-                SUM(stockQty) AS capacity_units,
-                SUM(stockQty * latestPrice) AS capacity_ca
-            FROM (
-                SELECT
-                    i.id_item AS itemId,
-                    COALESCE(SUM(s.in_item),0) - COALESCE(SUM(s.out_item),0) AS stockQty,
-                    (
-                        SELECT p.price
-                        FROM price_items p
-                        WHERE p.id_item = i.id_item
-                        ORDER BY p.date_price DESC
-                        LIMIT 1
-                    ) AS latestPrice
-                FROM items_stock s
-                INNER JOIN item_size_color isc ON s.id_item_size_color = isc.id_item_size_color
-                INNER JOIN item_size isz ON isc.id_item_size = isz.id_item_size
-                INNER JOIN item i ON isz.id_item = i.id_item
-                WHERE i.id_seller = :idSeller
-                GROUP BY i.id_item
-            ) t
+                SUM(stock_qty) AS capacity_units,
+                SUM(stock_qty * COALESCE(latest_price, 0)) AS capacity_ca
+            FROM v_item_stock_with_latest_price
+            WHERE seller_id = :idSeller
         ";
 
         $stmt = $conn->prepare($sql);
-        $result = $stmt->executeQuery(['idSeller' => $idSeller]);
+        $result = $stmt->executeQuery([
+            'idSeller' => $idSeller,
+        ]);
         $row = $result->fetchAssociative();
 
         return [

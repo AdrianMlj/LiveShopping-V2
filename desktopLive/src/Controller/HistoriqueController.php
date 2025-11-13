@@ -39,13 +39,28 @@ class HistoriqueController extends AbstractController
             'is_paid' => $request->query->get('is_paid') !== null && $request->query->get('is_paid') !== ''
                         ? (bool)$request->query->get('is_paid')
                         : null,
+            'sort' => $request->query->get('sort') ?: 'recent',
         ];
 
         $sales = $historyRepo->getSalesBySeller($sellerId, $filters);
+
+        // Pagination
+        $currentPage = $request->query->getInt('history_page', 1);
+        $perPage = 3;
+        $paginatedSales = $this->paginator->paginate(
+            $sales,
+            $currentPage,
+            $perPage,
+            [
+                'pageParameterName' => 'history_page',
+                'sortFieldParameterName' => 'history_sort',
+                'sortDirectionParameterName' => 'history_direction'
+            ]
+        );
         $states = $stateRepo->findAll();
 
         return $this->render('admin/historique.html.twig', [
-            'sales' => $sales,
+            'sales' => $paginatedSales,
             'states' => $states,
         ]);
     }
