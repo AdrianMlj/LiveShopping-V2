@@ -93,7 +93,7 @@
                         <div class="thumb">
                             <img src="{{ live.thumbnail }}" alt="{{ live.title }}">
                             <div class="badge">{{ live.language }}</div>
-                            <div class="viewer">{{ live.viewers }}</div>
+                            {# <div class="viewer">{{ live.viewers }}</div> #}
                             <div class="username-chip">{{ live.username }}</div>
                         </div>
                     </a>
@@ -112,7 +112,6 @@
                         <div class="thumb">
                             <img src="${live.seller?.pdp || '/default-pdp.jpg'}" alt="${live.seller?.name || 'Streamer'}">
                             <div class="badge">${live.language || 'FR'}</div>
-                            <div class="viewer">${live.viewers || 0}</div>
                             <div class="username-chip">${live.seller?.name || 'Streamer'}</div>
                         </div>
                     </a>

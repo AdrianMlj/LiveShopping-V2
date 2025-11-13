@@ -53,7 +53,7 @@
             <!-- Cart Items -->
             <div class="cart-items-section">
                 {% for item in cart %}
-                <div class="cart-item-card" data-cart-key="{{ item.cart_key|default(item.id) }}" data-price="{{ item.price }}">
+                <div class="cart-item-card" data-cart-key="{{ item.cart_key|default(item.id) }}" data-price="{{ item.price }}" {% set ck = item.cart_key|default(item.id ~ '_' ~ (item.itemSizeId|default(0)) ~ '_' ~ (item.colorId|default(0))) %}{% set maxStock = stockByCartKey[ck]|default(null) %}{% if maxStock is not null %}data-max-stock="{{ maxStock }}"{% endif %}>
                     <!-- Product Image -->
                     <div class="product-image-container">
                         {% set displayImage = null %}
@@ -143,6 +143,7 @@
                                         <i class="fa-solid fa-plus"></i>
                                     </button>
                                 </div>
+                                <div class="qty-limit-msg" role="status" aria-live="polite"></div>
                                 
                                 <div class="item-total">
                                     <span class="total-label">Sous-total :</span>
@@ -499,7 +500,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnBackHome = document.getElementById('btn-back-home');
     
     if (btnNextShipping) {
-        btnNextShipping.addEventListener('click', () => showStep('shipping'));
+        btnNextShipping.addEventListener('click', async () => {
+            btnNextShipping.disabled = true;
+            try {
+                const resp = await fetch('/client/cart/validate-stock', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await resp.json();
+                if (data && data.success) {
+                    showStep('shipping');
+                } else {
+                    const msg = (data && ((data.errors && data.errors.join('\n')) || data.message)) || 'Un article est en rupture de stock.';
+                    showNotification(msg, 'error');
+                }
+            } catch (e) {
+                console.error('Erreur validation stock', e);
+                showNotification('Erreur lors de la validation du stock', 'error');
+            } finally {
+                btnNextShipping.disabled = false;
+            }
+        });
     }
     if (btnBackCart) {
         btnBackCart.addEventListener('click', () => showStep('cart'));
@@ -609,15 +630,33 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', async function() {
             const cartKey = this.getAttribute('data-cart-key');
             const input = document.querySelector(`.qty-input[data-cart-key="${cartKey}"]`);
+            const card = document.querySelector(`.cart-item-card[data-cart-key="${cartKey}"]`);
+            const maxStockAttr = card ? card.getAttribute('data-max-stock') : null;
+            const maxStock = maxStockAttr ? parseInt(maxStockAttr) : null;
+            const msgEl = card ? card.querySelector('.qty-limit-msg') : null;
             let currentValue = parseInt(input.value);
             
             if (this.classList.contains('increase')) {
+                if (maxStock !== null && currentValue >= maxStock) {
+                    showNotification('Quantité maximale atteinte pour cet article.', 'warning');
+                    this.disabled = true;
+                    if (msgEl) { msgEl.textContent = 'Quantité maximale atteinte'; msgEl.style.display = 'block'; }
+                    return;
+                }
                 input.value = currentValue + 1;
             } else if (this.classList.contains('decrease') && currentValue > 1) {
                 input.value = currentValue - 1;
             }
             
             const newQuantity = parseInt(input.value);
+            const incBtn = card ? card.querySelector('.qty-btn.increase') : null;
+            if (incBtn) {
+                if (maxStock !== null && newQuantity >= maxStock) { incBtn.disabled = true; } else { incBtn.disabled = false; }
+            }
+            if (msgEl) {
+                if (maxStock !== null && newQuantity >= maxStock) { msgEl.textContent = 'Quantité maximale atteinte'; msgEl.style.display = 'block'; }
+                else { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+            }
             updateCartDisplay(cartKey, newQuantity);
             await updateQuantity(cartKey, newQuantity);
         });
@@ -627,11 +666,44 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.qty-input').forEach(input => {
         input.addEventListener('change', async function() {
             const cartKey = this.getAttribute('data-cart-key');
+            const card = document.querySelector(`.cart-item-card[data-cart-key="${cartKey}"]`);
+            const maxStockAttr = card ? card.getAttribute('data-max-stock') : null;
+            const maxStock = maxStockAttr ? parseInt(maxStockAttr) : null;
+            const msgEl = card ? card.querySelector('.qty-limit-msg') : null;
             if (this.value < 1) this.value = 1;
-            const newQuantity = parseInt(this.value);
+            let newQuantity = parseInt(this.value);
+            if (maxStock !== null && newQuantity > maxStock) {
+                newQuantity = maxStock;
+                this.value = maxStock;
+                showNotification('Quantité maximale atteinte pour cet article.', 'warning');
+                if (msgEl) { msgEl.textContent = 'Quantité maximale atteinte'; msgEl.style.display = 'block'; }
+            }
+            const incBtn = card ? card.querySelector('.qty-btn.increase') : null;
+            if (incBtn) {
+                if (maxStock !== null && newQuantity >= maxStock) { incBtn.disabled = true; } else { incBtn.disabled = false; }
+            }
+            if (msgEl) {
+                if (maxStock !== null && newQuantity >= maxStock) { msgEl.style.display = 'block'; }
+                else { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+            }
             updateCartDisplay(cartKey, newQuantity);
             await updateQuantity(cartKey, newQuantity);
         });
+    });
+
+    // État initial des boutons + selon max
+    document.querySelectorAll('.cart-item-card').forEach(card => {
+        const maxAttr = card.getAttribute('data-max-stock');
+        if (!maxAttr) return;
+        const max = parseInt(maxAttr);
+        const input = card.querySelector('.qty-input');
+        const incBtn = card.querySelector('.qty-btn.increase');
+        const msgEl = card.querySelector('.qty-limit-msg');
+        if (input && incBtn) {
+            const q = parseInt(input.value);
+            incBtn.disabled = (q >= max);
+            if (msgEl) { msgEl.style.display = (q >= max) ? 'block' : 'none'; msgEl.textContent = (q >= max) ? 'Quantité maximale atteinte' : ''; }
+        }
     });
 
     // Fonction pour envoyer la mise à jour de la quantité au serveur
@@ -2007,6 +2079,12 @@ textarea.form-input {
     .checkout-card {
         padding: 20px;
     }
+}
+.qty-limit-msg {
+    color: var(--danger);
+    font-size: 0.85rem;
+    margin-top: 6px;
+    display: none;
 }
 </style>
 {% endblock %}

@@ -210,6 +210,9 @@
         body.dark-theme .price-regular { color: #e0e0e0; }
         body.dark-theme .price-current { color: #ff6b7a; }
         body.dark-theme .price-base s { color: #9ca3af; }
+        /* Modal buttons alignment fix */
+        #productModal .btn-bag { margin-top: 0 !important; }
+        #productModal #modalCloseBtn { padding: 12px 18px; border-radius: 12px; }
   /* Floating hearts animation */
   /* Layer that holds the hearts inside the player-thumb (so they appear on the video area) */
   .player-thumb .hearts-layer { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
@@ -562,7 +565,7 @@
                             <i class="fas fa-comments"></i>
                             <i class="fas fa-users"></i>
                         </div>
-                        <div class="viewer-pill">{{ live.nbrLike|default(0) }}</div>
+                        {# <div class="viewer-pill">{{ live.nbrLike|default(0) }}</div> #}
                     </div>
                 </div>
 

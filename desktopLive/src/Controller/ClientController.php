@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Repository\RatingRepository;
 use App\Entity\Rating;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\ItemSizeColor;
 
 class ClientController extends AbstractController
 {
@@ -36,6 +37,55 @@ class ClientController extends AbstractController
             $session->set('ratings', $ratings);
         }
         return $this->redirectToRoute('app_home');
+    }
+
+    #[Route('/client/cart/validate-stock', name: 'app_client_cart_validate_stock', methods: ['POST'])]
+    public function validateCartStock(
+        Request $request,
+        EntityManagerInterface $em,
+        \App\Repository\ItemRepository $itemRepo
+    ): JsonResponse {
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
+        if (!$cart || count($cart) === 0) {
+            return $this->json(['success' => false, 'message' => 'Panier vide'], 400);
+        }
+
+        $errors = [];
+        foreach ($cart as $ci) {
+            $itemId = (int)($ci['id'] ?? 0);
+            $sizeId = (int)($ci['itemSizeId'] ?? 0);
+            $colorId = (int)($ci['colorId'] ?? 0);
+            $qty = (int)($ci['quantity'] ?? 1);
+
+            if ($itemId <= 0 || $sizeId <= 0 || $colorId <= 0) {
+                // Variante incomplète: on bloque pour éviter incohérences
+                $errors[] = 'Veuillez sélectionner taille et couleur pour tous les articles.';
+                continue;
+            }
+
+            $item = $itemRepo->find($itemId);
+            $isc = $em->getRepository(ItemSizeColor::class)->findOneBy(['itemSize' => $sizeId, 'color' => $colorId]);
+            if (!$isc) {
+                $errors[] = sprintf('Article "%s" indisponible pour cette variante.', $item ? ($item->getNameItem() ?? 'Article') : 'Article');
+                continue;
+            }
+
+            $available = 0;
+            foreach ($isc->getStocks() as $st) {
+                $available += max(0, (int)$st->getInItem()) - max(0, (int)$st->getOutItem());
+            }
+            if ($available < $qty) {
+                // Ne pas exposer de quantité: message générique
+                $errors[] = sprintf('Rupture de stock pour "%s".', $item ? ($item->getNameItem() ?? 'Article') : 'Article');
+            }
+        }
+
+        if (!empty($errors)) {
+            return $this->json(['success' => false, 'errors' => $errors, 'message' => 'Certains articles sont indisponibles'], 400);
+        }
+
+        return $this->json(['success' => true]);
     }
     #[Route('/client/product/rate', name: 'app_client_product_rate', methods: ['POST'])]
     public function rateProductAjax(Request $request, EntityManagerInterface $em, \App\Repository\ItemRepository $itemRepo, RatingRepository $ratingRepo): JsonResponse
@@ -284,7 +334,7 @@ class ClientController extends AbstractController
     }
     
     #[Route('/client/panier', name: 'app_client_panier')]
-    public function panier(Request $request, \App\Repository\ItemRepository $itemRepo, \App\Repository\ItemSizeRepository $itemSizeRepo): Response
+    public function panier(Request $request, \App\Repository\ItemRepository $itemRepo, \App\Repository\ItemSizeRepository $itemSizeRepo, EntityManagerInterface $em): Response
     {
         // Exemple : récupération du panier depuis la session
         $session = $request->getSession();
@@ -377,11 +427,35 @@ class ClientController extends AbstractController
             }
         }
 
+        // Préparer la disponibilité (stock) par article du panier (clé = cart_key)
+        $stockByCartKey = [];
+        foreach ($cart as $ci) {
+            $itemId = (int)($ci['id'] ?? 0);
+            $sizeId = (int)($ci['itemSizeId'] ?? 0);
+            $colorId = (int)($ci['colorId'] ?? 0);
+            $cartKey = $ci['cart_key'] ?? ($itemId . '_' . $sizeId . '_' . $colorId);
+            $available = null;
+            if ($sizeId > 0 && $colorId > 0) {
+                $isc = $em->getRepository(\App\Entity\ItemSizeColor::class)->findOneBy(['itemSize' => $sizeId, 'color' => $colorId]);
+                if ($isc) {
+                    $sum = 0;
+                    foreach ($isc->getStocks() as $st) {
+                        $sum += max(0, (int)$st->getInItem()) - max(0, (int)$st->getOutItem());
+                    }
+                    $available = max(0, $sum);
+                } else {
+                    $available = 0;
+                }
+            }
+            $stockByCartKey[$cartKey] = $available;
+        }
+
         return $this->render('client/panier.html.twig', [
             'cart' => $cart,
             'cartTotal' => $cartTotal,
             'sizesByItem' => $sizesByItem,
             'colorsBySize' => $colorsBySize,
+            'stockByCartKey' => $stockByCartKey,
         ]);
     }
 
@@ -454,6 +528,30 @@ class ClientController extends AbstractController
             return $this->json(['success' => false, 'message' => 'Panier vide'], 400);
         }
 
+        // Validation stock (anti-rupture) avant création de commande
+        foreach ($cart as $ci) {
+            $item = $itemRepo->find((int)($ci['id'] ?? 0));
+            $sizeId = (int)($ci['itemSizeId'] ?? 0);
+            $colorId = (int)($ci['colorId'] ?? 0);
+            $qty = (int)($ci['quantity'] ?? 1);
+
+            if ($sizeId <= 0 || $colorId <= 0) {
+                return $this->json(['success' => false, 'message' => 'Veuillez sélectionner taille et couleur pour tous les articles.'], 400);
+            }
+
+            $isc = $em->getRepository(ItemSizeColor::class)->findOneBy(['itemSize' => $sizeId, 'color' => $colorId]);
+            if (!$isc) {
+                return $this->json(['success' => false, 'message' => sprintf('Article "%s" indisponible pour cette variante.', $item ? ($item->getNameItem() ?? 'Article') : 'Article')], 400);
+            }
+            $available = 0;
+            foreach ($isc->getStocks() as $st) {
+                $available += max(0, (int)$st->getInItem()) - max(0, (int)$st->getOutItem());
+            }
+            if ($available < $qty) {
+                return $this->json(['success' => false, 'message' => sprintf('Rupture de stock pour "%s".', $item ? ($item->getNameItem() ?? 'Article') : 'Article')], 400);
+            }
+        }
+
         // Group items by seller
         $groups = [];
         foreach ($cart as $ci) {
@@ -511,6 +609,25 @@ class ClientController extends AbstractController
                     $detail->setQuantity((int)($ci['quantity'] ?? 1));
                     $detail->setPrice((string)number_format((float)($ci['price'] ?? 0), 2, '.', ''));
                     $commande->addDetail($detail);
+
+                    // Décrémenter le stock (mouvement de sortie) sur la variante Taille/Couleur
+                    $colorId = (int)($ci['colorId'] ?? 0);
+                    if ($colorId <= 0) {
+                        throw new \InvalidArgumentException('Veuillez choisir une couleur pour l\'article "'.$item->getNameItem().'"');
+                    }
+                    $isc = $em->getRepository(\App\Entity\ItemSizeColor::class)->findOneBy([
+                        'itemSize' => $itemSize->getId(),
+                        'color' => $colorId,
+                    ]);
+                    if (!$isc) {
+                        throw new \RuntimeException('Variante taille/couleur introuvable pour le mouvement de stock.');
+                    }
+                    $stockMove = new \App\Entity\ItemsStock();
+                    $stockMove->setItemSizeColor($isc);
+                    $stockMove->setInItem(0);
+                    $stockMove->setOutItem((int)$detail->getQuantity());
+                    $stockMove->setDateMove(new \DateTime());
+                    $em->persist($stockMove);
                 }
 
                 $em->persist($commande);
@@ -1116,39 +1233,73 @@ class ClientController extends AbstractController
         return $this->json(['success' => true, 'action' => 'added']);
     }
 
-    // #[Route('/client/cart/update-quantity', name: 'app_client_update_quantity', methods: ['POST'])]
-    // public function updateCartQuantity(Request $request): JsonResponse
-    // {
-    //     $data = json_decode($request->getContent(), true);
-    //     $cartKey = $data['cartKey'] ?? null;
-    //     $quantity = (int) ($data['quantity'] ?? 1);
+    #[Route('/client/cart/update-quantity', name: 'app_client_update_quantity', methods: ['POST'])]
+    public function updateCartQuantity(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $cartKey = $data['cartKey'] ?? null;
+        $quantity = (int) ($data['quantity'] ?? 1);
 
-    //     if (!$cartKey || $quantity < 1) {
-    //         return new JsonResponse([
-    //             'success' => false,
-    //             'message' => 'Paramètres invalides',
-    //             'previousQuantity' => 1
-    //         ], 400);
-    //     }
+        if (!$cartKey || $quantity < 1) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Paramètres invalides',
+                'previousQuantity' => 1
+            ], 400);
+        }
 
-    //     $cart = $this->get('session')->get('cart', []);
-    //     if (!isset($cart[$cartKey])) {
-    //         return new JsonResponse([
-    //             'success' => false,
-    //             'message' => 'Article non trouvé dans le panier',
-    //             'previousQuantity' => 1
-    //         ], 404);
-    //     }
+        $session = $request->getSession();
+        $cart = $session->get('cart', []);
 
-    //     $previousQuantity = $cart[$cartKey]['quantity'];
-    //     $cart[$cartKey]['quantity'] = $quantity;
+        $index = null;
+        foreach ($cart as $i => $ci) {
+            if (($ci['cart_key'] ?? null) === $cartKey) {
+                $index = $i; break;
+            }
+        }
+        if ($index === null) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Article non trouvé dans le panier',
+                'previousQuantity' => 1
+            ], 404);
+        }
 
-    //     $this->get('session')->set('cart', $cart);
+        $current = $cart[$index];
+        $prevQty = (int)($current['quantity'] ?? 1);
 
-    //     return new JsonResponse([
-    //         'success' => true,
-    //         'message' => 'Quantité mise à jour',
-    //         'previousQuantity' => $previousQuantity
-    //     ]);
-    // }
+        // Vérifier la dispo si variante connue
+        $sizeId = (int)($current['itemSizeId'] ?? 0);
+        $colorId = (int)($current['colorId'] ?? 0);
+        if ($sizeId > 0 && $colorId > 0) {
+            $isc = $em->getRepository(\App\Entity\ItemSizeColor::class)->findOneBy(['itemSize' => $sizeId, 'color' => $colorId]);
+            $available = null;
+            if ($isc) {
+                $sum = 0;
+                foreach ($isc->getStocks() as $st) {
+                    $sum += max(0, (int)$st->getInItem()) - max(0, (int)$st->getOutItem());
+                }
+                $available = max(0, $sum);
+            } else {
+                $available = 0;
+            }
+            if ($available !== null && $quantity > $available) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Quantité maximale atteinte pour cet article.',
+                    'previousQuantity' => min($prevQty, $available)
+                ], 400);
+            }
+        }
+
+        // Mise à jour
+        $cart[$index]['quantity'] = $quantity;
+        $session->set('cart', $cart);
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Quantité mise à jour',
+            'previousQuantity' => $prevQty
+        ]);
+    }
 }

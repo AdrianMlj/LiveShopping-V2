@@ -19,7 +19,8 @@ class ItemRepository extends ServiceEntityRepository
 
     public function findAvailableItems($user): array
     {
-        $expr = 'SUM(s.inItem - COALESCE(s.outItem, 0))';
+        // Inclure tous les articles (même sans stock), et retourner 0 si pas de stock
+        $expr = 'COALESCE(SUM(s.inItem - COALESCE(s.outItem, 0)), 0)';
         $sub = $this->getEntityManager()->createQueryBuilder()
             ->select('MAX(p2.datePrice)')
             ->from(PriceItems::class, 'p2')
@@ -37,9 +38,9 @@ class ItemRepository extends ServiceEntityRepository
             'COALESCE(i.images, MIN(isc.images)) AS images'
         )
         ->join('i.category', 'c')
-        ->join('i.itemSizes', 'isize')
+        ->leftJoin('i.itemSizes', 'isize')
         ->leftJoin('isize.itemSizeColors', 'isc')
-        ->join('isc.stocks', 's')
+        ->leftJoin('isc.stocks', 's')
         ->join('i.priceItems', 'p')
         ->leftJoin('i.promotions', 'promo', 'WITH',
             'promo.startDate <= CURRENT_DATE() AND (promo.endDate IS NULL OR promo.endDate >= CURRENT_DATE())'
@@ -48,7 +49,6 @@ class ItemRepository extends ServiceEntityRepository
         ->andWhere('i.seller = :user')
         ->setParameter('user', $user)
         ->groupBy('i.id, i.nameItem, c.nameCategory, p.price, promo.namePromotion, promo.percentage')
-        ->having($expr . ' > 0')
         ->distinct();
 
         return $qb->getQuery()->getResult();
