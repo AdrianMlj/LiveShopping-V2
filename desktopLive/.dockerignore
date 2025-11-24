@@ -1,0 +1,13 @@
+node_modules
+vendor
+var/cache
+var/log
+.git
+.gitignore
+.env.local
+.env.local.php
+.DS_Store
+*.md
+test_makefile.sh
+TEST_MAKEFILE.md
+
